@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <style id="active-theme"><?!= uiThemeCss ?></style>
+    <?!= includeUiFile_('UiStyles'); ?>
+  </head>
+  <body>
+    <main class="app sidebar-app">
+      <header class="brand-header sidebar-brand-header">
+        <img class="brand-logo sidebar-brand-logo" src="<?!= branding.icon ?>" alt="">
+        <div class="brand-copy">
+          <p class="brand-name"><?= uiConfig.projectName ?></p>
+          <span class="version-label"><?= uiConfig.versionLabel ?></span>
+        </div>
+        <button class="icon-button" id="refresh-button" type="button" title="Actualizar estado" aria-label="Actualizar estado">
+          &#x21bb;
+        </button>
+      </header>
+
+      <div class="sidebar-content">
+        <section class="sidebar-section" aria-labelledby="status-title">
+          <h2 id="status-title">Estado del cuaderno</h2>
+          <div class="sidebar-status" id="status-list"></div>
+        </section>
+
+        <section class="sidebar-section" aria-labelledby="access-title">
+          <h2 id="access-title">Acceso r&aacute;pido</h2>
+          <div class="sidebar-actions">
+            <button class="button sidebar-action" id="general-data-button" type="button">
+              &#x1f464; Datos generales
+            </button>
+            <button class="button button-secondary sidebar-action" id="initialize-button" type="button">
+              &#x1f504; Inicializar / reparar
+            </button>
+          </div>
+        </section>
+
+        <section class="sidebar-section sidebar-help" aria-labelledby="help-title">
+          <h2 id="help-title">Ayuda</h2>
+          <div id="help-sections"></div>
+        </section>
+      </div>
+
+      <footer class="author-footer sidebar-footer">
+        &copy; <?= uiConfig.author ?><br>
+        <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a>
+      </footer>
+    </main>
+
+    <script>
+      let sidebarData = <?!= JSON.stringify(sidebarData) ?>;
+      const statusList = document.getElementById('status-list');
+      const helpSections = document.getElementById('help-sections');
+      const refreshButton = document.getElementById('refresh-button');
+
+      renderSidebar(sidebarData);
+
+      document.getElementById('general-data-button').addEventListener('click', function() {
+        google.script.run.abrirDatosGenerales();
+      });
+
+      document.getElementById('initialize-button').addEventListener('click', function() {
+        google.script.run.abrirDialogoInicializacion();
+      });
+
+      refreshButton.addEventListener('click', function() {
+        refreshButton.disabled = true;
+        refreshButton.classList.add('is-refreshing');
+        google.script.run
+          .withSuccessHandler(function(data) {
+            sidebarData = data;
+            document.getElementById('active-theme').textContent = data.themeCss;
+            renderSidebar(data);
+            setRefreshState(false);
+          })
+          .withFailureHandler(function() {
+            setRefreshState(false);
+          })
+          .obtenerDatosPanelLateral();
+      });
+
+      function renderSidebar(data) {
+        statusList.replaceChildren();
+        data.stateItems.forEach(function(item) {
+          const row = document.createElement('div');
+          const marker = document.createElement('span');
+          const copy = document.createElement('span');
+          const label = document.createElement('strong');
+          const detail = document.createElement('small');
+
+          row.className = 'status-item status-' + item.status;
+          marker.className = 'status-marker';
+          marker.textContent = item.status === 'complete' ? '\u2713' : '\u2022';
+          marker.setAttribute('aria-hidden', 'true');
+          copy.className = 'status-copy';
+          label.textContent = item.label;
+          detail.textContent = item.statusLabel;
+          copy.append(label, detail);
+          row.append(marker, copy);
+          statusList.appendChild(row);
+        });
+
+        helpSections.replaceChildren();
+        data.helpSections.forEach(function(section) {
+          const details = document.createElement('details');
+          const summary = document.createElement('summary');
+          const paragraph = document.createElement('p');
+
+          details.className = 'help-item';
+          details.open = section.open;
+          summary.textContent = section.title;
+          paragraph.textContent = section.text;
+          details.append(summary, paragraph);
+          helpSections.appendChild(details);
+        });
+      }
+
+      function setRefreshState(refreshing) {
+        refreshButton.disabled = refreshing;
+        refreshButton.classList.toggle('is-refreshing', refreshing);
+      }
+    </script>
+  </body>
+</html>

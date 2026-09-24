@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-09-24  
-**Estado general:** correcciones globales de configuración, temas y dimensiones completadas en versión 1.1.1
+**Estado general:** panel lateral básico de ayuda y estado completado en versión 1.2.0
 
 ## Completado
 
@@ -17,7 +17,7 @@
 - Menú `📘 Cuaderno del Profesor` implementado con:
   - `🔄 Inicializar / reparar estructura`.
   - `⚙️ Configuración > 👤 Datos generales`.
-  - `❓ Ayuda` temporal mediante diálogo.
+  - `❓ Ayuda` mediante panel lateral.
 - Hoja visible `0 Portada` terminada, generada por Apps Script y alimentada desde `_CONFIG`, con correos diferenciados y enlaces navegables.
 - Índice dinámico navegable de hojas visibles implementado en la portada.
 - Hojas técnicas `_CONFIG` y `_META` creadas y ocultas.
@@ -30,7 +30,7 @@
 - Web del centro normalizada y validada aunque se introduzca sin protocolo.
 - Utilidades globales para ampliar hojas y recortarlas al layout; aplicadas a la Portada `A:H` con filas dinámicas.
 - `_META` escribe las versiones como texto para evitar su conversión a fecha.
-- Versión central del cuaderno `1.1.1` y esquema `2`.
+- Versión central del cuaderno `1.2.0` y esquema `2`.
 - Infraestructura HTML común para diálogos de Apps Script implementada.
 - Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
 - La inicialización se ejecuta desde el diálogo en cuatro pasos idempotentes.
@@ -42,11 +42,15 @@
 - Copyright visible de forma discreta en el pie de la UI.
 - Splash retirado de los diálogos comunes y reservado para posibles usos futuros.
 - Títulos nativos y opciones de menú con iconografía funcional coherente.
+- Panel lateral permanente con branding, tema activo, versión y copyright compartidos.
+- Estado real de datos generales y señalización explícita de áreas todavía no disponibles.
+- Accesos rápidos a Datos generales y a la confirmación de Inicializar / reparar.
+- Ayuda breve colapsable, con Portada priorizada cuando esa hoja está activa.
+- Actualización manual del estado, contexto y tema sin polling ni triggers.
 
 ## Pendiente inmediato
 
 - Probar manualmente las seis paletas, el cierre del diálogo, la URL normalizada y el recorte de la Portada en `CP_DEV`.
-- Implementar el panel lateral básico.
 - Implementar el asistente de preparación de nuevo curso.
 
 ## Fase 1 prevista
@@ -66,7 +70,8 @@ Preparar nuevo curso
 Estado actual de la fase:
 
 - Completado: estructura base, configuración general, `_CONFIG`, `_META`, `0 Portada`, índice dinámico, menú inicial e infraestructura UI común.
-- Pendiente: panel lateral básico y preparar nuevo curso.
+- Completado: panel lateral básico de ayuda, estado y accesos rápidos.
+- Pendiente: preparar nuevo curso.
 
 ## Regla de actualización
 

@@ -13,9 +13,5 @@ function onOpen() {
 }
 
 function mostrarAyuda() {
-  SpreadsheetApp.getUi().alert(
-    CP.MENU.HELP,
-    'El panel de ayuda se implementara en una tarea posterior.',
-    SpreadsheetApp.getUi().ButtonSet.OK
-  );
+  abrirPanelLateral();
 }

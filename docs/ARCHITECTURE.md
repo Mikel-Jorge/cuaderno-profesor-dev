@@ -36,7 +36,7 @@ La implementación inicial utiliza una separación sencilla de responsabilidades
 
 - `Config.gs`: constantes compartidas, nombres de hojas y fuente central de la versión del cuaderno.
 - `Theme.gs`: tokens visuales, presets, personalizaciones y adaptación del tema a Sheets y CSS.
-- `Main.gs`: funciones públicas de UI, incluyendo `onOpen()` y ayuda temporal.
+- `Main.gs`: construcción del menú y puntos de entrada públicos generales.
 - `Setup.gs`: inicialización idempotente de la estructura base.
 - `GeneralConfig.gs`: definición, migración, lectura, validación y persistencia diferencial de la configuración general y visual.
 - `Portada.gs`: reparación de estructura, actualización diferencial de datos, aplicación del tema y generación del índice navegable.
@@ -45,6 +45,8 @@ La implementación inicial utiliza una separación sencilla de responsabilidades
 - `UiDialogProgress.html`: diálogo reutilizable para procesos con progreso, resultado y log.
 - `UiDialogConfirmation.html`: confirmación reutilizable con variantes normal, warning y danger.
 - `UiDialogGeneralConfig.html`: edición de los datos generales almacenados en `_CONFIG`.
+- `Sidebar.gs`: preparación del estado, ayuda contextual y apertura del panel lateral.
+- `UiSidebar.html`: renderizado del panel, accesos rápidos y actualización manual en cliente.
 - `UiStyles.html`: estilos visuales comunes para HTML de Apps Script.
 - `Branding.gs`: recursos de branding embebidos y fallback visual sin dependencias externas.
 
@@ -62,6 +64,8 @@ No crear capas o abstracciones hasta que exista una necesidad real.
 ## UI HTML y procesos largos
 
 Los diálogos se construyen con plantillas de `HtmlService` y parciales compartidos. La cabecera común recibe el nombre del proyecto y la versión desde `Config.gs`, evitando hardcodearlos en HTML. Los títulos nativos y el menú reutilizan las etiquetas con iconos funcionales centralizadas en `CP.MENU`. `Theme.gs` resuelve el preset y las personalizaciones almacenadas, y los inyecta como variables CSS en todas las plantillas comunes.
+
+El panel lateral utiliza esa misma cabecera, tema y pie de autor. Su estado se calcula en servidor a partir de `_CONFIG`; la ayuda se ordena según la hoja activa mediante un mapa ampliable. Los accesos rápidos invocan los puntos de entrada públicos ya existentes. La actualización es manual y vuelve a solicitar estado, contexto y tema, sin polling ni triggers.
 
 Un proceso UI declara sus pasos en servidor; el cliente los invoca en secuencia mediante `google.script.run`, actualizando el estado después de cada respuesta. Las funciones de dominio continúan siendo ejecutables directamente sin depender del diálogo.
 

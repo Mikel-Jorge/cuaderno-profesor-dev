@@ -13,7 +13,7 @@ especificación.
 ## Definición funcional del proyecto
 
 **Estado:** Especificación funcional inicial cerrada  
-**Versión del documento:** 1.6
+**Versión del documento:** 1.7
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 ---
@@ -972,50 +972,44 @@ El cuaderno solo recibe la nota vigente/final de la UT.
 
 # 22. Panel lateral
 
-Será una pieza central.
+Será una pieza central de ayuda, estado y acceso rápido. La opción `❓ Ayuda` del menú abrirá el panel sin iniciar procesos ni modificar datos.
 
 ## 22.1. Estado
 
-Ejemplo:
+La primera versión mostrará el estado real de estas áreas:
 
 ```text
-CUADERNO DEL PROFESOR
-Curso 2026-2027
-
-✓ Centro configurado
-✓ Calendario configurado
-✓ Horario configurado
-⚠ PMDM: evaluación pendiente
-⚠ AD: alumnado pendiente
-```
-
-## 22.2. Ayuda colapsable
-
-Apartados mínimos:
-
-```text
-Primeros pasos
-Portada
-Preparar nuevo curso
+Datos generales
 Calendario
 Horario
 Módulos
 Alumnado
-Contactos
-Calendario de módulo
-UT y planificación
-Seguimiento
-Replanificación
-Evaluación
-Notas y colores
+```
+
+Los datos generales se considerarán completos cuando existan curso académico, profesor y centro. Las áreas todavía no implementadas se identificarán como no disponibles y nunca se presentarán como completadas.
+
+## 22.2. Ayuda colapsable
+
+La primera versión incluirá únicamente apartados relacionados con funciones disponibles:
+
+```text
+Primeros pasos
+Portada
+Datos generales
+Inicializar / reparar
+Temas y apariencia
 Problemas frecuentes
 ```
 
-La ayuda debe ser breve, clara y completa: una guía práctica para no perderse.
+La ayuda será breve y clara. Se ampliará cuando se incorporen nuevas funciones, sin mostrar previamente apartados vacíos.
 
 ## 22.3. Ayuda contextual
 
-Cuando sea posible, el panel detectará la hoja activa y priorizará la ayuda relacionada.
+El panel detectará la hoja activa y priorizará la ayuda relacionada cuando exista. En `0 Portada`, el apartado Portada aparecerá primero y abierto.
+
+## 22.4. Acciones y actualización
+
+El panel ofrecerá accesos a `Datos generales` y `Inicializar / reparar estructura`, reutilizando respectivamente el diálogo de configuración y la confirmación existentes. Incluirá una actualización manual del estado y del contexto, sin sondeo periódico ni triggers instalables.
 
 # 23. Estilo visual
 
@@ -1038,7 +1032,7 @@ Los presets utilizarán siempre fondo y superficie claros con texto oscuro; camb
 
 ## 23.2. UI común y branding
 
-Los diálogos y el futuro panel lateral compartirán una base visual común:
+Los diálogos y el panel lateral compartirán una base visual común:
 
 - tipografía legible, colores y botones coherentes;
 - cabecera con el icono MJS, el nombre `Cuaderno del Profesor` y la versión actual obtenida de la configuración central;
@@ -1117,7 +1111,7 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.1.1
+Versión del cuaderno: 1.2.0
 Versión del esquema: 2
 ```
 
