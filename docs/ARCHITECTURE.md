@@ -58,11 +58,13 @@ No crear capas o abstracciones hasta que exista una necesidad real.
 
 ## UI HTML y procesos largos
 
-Los diálogos se construyen con plantillas de `HtmlService` y parciales compartidos. Un proceso UI declara sus pasos en servidor; el cliente los invoca en secuencia mediante `google.script.run`, actualizando el estado después de cada respuesta. Las funciones de dominio continúan siendo ejecutables directamente sin depender del diálogo.
+Los diálogos se construyen con plantillas de `HtmlService` y parciales compartidos. La cabecera común recibe el nombre del proyecto y la versión desde `Config.gs`, evitando hardcodearlos en HTML. Los títulos nativos y el menú reutilizan las etiquetas con iconos funcionales centralizadas en `CP.MENU`.
+
+Un proceso UI declara sus pasos en servidor; el cliente los invoca en secuencia mediante `google.script.run`, actualizando el estado después de cada respuesta. Las funciones de dominio continúan siendo ejecutables directamente sin depender del diálogo.
 
 Las confirmaciones se definen y validan en servidor mediante identificadores de acción permitidos. El cliente solo solicita la acción después de una pulsación expresa; no recibe nombres de funciones arbitrarios. Las variantes `normal`, `warning` y `danger` comparten plantilla y estilos, reservando `danger` para operaciones destructivas.
 
-Los logos originales se conservan en `branding/`. Para que Apps Script pueda mostrarlos sin publicar archivos ni depender de URLs externas, `Branding.gs` contiene copias reducidas como `data:` URI. Estas constantes confiables se imprimen sin escape contextual en los atributos `src`; el resto de datos visibles permanece escapado. Si un recurso embebido no está disponible, se genera un fallback SVG simple.
+Los logos originales se conservan en `branding/`. Para que Apps Script pueda mostrarlos sin publicar archivos ni depender de URLs externas, `Branding.gs` contiene copias reducidas como `data:` URI. Estas constantes confiables se imprimen sin escape contextual en los atributos `src`; el resto de datos visibles permanece escapado. Si un recurso embebido no está disponible, se genera un fallback SVG simple. El recurso splash permanece disponible para usos futuros, pero no se renderiza en los diálogos comunes actuales.
 
 El marco nativo de `showModalDialog()` pertenece a Google Sheets. La X nativa no puede ocultarse ni bloquearse desde el contenido HTML; por ello los pasos deben ser idempotentes y permitir reparar una ejecución interrumpida.
 

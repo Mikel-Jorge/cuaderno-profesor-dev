@@ -14,9 +14,9 @@
 - Primer `git push` probado correctamente.
 - `README.md` de configuración creado.
 - Función pública `inicializarCuaderno()` implementada.
-- Menú `Cuaderno del profesor` implementado con:
-  - `Inicializar / reparar estructura`.
-  - `Ayuda` temporal mediante diálogo.
+- Menú `📘 Cuaderno del Profesor` implementado con:
+  - `🔄 Inicializar / reparar estructura`.
+  - `❓ Ayuda` temporal mediante diálogo.
 - Hoja visible `0 Portada` creada y renderizada por Apps Script.
 - Hojas técnicas `_CONFIG` y `_META` creadas y ocultas.
 - `_META` incluye proyecto, versión del cuaderno, versión del esquema y entorno `DEV`.
@@ -28,7 +28,10 @@
 - Impresión de las Data URI corregida para que los logos se rendericen en las plantillas HTML.
 - Diálogo reutilizable de confirmación con variantes `normal`, `warning` y `danger`.
 - La inicialización requiere confirmación expresa antes de abrir el progreso.
-- Autoría visible de forma discreta en el pie de la UI.
+- Cabecera común con icono MJS, nombre del proyecto y versión centralizada.
+- Copyright visible de forma discreta en el pie de la UI.
+- Splash retirado de los diálogos comunes y reservado para posibles usos futuros.
+- Títulos nativos y opciones de menú con iconografía funcional coherente.
 
 ## Pendiente inmediato
 

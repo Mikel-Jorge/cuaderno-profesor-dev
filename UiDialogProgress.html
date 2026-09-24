@@ -11,22 +11,17 @@
         <img class="brand-logo" src="<?!= branding.icon ?>" alt="">
         <div class="brand-copy">
           <p class="brand-name"><?= uiConfig.projectName ?></p>
-          <span class="environment-badge">Entorno <?= uiConfig.environment ?></span>
+          <span class="version-label"><?= uiConfig.versionLabel ?></span>
         </div>
       </header>
 
-      <section class="process" aria-labelledby="process-title">
-        <div class="process-heading">
-          <img class="splash-logo" src="<?!= branding.splash ?>" alt="">
-          <div>
-            <h1 id="process-title"><?= uiProcess.title ?></h1>
-            <p class="status" id="status" aria-live="polite"><?= uiProcess.initialStatus ?></p>
+      <section class="process" aria-label="Progreso de la operaci&oacute;n">
+        <div class="progress-summary">
+          <p class="progress-step" id="status" aria-live="polite">Paso 1 de <?= uiProcess.steps.length ?></p>
+          <div class="activity" id="activity">
+            <span class="spinner" aria-hidden="true"></span>
+            <span id="current-step"><?= uiProcess.steps[0].label ?></span>
           </div>
-        </div>
-
-        <div class="activity" id="activity">
-          <span class="spinner" aria-hidden="true"></span>
-          <span id="current-step">Iniciando...</span>
         </div>
 
         <div class="progress-track" aria-hidden="true">
@@ -42,7 +37,7 @@
       </section>
 
       <footer class="author-footer">
-        <?= uiConfig.author ?> ·
+        &copy; <?= uiConfig.author ?> ·
         <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a>
       </footer>
     </main>

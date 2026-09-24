@@ -62,13 +62,12 @@
     font-weight: 700;
   }
 
-  .environment-badge {
+  .version-label {
     display: inline-block;
     margin-top: 3px;
-    color: var(--dev);
+    color: var(--muted);
     font-size: 11px;
     font-weight: 700;
-    text-transform: uppercase;
   }
 
   .process {
@@ -78,36 +77,18 @@
     padding: 20px;
   }
 
-  .process-heading {
-    display: grid;
-    grid-template-columns: 76px minmax(0, 1fr);
-    align-items: center;
-    gap: 16px;
-  }
-
-  .splash-logo {
-    width: 76px;
-    height: 52px;
-    border-radius: 6px;
-    object-fit: cover;
-  }
-
-  h1 {
-    margin: 0 0 4px;
-    font-size: 20px;
-    line-height: 1.25;
-  }
-
-  .status {
+  .progress-step {
     margin: 0;
-    color: var(--muted);
+    font-size: 18px;
+    font-weight: 700;
   }
 
   .activity {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin: 20px 0 12px;
+    margin: 8px 0 14px;
+    color: var(--muted);
   }
 
   .spinner {
@@ -260,10 +241,6 @@
 
   .confirmation-danger {
     border-top-color: var(--error);
-  }
-
-  .confirmation h1 {
-    margin-bottom: 12px;
   }
 
   .confirmation-message {

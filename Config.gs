@@ -9,9 +9,9 @@ const CP = Object.freeze({
     META: '_META',
   }),
   MENU: Object.freeze({
-    NAME: 'Cuaderno del profesor',
-    INIT: 'Inicializar / reparar estructura',
-    HELP: 'Ayuda',
+    NAME: '📘 Cuaderno del Profesor',
+    INIT: '🔄 Inicializar / reparar estructura',
+    HELP: '❓ Ayuda',
   }),
   UI: Object.freeze({
     AUTHOR: 'Mikel Aingeru Jorge Soteras',

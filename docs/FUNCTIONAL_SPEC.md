@@ -13,7 +13,7 @@ especificación.
 ## Definición funcional del proyecto
 
 **Estado:** Especificación funcional inicial cerrada  
-**Versión del documento:** 1.2
+**Versión del documento:** 1.3
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 ---
@@ -91,7 +91,7 @@ Estas hojas estarán ocultas normalmente, podrán protegerse y podrán desoculta
 # 4. Menú principal
 
 ```text
-Cuaderno del profesor
+📘 Cuaderno del Profesor
 ├── Abrir panel / Ayuda
 ├── Preparar nuevo curso
 ├── Configuración
@@ -109,6 +109,8 @@ Cuaderno del profesor
 ```
 
 Google Calendar, People API y sincronizaciones avanzadas quedan fuera de la V1.
+
+El menú y sus acciones utilizarán un icono funcional únicamente cuando facilite su identificación rápida. Las etiquetas iniciales serán `🔄 Inicializar / reparar estructura` y `❓ Ayuda`, manteniendo el mismo icono en el título nativo del diálogo asociado.
 
 Las acciones sensibles solicitarán confirmación expresa antes de ejecutarse. Las operaciones destructivas utilizarán una confirmación destacada en rojo y explicarán claramente su efecto. Las acciones que puedan tardar varios segundos continuarán después en un diálogo de progreso común.
 
@@ -1028,9 +1030,11 @@ Los colores generales se centralizarán en configuración cuando sea razonable.
 Los diálogos y el futuro panel lateral compartirán una base visual común:
 
 - tipografía legible, colores y botones coherentes;
-- branding del proyecto en cabeceras y pantallas de carga cuando corresponda;
+- cabecera con el icono MJS, el nombre `Cuaderno del Profesor` y la versión actual obtenida de la configuración central;
 - fallback visual integrado cuando un recurso de imagen no esté disponible;
-- autoría discreta con `Mikel Aingeru Jorge Soteras` y `mjorgesote@educacion.navarra.es`.
+- copyright discreto con `Mikel Aingeru Jorge Soteras` y `mjorgesote@educacion.navarra.es`.
+
+Los diálogos no repetirán dentro del contenido el título nativo de la acción. La imagen splash queda reservada para posibles usos futuros y no se mostrará en los diálogos comunes actuales.
 
 Los procesos que puedan tardar mostrarán un diálogo reutilizable con título, estado, indicador de actividad, registro breve y resultado de éxito o error. Mientras el proceso esté activo no habrá botones internos de cierre o confirmación; el botón `Cerrar` aparecerá al finalizar.
 

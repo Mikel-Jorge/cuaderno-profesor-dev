@@ -29,7 +29,6 @@ function showProgressDialog_(processId) {
   template.uiProcess = {
     id: process.id,
     title: process.title,
-    initialStatus: process.initialStatus,
     successMessage: process.successMessage,
     steps: process.steps.map(function(step) {
       return { label: step.label };
@@ -52,7 +51,7 @@ function getUiConfirmationDefinition_(confirmationId) {
 
   return validateUiConfirmation_({
     id: CP.UI.INIT_CONFIRMATION_ID,
-    title: 'Inicializar / reparar estructura',
+    title: CP.MENU.INIT,
     message: 'Se comprobar\u00e1 y reparar\u00e1 la estructura base del cuaderno.',
     helperText: 'Los datos existentes no se eliminar\u00e1n.',
     confirmText: 'Continuar',
@@ -77,7 +76,7 @@ function setCommonUiTemplateData_(template) {
   template.branding = getUiBranding_();
   template.uiConfig = {
     projectName: CP.PROJECT_NAME,
-    environment: CP.ENVIRONMENT,
+    versionLabel: 'v' + CP.NOTEBOOK_VERSION,
     author: CP.UI.AUTHOR,
     authorEmail: CP.UI.AUTHOR_EMAIL,
   };
@@ -106,27 +105,26 @@ function getUiProcessDefinition_(processId) {
 
   return {
     id: CP.UI.INIT_PROCESS_ID,
-    title: 'Inicializar cuaderno',
-    initialStatus: 'Preparando la estructura base...',
+    title: CP.MENU.INIT,
     successMessage: 'La estructura del cuaderno esta lista.',
     steps: [
       {
-        label: 'Preparando la portada',
+        label: 'Preparando la portada...',
         completedMessage: 'Portada creada o reparada.',
         run: initializeCoverStructure_,
       },
       {
-        label: 'Preparando la configuracion',
+        label: 'Preparando la configuracion...',
         completedMessage: 'Configuracion comprobada.',
         run: initializeConfigStructure_,
       },
       {
-        label: 'Actualizando metadatos',
+        label: 'Actualizando metadatos...',
         completedMessage: 'Metadatos actualizados.',
         run: initializeMetaStructure_,
       },
       {
-        label: 'Finalizando la estructura',
+        label: 'Finalizando la estructura...',
         completedMessage: 'Hojas tecnicas ocultas y portada situada en primer lugar.',
         run: finishStructureInitialization_,
       },

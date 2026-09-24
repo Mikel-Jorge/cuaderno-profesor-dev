@@ -11,12 +11,11 @@
         <img class="brand-logo" src="<?!= branding.icon ?>" alt="">
         <div class="brand-copy">
           <p class="brand-name"><?= uiConfig.projectName ?></p>
-          <span class="environment-badge">Entorno <?= uiConfig.environment ?></span>
+          <span class="version-label"><?= uiConfig.versionLabel ?></span>
         </div>
       </header>
 
-      <section class="confirmation confirmation-<?= confirmation.variant ?>" aria-labelledby="confirmation-title">
-        <h1 id="confirmation-title"><?= confirmation.title ?></h1>
+      <section class="confirmation confirmation-<?= confirmation.variant ?>" aria-label="Confirmaci&oacute;n">
         <p class="confirmation-message"><?= confirmation.message ?></p>
         <? if (confirmation.helperText) { ?>
           <p class="confirmation-helper"><?= confirmation.helperText ?></p>
@@ -31,7 +30,7 @@
       </section>
 
       <footer class="author-footer">
-        <?= uiConfig.author ?> ·
+        &copy; <?= uiConfig.author ?> ·
         <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a>
       </footer>
     </main>
