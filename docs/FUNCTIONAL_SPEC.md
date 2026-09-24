@@ -13,7 +13,7 @@ especificación.
 ## Definición funcional del proyecto
 
 **Estado:** Especificación funcional inicial cerrada  
-**Versión del documento:** 1.3
+**Versión del documento:** 1.4
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 ---
@@ -95,7 +95,7 @@ Estas hojas estarán ocultas normalmente, podrán protegerse y podrán desoculta
 ├── Abrir panel / Ayuda
 ├── Preparar nuevo curso
 ├── Configuración
-│   ├── Datos del profesor y centro
+│   ├── 👤 Datos generales
 │   ├── Fechas y calendario
 │   ├── Tramos horarios
 │   └── Módulos y grupos
@@ -153,7 +153,7 @@ La propuesta podrá corregirse manualmente.
 
 ## 5.2. Índice dinámico
 
-A la derecha habrá un índice visual y clicable:
+A la derecha habrá un índice visual y clicable construido a partir de las hojas visibles existentes:
 
 ```text
 0 · Portada
@@ -162,18 +162,12 @@ A la derecha habrá un índice visual y clicable:
 3 · Módulos
 4 · Alumnado
 
-5 · Calendarios de módulo
-    PMDM · DAM2A
-    AD · DAM2A
-
-6 · Seguimientos
-    PMDM · DAM2A
-
-7 · Evaluación
-    PMDM · DAM2A
+5 · Calendario - PMDM - DAM2A
+6 · Seguimiento - PMDM - DAM2A
+7 · Evaluación - PMDM - DAM2A
 ```
 
-Al generar nuevas hojas, el índice se actualizará.
+No se mostrarán hojas técnicas cuyo nombre comience por `_`. Al generar nuevas hojas, el índice se actualizará y cada entrada permitirá navegar a la pestaña correspondiente.
 
 # 6. Preparar nuevo curso
 

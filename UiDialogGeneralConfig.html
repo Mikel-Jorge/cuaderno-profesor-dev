@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <?!= includeUiFile_('UiStyles'); ?>
+  </head>
+  <body>
+    <main class="app">
+      <header class="brand-header">
+        <img class="brand-logo" src="<?!= branding.icon ?>" alt="">
+        <div class="brand-copy">
+          <p class="brand-name"><?= uiConfig.projectName ?></p>
+          <span class="version-label"><?= uiConfig.versionLabel ?></span>
+        </div>
+      </header>
+
+      <form class="config-form" id="config-form">
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="curso_academico">Curso acad&eacute;mico</label>
+            <input id="curso_academico" name="curso_academico" type="text" inputmode="numeric" autocomplete="off">
+            <p class="form-help">Formato YYYY-YYYY</p>
+          </div>
+
+          <div class="form-field">
+            <label for="profesor">Nombre y apellidos del profesor</label>
+            <input id="profesor" name="profesor" type="text" autocomplete="name">
+          </div>
+
+          <div class="form-field form-field-wide">
+            <label for="centro">Nombre del centro</label>
+            <input id="centro" name="centro" type="text" autocomplete="organization">
+          </div>
+
+          <div class="form-field form-field-wide">
+            <label for="centro_direccion">Direcci&oacute;n</label>
+            <input id="centro_direccion" name="centro_direccion" type="text" autocomplete="street-address">
+          </div>
+
+          <div class="form-field">
+            <label for="centro_telefono">Tel&eacute;fono</label>
+            <input id="centro_telefono" name="centro_telefono" type="text" inputmode="tel" autocomplete="tel">
+          </div>
+
+          <div class="form-field">
+            <label for="centro_email">Correo electr&oacute;nico</label>
+            <input id="centro_email" name="centro_email" type="text" inputmode="email" autocomplete="email">
+          </div>
+
+          <div class="form-field form-field-wide">
+            <label for="centro_web">Web</label>
+            <input id="centro_web" name="centro_web" type="text" inputmode="url" autocomplete="url">
+          </div>
+        </div>
+
+        <div class="result" id="form-result" role="status"></div>
+
+        <div class="actions">
+          <button class="button button-secondary" id="close-button" type="button">Cancelar</button>
+          <button class="button" id="save-button" type="submit">Guardar</button>
+        </div>
+      </form>
+
+      <footer class="author-footer">
+        &copy; <?= uiConfig.author ?> ·
+        <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a>
+      </footer>
+    </main>
+
+    <script>
+      const GENERAL_CONFIG = <?!= JSON.stringify(generalConfig) ?>;
+      const fieldNames = [
+        'curso_academico',
+        'profesor',
+        'centro',
+        'centro_direccion',
+        'centro_telefono',
+        'centro_email',
+        'centro_web',
+      ];
+      const form = document.getElementById('config-form');
+      const closeButton = document.getElementById('close-button');
+      const saveButton = document.getElementById('save-button');
+      const resultElement = document.getElementById('form-result');
+
+      fieldNames.forEach(function(fieldName) {
+        document.getElementById(fieldName).value = GENERAL_CONFIG[fieldName] || '';
+      });
+
+      form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const values = fieldNames.reduce(function(config, fieldName) {
+          config[fieldName] = document.getElementById(fieldName).value.trim();
+          return config;
+        }, {});
+
+        if (!/^\d{4}-\d{4}$/.test(values.curso_academico)) {
+          showResult('El curso acad\u00e9mico debe tener el formato YYYY-YYYY.', 'error');
+          return;
+        }
+
+        setSavingState(true);
+        resultElement.className = 'result';
+        resultElement.textContent = '';
+
+        google.script.run
+          .withSuccessHandler(handleSaveSuccess)
+          .withFailureHandler(handleSaveError)
+          .guardarDatosGenerales(values);
+      });
+
+      closeButton.addEventListener('click', function() {
+        google.script.host.close();
+      });
+
+      function handleSaveSuccess(response) {
+        showResult(response.message, 'success');
+        closeButton.textContent = 'Cerrar';
+        saveButton.className = 'button is-hidden';
+        setSavingState(false);
+      }
+
+      function handleSaveError(error) {
+        const message = error && error.message ? error.message : 'No se han podido guardar los datos.';
+        showResult(message, 'error');
+        setSavingState(false);
+      }
+
+      function showResult(message, state) {
+        resultElement.textContent = message;
+        resultElement.className = 'result visible ' + state;
+      }
+
+      function setSavingState(isSaving) {
+        closeButton.disabled = isSaving;
+        saveButton.disabled = isSaving;
+        saveButton.textContent = isSaving ? 'Guardando...' : 'Guardar';
+      }
+    </script>
+  </body>
+</html>

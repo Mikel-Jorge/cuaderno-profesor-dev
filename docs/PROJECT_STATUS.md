@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-09-24  
-**Estado general:** estructura base inicial e infraestructura UI común implementadas
+**Estado general:** núcleo de configuración general y portada funcional implementados
 
 ## Completado
 
@@ -16,11 +16,15 @@
 - Función pública `inicializarCuaderno()` implementada.
 - Menú `📘 Cuaderno del Profesor` implementado con:
   - `🔄 Inicializar / reparar estructura`.
+  - `⚙️ Configuración > 👤 Datos generales`.
   - `❓ Ayuda` temporal mediante diálogo.
-- Hoja visible `0 Portada` creada y renderizada por Apps Script.
+- Hoja visible `0 Portada` terminada, generada por Apps Script y alimentada desde `_CONFIG`.
+- Índice dinámico navegable de hojas visibles implementado en la portada.
 - Hojas técnicas `_CONFIG` y `_META` creadas y ocultas.
-- `_META` incluye proyecto, versión del cuaderno, versión del esquema y entorno `DEV`.
-- `_CONFIG` contiene la estructura mínima para futuras configuraciones.
+- `_META` incluye únicamente proyecto, versión del cuaderno y versión del esquema.
+- `_CONFIG` contiene curso, profesor y datos completos del centro en formato clave/valor.
+- Propuesta automática del curso académico según fecha y zona horaria del Spreadsheet.
+- Diálogo de datos generales con carga, validación, guardado y actualización inmediata de la portada.
 - Infraestructura HTML común para diálogos de Apps Script implementada.
 - Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
 - La inicialización se ejecuta desde el diálogo en cuatro pasos idempotentes.
@@ -35,7 +39,7 @@
 
 ## Pendiente inmediato
 
-- Probar manualmente la confirmación, el branding y la inicialización en `CP_DEV`.
+- Probar manualmente la configuración general, la portada y los enlaces del índice en `CP_DEV`.
 - Implementar el panel lateral básico.
 - Implementar el asistente de preparación de nuevo curso.
 
@@ -55,7 +59,7 @@ Preparar nuevo curso
 
 Estado actual de la fase:
 
-- Completado: estructura base, `_CONFIG`, `_META`, `0 Portada`, menú inicial e infraestructura UI común.
+- Completado: estructura base, configuración general, `_CONFIG`, `_META`, `0 Portada`, índice dinámico, menú inicial e infraestructura UI común.
 - Pendiente: panel lateral básico y preparar nuevo curso.
 
 ## Regla de actualización

@@ -6,7 +6,7 @@ const CP_BRANDING = Object.freeze({
 function getUiBranding_() {
   return {
     icon: CP_BRANDING.ICON_DATA_URI || createBrandingFallbackDataUri_('CP', '#087EA4'),
-    splash: CP_BRANDING.SPLASH_DATA_URI || createBrandingFallbackDataUri_('CP DEV', '#172033'),
+    splash: CP_BRANDING.SPLASH_DATA_URI || createBrandingFallbackDataUri_('MJS', '#172033'),
   };
 }
 

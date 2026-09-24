@@ -37,11 +37,13 @@ La implementación inicial utiliza una separación sencilla de responsabilidades
 - `Config.gs`: constantes compartidas, nombres de hojas, versiones y colores base.
 - `Main.gs`: funciones públicas de UI, incluyendo `onOpen()` y ayuda temporal.
 - `Setup.gs`: inicialización idempotente de la estructura base.
-- `Portada.gs`: renderizado de la hoja visible `0 Portada`.
+- `GeneralConfig.gs`: definición, lectura, validación y persistencia de la configuración general, incluida la propuesta de curso académico.
+- `Portada.gs`: renderizado completo de `0 Portada` y generación de su índice navegable.
 - `Utils.gs`: utilidades comunes de acceso y organización de hojas.
 - `Ui.gs`: apertura de diálogos, registro de procesos UI y ejecución secuencial de pasos.
 - `UiDialogProgress.html`: diálogo reutilizable para procesos con progreso, resultado y log.
 - `UiDialogConfirmation.html`: confirmación reutilizable con variantes normal, warning y danger.
+- `UiDialogGeneralConfig.html`: edición de los datos generales almacenados en `_CONFIG`.
 - `UiStyles.html`: estilos visuales comunes para HTML de Apps Script.
 - `Branding.gs`: recursos de branding embebidos y fallback visual sin dependencias externas.
 
@@ -85,6 +87,8 @@ _META
 Podrán variar si la implementación demuestra que una estructura más sencilla es suficiente.
 
 En la estructura base inicial solo se crean `_CONFIG` y `_META`. El resto de hojas técnicas se crearán cuando se implemente la funcionalidad correspondiente.
+
+`_CONFIG` mantiene un modelo clave/valor y conserva las claves desconocidas al reparar su estructura. `0 Portada` es una vista generada desde esta configuración y no actúa como fuente de datos. `_META` contiene únicamente proyecto, versión del cuaderno y versión del esquema.
 
 ## Restricciones técnicas vigentes
 

@@ -267,6 +267,67 @@
     margin-top: auto;
   }
 
+  .config-form {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+  }
+
+  .form-field {
+    min-width: 0;
+  }
+
+  .form-field-wide {
+    grid-column: 1 / -1;
+  }
+
+  .form-field label {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .form-field input {
+    width: 100%;
+    min-height: 38px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+  }
+
+  .form-field input:focus {
+    border-color: var(--primary);
+    outline: 2px solid #cfe4ec;
+    outline-offset: 0;
+  }
+
+  .form-help {
+    margin: 5px 0 0;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .config-form .result {
+    margin-top: 14px;
+  }
+
+  .config-form .actions {
+    gap: 10px;
+    margin-top: auto;
+  }
+
   .author-footer {
     padding: 10px 20px 14px;
     border-top: 1px solid var(--border);
@@ -277,5 +338,15 @@
 
   .author-footer a {
     color: inherit;
+  }
+
+  @media (max-width: 520px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .form-field-wide {
+      grid-column: auto;
+    }
   }
 </style>
