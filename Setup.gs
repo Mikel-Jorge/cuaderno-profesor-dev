@@ -1,16 +1,32 @@
 function inicializarCuaderno() {
+  initializeCoverStructure_();
+  initializeConfigStructure_();
+  initializeMetaStructure_();
+  finishStructureInitialization_();
+}
+
+function initializeCoverStructure_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
 
   const coverSheet = getOrCreateSheet_(spreadsheet, CP.SHEETS.COVER);
   renderPortada_(coverSheet);
   moveSheetToFirstPosition_(spreadsheet, coverSheet);
+}
 
+function initializeConfigStructure_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const configSheet = getOrCreateSheet_(spreadsheet, CP.SHEETS.CONFIG);
   initializeConfigSheet_(configSheet);
+}
 
+function initializeMetaStructure_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const metaSheet = getOrCreateSheet_(spreadsheet, CP.SHEETS.META);
   initializeMetaSheet_(metaSheet);
+}
 
+function finishStructureInitialization_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   hideTechnicalSheets_(spreadsheet);
 
   spreadsheet.toast(

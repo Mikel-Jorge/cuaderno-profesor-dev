@@ -1,7 +1,7 @@
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu(CP.MENU.NAME)
-    .addItem(CP.MENU.INIT, 'inicializarCuaderno')
+    .addItem(CP.MENU.INIT, 'abrirDialogoInicializacion')
     .addSeparator()
     .addItem(CP.MENU.HELP, 'mostrarAyuda')
     .addToUi();

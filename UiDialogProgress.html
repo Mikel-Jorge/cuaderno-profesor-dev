@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <?!= includeUiFile_('UiStyles'); ?>
+  </head>
+  <body>
+    <main class="app">
+      <header class="brand-header">
+        <img class="brand-logo" src="<?= branding.icon ?>" alt="">
+        <div class="brand-copy">
+          <p class="brand-name"><?= uiConfig.projectName ?></p>
+          <span class="environment-badge">Entorno <?= uiConfig.environment ?></span>
+        </div>
+      </header>
+
+      <section class="process" aria-labelledby="process-title">
+        <div class="process-heading">
+          <img class="splash-logo" src="<?= branding.splash ?>" alt="">
+          <div>
+            <h1 id="process-title"><?= uiProcess.title ?></h1>
+            <p class="status" id="status" aria-live="polite"><?= uiProcess.initialStatus ?></p>
+          </div>
+        </div>
+
+        <div class="activity" id="activity">
+          <span class="spinner" aria-hidden="true"></span>
+          <span id="current-step">Iniciando...</span>
+        </div>
+
+        <div class="progress-track" aria-hidden="true">
+          <div class="progress-bar" id="progress-bar"></div>
+        </div>
+
+        <ol class="log" id="log" aria-label="Registro del proceso"></ol>
+        <div class="result" id="result" role="status"></div>
+
+        <div class="actions">
+          <button class="button" id="close-button" type="button">Cerrar</button>
+        </div>
+      </section>
+
+      <footer class="author-footer">
+        <?= uiConfig.author ?> ·
+        <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a>
+      </footer>
+    </main>
+
+    <script>
+      const PROCESS = <?!= JSON.stringify(uiProcess) ?>;
+      let currentStep = 0;
+
+      const statusElement = document.getElementById('status');
+      const currentStepElement = document.getElementById('current-step');
+      const progressBar = document.getElementById('progress-bar');
+      const logElement = document.getElementById('log');
+      const resultElement = document.getElementById('result');
+      const activityElement = document.getElementById('activity');
+      const closeButton = document.getElementById('close-button');
+
+      function appendLog(message, isError) {
+        const entry = document.createElement('li');
+        entry.textContent = message;
+        if (isError) {
+          entry.className = 'error-entry';
+        }
+        logElement.appendChild(entry);
+        logElement.scrollTop = logElement.scrollHeight;
+      }
+
+      function runNextStep() {
+        if (currentStep >= PROCESS.steps.length) {
+          finishSuccessfully();
+          return;
+        }
+
+        const step = PROCESS.steps[currentStep];
+        currentStepElement.textContent = step.label;
+        statusElement.textContent = 'Paso ' + (currentStep + 1) + ' de ' + PROCESS.steps.length;
+
+        google.script.run
+          .withSuccessHandler(handleStepSuccess)
+          .withFailureHandler(handleStepError)
+          .ejecutarPasoProcesoUi(PROCESS.id, currentStep);
+      }
+
+      function handleStepSuccess(response) {
+        appendLog(response.message, false);
+        currentStep = response.completedStep;
+        progressBar.style.width = Math.round((currentStep / response.totalSteps) * 100) + '%';
+        runNextStep();
+      }
+
+      function handleStepError(error) {
+        const message = error && error.message ? error.message : 'Se ha producido un error inesperado.';
+        appendLog(message, true);
+        statusElement.textContent = 'El proceso no ha podido completarse.';
+        showResult('Error: ' + message, 'error');
+      }
+
+      function finishSuccessfully() {
+        statusElement.textContent = 'Proceso completado.';
+        showResult(PROCESS.successMessage, 'success');
+      }
+
+      function showResult(message, state) {
+        activityElement.style.display = 'none';
+        resultElement.textContent = message;
+        resultElement.className = 'result visible ' + state;
+        closeButton.className = 'button visible';
+        closeButton.focus();
+      }
+
+      closeButton.addEventListener('click', function() {
+        google.script.host.close();
+      });
+
+      runNextStep();
+    </script>
+  </body>
+</html>

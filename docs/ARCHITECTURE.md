@@ -39,6 +39,10 @@ La implementación inicial utiliza una separación sencilla de responsabilidades
 - `Setup.gs`: inicialización idempotente de la estructura base.
 - `Portada.gs`: renderizado de la hoja visible `0 Portada`.
 - `Utils.gs`: utilidades comunes de acceso y organización de hojas.
+- `Ui.gs`: apertura de diálogos, registro de procesos UI y ejecución secuencial de pasos.
+- `UiDialogProgress.html`: diálogo reutilizable para procesos con progreso, resultado y log.
+- `UiStyles.html`: estilos visuales comunes para HTML de Apps Script.
+- `Branding.gs`: recursos de branding embebidos y fallback visual sin dependencias externas.
 
 Como principio general para las siguientes fases:
 
@@ -50,6 +54,14 @@ Como principio general para las siguientes fases:
 6. **Utilidades comunes**
 
 No crear capas o abstracciones hasta que exista una necesidad real.
+
+## UI HTML y procesos largos
+
+Los diálogos se construyen con plantillas de `HtmlService` y parciales compartidos. Un proceso UI declara sus pasos en servidor; el cliente los invoca en secuencia mediante `google.script.run`, actualizando el estado después de cada respuesta. Las funciones de dominio continúan siendo ejecutables directamente sin depender del diálogo.
+
+Los logos originales se conservan en `branding/`. Para que Apps Script pueda mostrarlos sin publicar archivos ni depender de URLs externas, `Branding.gs` contiene copias reducidas como `data:` URI. Si un recurso embebido no está disponible, se genera un fallback SVG simple.
+
+El marco nativo de `showModalDialog()` pertenece a Google Sheets. La X nativa no puede ocultarse ni bloquearse desde el contenido HTML; por ello los pasos deben ser idempotentes y permitir reparar una ejecución interrumpida.
 
 ## Hojas técnicas previstas
 

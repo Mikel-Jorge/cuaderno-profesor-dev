@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-09-24  
-**Estado general:** estructura base inicial implementada
+**Estado general:** estructura base inicial e infraestructura UI común implementadas
 
 ## Completado
 
@@ -21,10 +21,15 @@
 - Hojas técnicas `_CONFIG` y `_META` creadas y ocultas.
 - `_META` incluye proyecto, versión del cuaderno, versión del esquema y entorno `DEV`.
 - `_CONFIG` contiene la estructura mínima para futuras configuraciones.
+- Infraestructura HTML común para diálogos de Apps Script implementada.
+- Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
+- La inicialización se ejecuta desde el diálogo en cuatro pasos idempotentes.
+- Branding local integrado en la UI sin dependencias externas, con fallback visual.
+- Autoría visible de forma discreta en el pie de la UI.
 
 ## Pendiente inmediato
 
-- Probar manualmente la inicialización en `CP_DEV`.
+- Probar manualmente el diálogo y la inicialización en `CP_DEV`.
 - Implementar el panel lateral básico.
 - Implementar el asistente de preparación de nuevo curso.
 
@@ -44,7 +49,7 @@ Preparar nuevo curso
 
 Estado actual de la fase:
 
-- Completado: estructura base, `_CONFIG`, `_META`, `0 Portada` y menú inicial.
+- Completado: estructura base, `_CONFIG`, `_META`, `0 Portada`, menú inicial e infraestructura UI común.
 - Pendiente: panel lateral básico y preparar nuevo curso.
 
 ## Regla de actualización

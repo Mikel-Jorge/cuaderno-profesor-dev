@@ -13,6 +13,13 @@ const CP = Object.freeze({
     INIT: 'Inicializar / reparar estructura',
     HELP: 'Ayuda',
   }),
+  UI: Object.freeze({
+    AUTHOR: 'Mikel Aingeru Jorge Soteras',
+    AUTHOR_EMAIL: 'mjorgesote@educacion.navarra.es',
+    INIT_PROCESS_ID: 'initialize-notebook',
+    PROGRESS_DIALOG_WIDTH: 480,
+    PROGRESS_DIALOG_HEIGHT: 560,
+  }),
 });
 
 const CP_COLORS = Object.freeze({

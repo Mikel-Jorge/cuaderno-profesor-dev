@@ -13,7 +13,7 @@ especificación.
 ## Definición funcional del proyecto
 
 **Estado:** Especificación funcional inicial cerrada  
-**Versión del documento:** 1.0  
+**Versión del documento:** 1.1
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 ---
@@ -109,6 +109,8 @@ Cuaderno del profesor
 ```
 
 Google Calendar, People API y sincronizaciones avanzadas quedan fuera de la V1.
+
+Las acciones que puedan tardar varios segundos se ejecutarán desde un diálogo de progreso común. La opción inicial `Inicializar / reparar estructura` abrirá este diálogo antes de iniciar el proceso y mostrará sus estados relevantes, el resultado final y cualquier error producido.
 
 
 # 5. Portada
@@ -1018,6 +1020,19 @@ Principios:
 - Alternancia visual de UT.
 
 Los colores generales se centralizarán en configuración cuando sea razonable.
+
+## 23.1. UI común y branding
+
+Los diálogos y el futuro panel lateral compartirán una base visual común:
+
+- tipografía legible, colores y botones coherentes;
+- branding del proyecto en cabeceras y pantallas de carga cuando corresponda;
+- fallback visual integrado cuando un recurso de imagen no esté disponible;
+- autoría discreta con `Mikel Aingeru Jorge Soteras` y `mjorgesote@educacion.navarra.es`.
+
+Los procesos que puedan tardar mostrarán un diálogo reutilizable con título, estado, indicador de actividad, registro breve y resultado de éxito o error. Mientras el proceso esté activo no habrá botones internos de cierre o confirmación; el botón `Cerrar` aparecerá al finalizar.
+
+Google Sheets controla el marco nativo de los diálogos de Apps Script. Su botón X no puede ocultarse ni bloquearse completamente desde el HTML del proyecto. Si el usuario lo utiliza durante un proceso, la operación podrá quedar completada solo hasta el último paso ejecutado y deberá poder reanudarse de forma segura.
 
 
 # 24. Validaciones
