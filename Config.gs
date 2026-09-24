@@ -1,0 +1,26 @@
+const CP = Object.freeze({
+  PROJECT_NAME: 'Cuaderno del Profesor',
+  NOTEBOOK_VERSION: '1.0.0',
+  SCHEMA_VERSION: '1',
+  ENVIRONMENT: 'DEV',
+  SHEETS: Object.freeze({
+    COVER: '0 Portada',
+    CONFIG: '_CONFIG',
+    META: '_META',
+  }),
+  MENU: Object.freeze({
+    NAME: 'Cuaderno del profesor',
+    INIT: 'Inicializar / reparar estructura',
+    HELP: 'Ayuda',
+  }),
+});
+
+const CP_COLORS = Object.freeze({
+  DARK: '#1F2937',
+  PRIMARY: '#2563EB',
+  PRIMARY_LIGHT: '#DBEAFE',
+  MUTED: '#F3F4F6',
+  BORDER: '#CBD5E1',
+  DEV: '#F97316',
+  WHITE: '#FFFFFF',
+});

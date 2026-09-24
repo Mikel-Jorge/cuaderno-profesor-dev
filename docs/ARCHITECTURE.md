@@ -32,7 +32,15 @@ Se recurrirá a edición manual únicamente cuando resulte claramente más senci
 
 ## Capas previstas
 
-La separación exacta de archivos se concretará al comenzar la implementación. Como principio general:
+La implementación inicial utiliza una separación sencilla de responsabilidades:
+
+- `Config.gs`: constantes compartidas, nombres de hojas, versiones y colores base.
+- `Main.gs`: funciones públicas de UI, incluyendo `onOpen()` y ayuda temporal.
+- `Setup.gs`: inicialización idempotente de la estructura base.
+- `Portada.gs`: renderizado de la hoja visible `0 Portada`.
+- `Utils.gs`: utilidades comunes de acceso y organización de hojas.
+
+Como principio general para las siguientes fases:
 
 1. **Configuración y metadatos**
 2. **Generadores/renderizado de hojas**
@@ -58,6 +66,8 @@ _META
 ```
 
 Podrán variar si la implementación demuestra que una estructura más sencilla es suficiente.
+
+En la estructura base inicial solo se crean `_CONFIG` y `_META`. El resto de hojas técnicas se crearán cuando se implemente la funcionalidad correspondiente.
 
 ## Restricciones técnicas vigentes
 

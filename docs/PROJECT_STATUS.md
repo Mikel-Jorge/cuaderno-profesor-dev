@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-09-24  
-**Estado general:** preparación del entorno de desarrollo
+**Estado general:** estructura base inicial implementada
 
 ## Completado
 
@@ -13,16 +13,20 @@
 - Primer `clasp push` probado correctamente.
 - Primer `git push` probado correctamente.
 - `README.md` de configuración creado.
+- Función pública `inicializarCuaderno()` implementada.
+- Menú `Cuaderno del profesor` implementado con:
+  - `Inicializar / reparar estructura`.
+  - `Ayuda` temporal mediante diálogo.
+- Hoja visible `0 Portada` creada y renderizada por Apps Script.
+- Hojas técnicas `_CONFIG` y `_META` creadas y ocultas.
+- `_META` incluye proyecto, versión del cuaderno, versión del esquema y entorno `DEV`.
+- `_CONFIG` contiene la estructura mínima para futuras configuraciones.
 
 ## Pendiente inmediato
 
-- Configurar el entorno local en el ordenador del trabajo.
-- Incorporar al repositorio:
-  - `AGENTS.md`
-  - `docs/FUNCTIONAL_SPEC.md`
-  - `docs/ARCHITECTURE.md`
-  - `docs/PROJECT_STATUS.md`
-- Comenzar la Fase 1 del desarrollo.
+- Probar manualmente la inicialización en `CP_DEV`.
+- Implementar el panel lateral básico.
+- Implementar el asistente de preparación de nuevo curso.
 
 ## Fase 1 prevista
 
@@ -37,6 +41,11 @@ Menú "Cuaderno del profesor"
 Panel lateral básico
 Preparar nuevo curso
 ```
+
+Estado actual de la fase:
+
+- Completado: estructura base, `_CONFIG`, `_META`, `0 Portada` y menú inicial.
+- Pendiente: panel lateral básico y preparar nuevo curso.
 
 ## Regla de actualización
 
