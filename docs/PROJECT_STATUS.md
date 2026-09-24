@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-09-24  
-**Estado general:** ubicación opcional del cuaderno añadida a Preparar nuevo curso en versión 1.2.2
+**Estado general:** copia automática y renombrado del cuaderno activos en Preparar nuevo curso, versión 1.2.3
 
 ## Completado
 
@@ -31,7 +31,7 @@
 - Web del centro normalizada y validada aunque se introduzca sin protocolo.
 - Utilidades globales para ampliar hojas y recortarlas al layout; aplicadas a la Portada `A:H` con filas dinámicas.
 - `_META` escribe las versiones como texto para evitar su conversión a fecha.
-- Versión central del cuaderno `1.2.2` y esquema `2`.
+- Versión central del cuaderno `1.2.3` y esquema `2`.
 - Infraestructura HTML común para diálogos de Apps Script implementada.
 - Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
 - La inicialización se ejecuta desde el diálogo en cuatro pasos idempotentes.
@@ -51,9 +51,10 @@
 - Confirmación `danger` previa a Preparar nuevo curso, sin cambios antes de la aceptación expresa.
 - Primera versión del asistente de nuevo curso con curso académico, profesor y centro, apariencia, ubicación y resumen.
 - Navegador propio de carpetas de Mi unidad con ruta, subcarpetas, regreso al nivel superior y selección sin mostrar IDs.
-- Copia de seguridad opcional, activada por defecto, verificada y conservada en la carpeta original.
+- Copia de seguridad obligatoria y automática, verificada en la carpeta original con el nombre original exacto.
 - Movimiento opcional del cuaderno activo mediante `File.moveTo()` antes de modificar su configuración.
-- Recuperación defensiva de configuración y ubicación original ante errores posteriores al movimiento.
+- Renombrado obligatorio del cuaderno activo a `CuadernoProfesor_XXXX` a partir del curso académico.
+- Recuperación defensiva de configuración, Portada, metadatos, nombre y ubicación originales, conservando siempre la copia.
 - Proceso de nuevo curso mediante el diálogo común de progreso, con pasos condicionales y detención ante errores.
 - Actualización validada de `_CONFIG`, Portada, índice y `_META`, sin crear ni borrar estructuras futuras.
 

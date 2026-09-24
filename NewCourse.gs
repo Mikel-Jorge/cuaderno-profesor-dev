@@ -2,6 +2,7 @@ function abrirAsistenteNuevoCurso() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const currentConfig = getGeneralConfigValues_(spreadsheet);
   const currentLocation = getNotebookDriveLocation_();
+  const currentFileName = spreadsheet.getName();
   const proposedAcademicYear = proponerCursoAcademico_(
     new Date(),
     spreadsheet.getSpreadsheetTimeZone()
@@ -12,6 +13,7 @@ function abrirAsistenteNuevoCurso() {
   const template = HtmlService.createTemplateFromFile('UiDialogNewCourse');
   template.currentAcademicYear = currentConfig[CP.CONFIG_KEYS.ACADEMIC_YEAR] || '';
   template.currentLocation = currentLocation;
+  template.currentFileName = currentFileName;
   template.wizardConfig = wizardConfig;
   template.themeConfig = getThemeConfigForUi_(spreadsheet, currentConfig);
   setCommonUiTemplateData_(template);
@@ -54,7 +56,10 @@ function normalizeNewCourseProcessInput_(input) {
 
   const processInput = {
     config: config,
-    createBackup: input.createBackup === true,
+    originalFileName: normalizeNewCourseFileName_(input.originalFileName),
+    newFileName: buildNotebookNameFromAcademicYear_(
+      config[CP.CONFIG_KEYS.ACADEMIC_YEAR]
+    ),
     originalFolderId: originalFolder.getId(),
     originalFolderName: getDriveFolderDisplayName_(originalFolder),
     destinationFolderId: destinationFolder.getId(),
@@ -76,19 +81,41 @@ function validateNotebookOriginalLocation_(processInput) {
       'La ubicación actual del cuaderno ha cambiado. Vuelve a abrir el asistente.'
     );
   }
+  if (file.getName() !== processInput.originalFileName) {
+    throw new Error(
+      'El nombre actual del cuaderno ha cambiado. Vuelve a abrir el asistente.'
+    );
+  }
+}
+
+function normalizeNewCourseFileName_(value) {
+  const fileName = value === null || value === undefined ? '' : String(value);
+  if (!fileName.trim()) {
+    throw new Error('No se ha podido determinar el nombre original del cuaderno.');
+  }
+  return fileName;
+}
+
+function buildNotebookNameFromAcademicYear_(academicYear) {
+  validateAcademicYear_(academicYear);
+  const years = academicYear.split('-').map(function(year) {
+    return Number(year);
+  });
+  const suffix = years.map(function(year) {
+    return String(year % 100).padStart(2, '0');
+  }).join('');
+  return 'CuadernoProfesor_' + suffix;
 }
 
 function getNewCourseProcessDefinition_(input) {
   const processInput = normalizeNewCourseProcessInput_(input);
   const steps = [];
 
-  if (processInput.createBackup) {
-    steps.push({
-      label: 'Creando copia de seguridad...',
-      completedMessage: 'Copia de seguridad creada.',
-      run: createNewCourseBackup_,
-    });
-  }
+  steps.push({
+    label: 'Creando copia de seguridad...',
+    completedMessage: 'Copia de seguridad creada.',
+    run: createNewCourseBackup_,
+  });
 
   if (processInput.moveNotebook) {
     steps.push({
@@ -97,6 +124,12 @@ function getNewCourseProcessDefinition_(input) {
       run: moveNewCourseNotebook_,
     });
   }
+
+  steps.push({
+    label: 'Renombrando cuaderno activo...',
+    completedMessage: 'Cuaderno activo renombrado.',
+    run: renameNewCourseNotebook_,
+  });
 
   steps.push(
     {
@@ -145,16 +178,9 @@ function createNewCourseBackup_(processInput) {
   }
 
   const originalFolder = getDriveFolderById_(processInput.originalFolderId);
-  const academicYear = processInput.config[CP.CONFIG_KEYS.ACADEMIC_YEAR];
-  const timestamp = Utilities.formatDate(
-    new Date(),
-    spreadsheet.getSpreadsheetTimeZone(),
-    'yyyy-MM-dd HH-mm'
-  );
-  const backupName = spreadsheet.getName() + ' - Backup ' + academicYear + ' - ' + timestamp;
-
-  const backupFile = sourceFile.makeCopy(backupName, originalFolder);
+  const backupFile = sourceFile.makeCopy(processInput.originalFileName, originalFolder);
   if (!backupFile || backupFile.isTrashed() ||
+      backupFile.getName() !== processInput.originalFileName ||
       !isFileInFolder_(backupFile, processInput.originalFolderId)) {
     throw new Error('No se ha podido verificar la copia de seguridad en la carpeta original.');
   }
@@ -175,24 +201,33 @@ function moveNewCourseNotebook_(processInput) {
       throw new Error('Drive no ha confirmado la nueva ubicación.');
     }
   } catch (error) {
-    let restoredToOriginal = isFileInFolder_(file, processInput.originalFolderId);
-    if (!restoredToOriginal) {
-      try {
-        file.moveTo(getDriveFolderById_(processInput.originalFolderId));
-        restoredToOriginal = isFileInFolder_(file, processInput.originalFolderId);
-      } catch (rollbackError) {
-        restoredToOriginal = false;
-      }
-    }
-    const backupMessage = processInput.createBackup
-      ? ' La copia de seguridad se ha creado correctamente.'
-      : '';
-    const locationMessage = restoredToOriginal
-      ? ' El cuaderno permanece en su carpeta original y no se ha modificado.'
-      : ' No se ha podido confirmar el regreso del cuaderno a su carpeta original; revisa su ubicación.';
+    const restored = restoreNewCourseFileIdentity_(processInput);
+    const locationMessage = restored
+      ? ' El cuaderno conserva su nombre y ubicación originales.'
+      : ' No se han podido restaurar completamente el nombre y la ubicación originales; revísalos manualmente.';
     throw new Error(
       'No se ha podido mover el cuaderno a la carpeta seleccionada.' +
-      backupMessage + locationMessage
+      ' La copia de seguridad se conserva.' + locationMessage
+    );
+  }
+}
+
+function renameNewCourseNotebook_(processInput) {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const file = DriveApp.getFileById(spreadsheet.getId());
+  try {
+    file.setName(processInput.newFileName);
+    if (file.getName() !== processInput.newFileName) {
+      throw new Error('Drive no ha confirmado el nuevo nombre.');
+    }
+  } catch (error) {
+    const restored = restoreNewCourseFileIdentity_(processInput);
+    const rollbackMessage = restored
+      ? ' Se han restaurado el nombre y la ubicación originales.'
+      : ' No se han podido restaurar completamente el nombre y la ubicación originales; revísalos manualmente.';
+    throw new Error(
+      'No se ha podido renombrar el cuaderno activo.' +
+      ' La copia de seguridad se conserva.' + rollbackMessage
     );
   }
 }
@@ -263,37 +298,44 @@ function rollbackNewCoursePreparation_(processInput, originalError) {
   let rollbackFailed = false;
 
   if (processInput.previousConfig) {
+    let workbookStateRestored = true;
     try {
       saveGeneralConfig_(processInput.previousConfig, {
         updateCover: false,
         showToast: false,
       });
-      initializeCoverStructure_();
-      initializeMetaStructure_();
-      outcomes.push('Se ha restaurado la configuración anterior.');
     } catch (error) {
+      workbookStateRestored = false;
+    }
+
+    try {
+      initializeCoverStructure_();
+    } catch (error) {
+      workbookStateRestored = false;
+    }
+
+    try {
+      initializeMetaStructure_();
+    } catch (error) {
+      workbookStateRestored = false;
+    }
+
+    if (workbookStateRestored) {
+      outcomes.push('Se ha restaurado la configuración anterior.');
+    } else {
       rollbackFailed = true;
       outcomes.push('No se ha podido restaurar completamente la configuración anterior.');
     }
   }
 
-  if (processInput.moveNotebook) {
-    try {
-      const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-      const file = DriveApp.getFileById(spreadsheet.getId());
-      if (!isFileInFolder_(file, processInput.originalFolderId)) {
-        file.moveTo(getDriveFolderById_(processInput.originalFolderId));
-      }
-      outcomes.push('El cuaderno ha vuelto a su carpeta original.');
-    } catch (error) {
-      rollbackFailed = true;
-      outcomes.push('No se ha podido devolver el cuaderno a su carpeta original.');
-    }
+  if (restoreNewCourseFileIdentity_(processInput)) {
+    outcomes.push('Se han restaurado el nombre y la ubicación originales.');
+  } else {
+    rollbackFailed = true;
+    outcomes.push('No se han podido restaurar completamente el nombre y la ubicación originales.');
   }
 
-  if (processInput.createBackup) {
-    outcomes.push('La copia de seguridad se conserva.');
-  }
+  outcomes.push('La copia de seguridad se conserva.');
 
   const prefix = originalError && originalError.message
     ? originalError.message
@@ -302,4 +344,35 @@ function rollbackNewCoursePreparation_(processInput, originalError) {
     ? ' Revisa manualmente el cuaderno antes de continuar.'
     : '';
   throw new Error(prefix + ' ' + outcomes.join(' ') + suffix);
+}
+
+function restoreNewCourseFileIdentity_(processInput) {
+  let file;
+  try {
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    file = DriveApp.getFileById(spreadsheet.getId());
+  } catch (error) {
+    return false;
+  }
+  let restored = true;
+
+  try {
+    if (file.getName() !== processInput.originalFileName) {
+      file.setName(processInput.originalFileName);
+    }
+    restored = restored && file.getName() === processInput.originalFileName;
+  } catch (error) {
+    restored = false;
+  }
+
+  try {
+    if (!isFileInFolder_(file, processInput.originalFolderId)) {
+      file.moveTo(getDriveFolderById_(processInput.originalFolderId));
+    }
+    restored = restored && isFileInFolder_(file, processInput.originalFolderId);
+  } catch (error) {
+    restored = false;
+  }
+
+  return restored;
 }

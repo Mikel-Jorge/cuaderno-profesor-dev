@@ -202,13 +202,15 @@ No se realizará ninguna acción destructiva sin confirmación expresa.
 
 ## 6.2. Copia de seguridad
 
-El resumen ofrecerá crear una copia de seguridad antes de aplicar cambios y la opción estará activada por defecto. Si se mantiene activada, se copiará el Spreadsheet mediante `DriveApp` en la carpeta original y con un nombre que incluya el curso y la fecha. La copia siempre precederá al movimiento y a cualquier modificación del cuaderno. Si la carpeta no puede determinarse, la copia falla o no puede verificarse, el proceso se detendrá sin mover el archivo ni aplicar cambios posteriores. El usuario podrá desactivar expresamente la copia.
+La copia de seguridad es obligatoria y automática. Antes de mover, renombrar o modificar el cuaderno, se copiará el Spreadsheet mediante `DriveApp` en su carpeta original y con exactamente su nombre original. El usuario no podrá desactivar este paso. Si la carpeta no puede determinarse, la copia falla o no puede verificarse, el proceso se detendrá sin mover, renombrar ni aplicar cambios posteriores.
 
 ## 6.3. Ubicación del cuaderno
 
 El usuario podrá mantener el cuaderno en su carpeta actual, que será el comportamiento por defecto, o elegir otra carpeta de `Mi unidad` mediante un navegador propio. El selector mostrará sólo carpetas, permitirá entrar en subcarpetas, volver a la carpeta superior, consultar la ruta actual, cancelar sin alterar la selección y usar la carpeta abierta como destino. No mostrará IDs técnicos ni permitirá crear, renombrar o eliminar carpetas.
 
-Si se elige otro destino, el backup permanecerá en la carpeta original y el archivo activo se moverá mediante `File.moveTo()` antes de actualizar la configuración. Si el movimiento falla, no se modificará la configuración. Si una modificación posterior falla, se intentará restaurar la configuración y devolver el archivo a la carpeta original, conservando siempre el backup.
+Si se elige otro destino, la copia permanecerá en la carpeta original y el archivo activo se moverá mediante `File.moveTo()` antes de actualizar la configuración. Se elija o no un nuevo destino, el archivo activo se renombrará como `CuadernoProfesor_XXXX`, donde `XXXX` son las dos últimas cifras de los años inicial y final del curso; por ejemplo, `2026-2027` producirá `CuadernoProfesor_2627`.
+
+Si el movimiento o el renombrado fallan, no se modificará la configuración y se intentarán restaurar el nombre y la ubicación originales. Si una modificación posterior falla, se intentarán restaurar la configuración, la Portada, los metadatos, el nombre y la ubicación originales. La copia de seguridad nunca se eliminará durante estas recuperaciones.
 
 El alcance inicial se limita a carpetas de `Mi unidad` accesibles mediante `DriveApp`. No se garantiza soporte completo para Unidades compartidas.
 
@@ -1124,7 +1126,7 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.2.2
+Versión del cuaderno: 1.2.3
 Versión del esquema: 2
 ```
 

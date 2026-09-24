@@ -100,8 +100,10 @@
               <div><dt>Profesor</dt><dd id="summary-teacher"></dd></div>
               <div><dt>Centro</dt><dd id="summary-school"></dd></div>
               <div><dt>Apariencia</dt><dd id="summary-theme"></dd></div>
-              <div><dt>Backup</dt><dd id="summary-backup"></dd></div>
-              <div><dt>Backup se guardar&aacute; en</dt><dd id="summary-backup-folder"></dd></div>
+              <div><dt>Copia de seguridad</dt><dd>Autom&aacute;tica antes de realizar cambios</dd></div>
+              <div><dt>Nombre de la copia</dt><dd id="summary-backup-name"></dd></div>
+              <div><dt>Ubicaci&oacute;n de la copia</dt><dd id="summary-backup-folder"></dd></div>
+              <div><dt>Nuevo nombre del cuaderno activo</dt><dd id="summary-active-name"></dd></div>
               <div><dt id="summary-location-label"></dt><dd id="summary-location"></dd></div>
             </dl>
             <div class="wizard-change-list">
@@ -112,10 +114,6 @@
                 <li>no se reiniciar&aacute;n calendarios, horarios, m&oacute;dulos ni alumnado porque todav&iacute;a no existen.</li>
               </ul>
             </div>
-            <label class="backup-option" for="create-backup">
-              <input id="create-backup" type="checkbox" checked>
-              <span>Crear copia de seguridad antes de aplicar cambios</span>
-            </label>
           </section>
         </div>
 
@@ -156,6 +154,7 @@
     <script>
       const CURRENT_ACADEMIC_YEAR = <?!= JSON.stringify(currentAcademicYear) ?>;
       const CURRENT_LOCATION = <?!= JSON.stringify(currentLocation) ?>;
+      const CURRENT_FILE_NAME = <?!= JSON.stringify(currentFileName) ?>;
       const INITIAL_CONFIG = <?!= JSON.stringify(wizardConfig) ?>;
       const THEME_CONFIG = <?!= JSON.stringify(themeConfig) ?>;
       const fieldNames = [
@@ -175,7 +174,6 @@
       const nextButton = document.getElementById('next-button');
       const resultElement = document.getElementById('wizard-result');
       const presetSelect = document.getElementById('tema_preset');
-      const backupCheckbox = document.getElementById('create-backup');
       const folderPicker = document.getElementById('folder-picker');
       const folderList = document.getElementById('folder-list');
       const folderBackButton = document.getElementById('folder-back-button');
@@ -187,6 +185,7 @@
       let originalFolder = Object.assign({}, CURRENT_LOCATION);
       let selectedFolder = Object.assign({}, CURRENT_LOCATION);
       let pickerFolder = null;
+      let newNotebookName = '';
 
       document.getElementById('current-academic-year').textContent =
         CURRENT_ACADEMIC_YEAR || 'Sin configurar';
@@ -215,12 +214,6 @@
         workingConfig.tema_secondary = preset.colors.secondary;
         workingConfig.tema_accent = preset.colors.accent;
         renderPalette();
-      });
-
-      backupCheckbox.addEventListener('change', function() {
-        if (currentStep === steps.length - 1) {
-          renderSummary();
-        }
       });
 
       document.getElementById('choose-folder-button').addEventListener('click', openFolderPicker);
@@ -302,7 +295,7 @@
         });
         return {
           config: Object.assign({}, workingConfig),
-          createBackup: backupCheckbox.checked,
+          originalFileName: CURRENT_FILE_NAME,
           originalFolderId: originalFolder.id,
           destinationFolderId: selectedFolder.id,
         };
@@ -321,6 +314,7 @@
               id: normalizedInput.destinationFolderId,
               name: normalizedInput.destinationFolderName,
             };
+            newNotebookName = normalizedInput.newFileName;
             fieldNames.forEach(function(fieldName) {
               document.getElementById(fieldName).value = workingConfig[fieldName] || '';
             });
@@ -349,10 +343,9 @@
           return item.id === workingConfig.tema_preset;
         });
         document.getElementById('summary-theme').textContent = preset ? preset.label : workingConfig.tema_preset;
-        document.getElementById('summary-backup').textContent = backupCheckbox.checked ? 'Sí' : 'No';
-        document.getElementById('summary-backup-folder').textContent = backupCheckbox.checked
-          ? originalFolder.name
-          : 'No se creará una copia';
+        document.getElementById('summary-backup-name').textContent = CURRENT_FILE_NAME;
+        document.getElementById('summary-backup-folder').textContent = originalFolder.name;
+        document.getElementById('summary-active-name').textContent = newNotebookName;
         const moving = selectedFolder.id !== originalFolder.id;
         document.getElementById('summary-location-label').textContent = moving
           ? 'Cuaderno activo se ubicará en'
