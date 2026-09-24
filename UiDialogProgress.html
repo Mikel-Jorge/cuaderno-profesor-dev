@@ -8,7 +8,7 @@
   <body>
     <main class="app">
       <header class="brand-header">
-        <img class="brand-logo" src="<?= branding.icon ?>" alt="">
+        <img class="brand-logo" src="<?!= branding.icon ?>" alt="">
         <div class="brand-copy">
           <p class="brand-name"><?= uiConfig.projectName ?></p>
           <span class="environment-badge">Entorno <?= uiConfig.environment ?></span>
@@ -17,7 +17,7 @@
 
       <section class="process" aria-labelledby="process-title">
         <div class="process-heading">
-          <img class="splash-logo" src="<?= branding.splash ?>" alt="">
+          <img class="splash-logo" src="<?!= branding.splash ?>" alt="">
           <div>
             <h1 id="process-title"><?= uiProcess.title ?></h1>
             <p class="status" id="status" aria-live="polite"><?= uiProcess.initialStatus ?></p>
@@ -37,7 +37,7 @@
         <div class="result" id="result" role="status"></div>
 
         <div class="actions">
-          <button class="button" id="close-button" type="button">Cerrar</button>
+          <button class="button is-hidden" id="close-button" type="button">Cerrar</button>
         </div>
       </section>
 
@@ -108,7 +108,7 @@
         activityElement.style.display = 'none';
         resultElement.textContent = message;
         resultElement.className = 'result visible ' + state;
-        closeButton.className = 'button visible';
+        closeButton.className = 'button';
         closeButton.focus();
       }
 

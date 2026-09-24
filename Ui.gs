@@ -1,4 +1,25 @@
 function abrirDialogoInicializacion() {
+  showConfirmationDialog_(CP.UI.INIT_CONFIRMATION_ID);
+}
+
+function showConfirmationDialog_(confirmationId) {
+  const confirmation = getUiConfirmationDefinition_(confirmationId);
+  const template = HtmlService.createTemplateFromFile('UiDialogConfirmation');
+  template.confirmation = confirmation;
+  setCommonUiTemplateData_(template);
+
+  const output = template.evaluate()
+    .setWidth(CP.UI.CONFIRMATION_DIALOG_WIDTH)
+    .setHeight(CP.UI.CONFIRMATION_DIALOG_HEIGHT);
+
+  SpreadsheetApp.getUi().showModalDialog(output, confirmation.title);
+}
+
+function ejecutarAccionConfirmadaUi(actionId) {
+  if (actionId !== CP.UI.INIT_ACTION_ID) {
+    throw new Error('La acci\u00f3n confirmada no existe.');
+  }
+
   showProgressDialog_(CP.UI.INIT_PROCESS_ID);
 }
 
@@ -14,13 +35,7 @@ function showProgressDialog_(processId) {
       return { label: step.label };
     }),
   };
-  template.branding = getUiBranding_();
-  template.uiConfig = {
-    projectName: CP.PROJECT_NAME,
-    environment: CP.ENVIRONMENT,
-    author: CP.UI.AUTHOR,
-    authorEmail: CP.UI.AUTHOR_EMAIL,
-  };
+  setCommonUiTemplateData_(template);
 
   const output = template.evaluate()
     .setWidth(CP.UI.PROGRESS_DIALOG_WIDTH)
@@ -28,6 +43,44 @@ function showProgressDialog_(processId) {
 
   // Apps Script controls the native dialog frame. Its X cannot be hidden or disabled.
   SpreadsheetApp.getUi().showModalDialog(output, process.title);
+}
+
+function getUiConfirmationDefinition_(confirmationId) {
+  if (confirmationId !== CP.UI.INIT_CONFIRMATION_ID) {
+    throw new Error('La confirmacion solicitada no existe.');
+  }
+
+  return validateUiConfirmation_({
+    id: CP.UI.INIT_CONFIRMATION_ID,
+    title: 'Inicializar / reparar estructura',
+    message: 'Se comprobar\u00e1 y reparar\u00e1 la estructura base del cuaderno.',
+    helperText: 'Los datos existentes no se eliminar\u00e1n.',
+    confirmText: 'Continuar',
+    variant: CP.UI.CONFIRMATION_VARIANTS.NORMAL,
+    actionId: CP.UI.INIT_ACTION_ID,
+  });
+}
+
+function validateUiConfirmation_(confirmation) {
+  const variants = CP.UI.CONFIRMATION_VARIANTS;
+  const allowedVariants = [variants.NORMAL, variants.WARNING, variants.DANGER];
+  if (allowedVariants.indexOf(confirmation.variant) === -1) {
+    throw new Error('La variante de confirmaci\u00f3n no es v\u00e1lida.');
+  }
+  if (!confirmation.title || !confirmation.message || !confirmation.confirmText || !confirmation.actionId) {
+    throw new Error('La configuraci\u00f3n de confirmaci\u00f3n est\u00e1 incompleta.');
+  }
+  return confirmation;
+}
+
+function setCommonUiTemplateData_(template) {
+  template.branding = getUiBranding_();
+  template.uiConfig = {
+    projectName: CP.PROJECT_NAME,
+    environment: CP.ENVIRONMENT,
+    author: CP.UI.AUTHOR,
+    authorEmail: CP.UI.AUTHOR_EMAIL,
+  };
 }
 
 function ejecutarPasoProcesoUi(processId, stepIndex) {

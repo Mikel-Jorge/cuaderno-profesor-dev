@@ -25,11 +25,14 @@
 - Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
 - La inicialización se ejecuta desde el diálogo en cuatro pasos idempotentes.
 - Branding local integrado en la UI sin dependencias externas, con fallback visual.
+- Impresión de las Data URI corregida para que los logos se rendericen en las plantillas HTML.
+- Diálogo reutilizable de confirmación con variantes `normal`, `warning` y `danger`.
+- La inicialización requiere confirmación expresa antes de abrir el progreso.
 - Autoría visible de forma discreta en el pie de la UI.
 
 ## Pendiente inmediato
 
-- Probar manualmente el diálogo y la inicialización en `CP_DEV`.
+- Probar manualmente la confirmación, el branding y la inicialización en `CP_DEV`.
 - Implementar el panel lateral básico.
 - Implementar el asistente de preparación de nuevo curso.
 

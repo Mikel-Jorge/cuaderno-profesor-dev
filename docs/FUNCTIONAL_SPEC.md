@@ -13,7 +13,7 @@ especificación.
 ## Definición funcional del proyecto
 
 **Estado:** Especificación funcional inicial cerrada  
-**Versión del documento:** 1.1
+**Versión del documento:** 1.2
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 ---
@@ -110,7 +110,9 @@ Cuaderno del profesor
 
 Google Calendar, People API y sincronizaciones avanzadas quedan fuera de la V1.
 
-Las acciones que puedan tardar varios segundos se ejecutarán desde un diálogo de progreso común. La opción inicial `Inicializar / reparar estructura` abrirá este diálogo antes de iniciar el proceso y mostrará sus estados relevantes, el resultado final y cualquier error producido.
+Las acciones sensibles solicitarán confirmación expresa antes de ejecutarse. Las operaciones destructivas utilizarán una confirmación destacada en rojo y explicarán claramente su efecto. Las acciones que puedan tardar varios segundos continuarán después en un diálogo de progreso común.
+
+La opción inicial `Inicializar / reparar estructura` mostrará una confirmación no destructiva antes de abrir el diálogo de progreso. Cancelar no iniciará ningún paso; continuar mostrará los estados relevantes, el resultado final y cualquier error producido.
 
 
 # 5. Portada
@@ -1031,6 +1033,8 @@ Los diálogos y el futuro panel lateral compartirán una base visual común:
 - autoría discreta con `Mikel Aingeru Jorge Soteras` y `mjorgesote@educacion.navarra.es`.
 
 Los procesos que puedan tardar mostrarán un diálogo reutilizable con título, estado, indicador de actividad, registro breve y resultado de éxito o error. Mientras el proceso esté activo no habrá botones internos de cierre o confirmación; el botón `Cerrar` aparecerá al finalizar.
+
+La UI común dispondrá también de confirmaciones reutilizables `normal`, `warning` y `danger`, configurables mediante título, mensaje, texto auxiliar, etiqueta de confirmación y acción. Ninguna acción asociada se ejecutará antes de la confirmación expresa del usuario. La variante `danger` y su botón rojo se reservarán para operaciones destructivas.
 
 Google Sheets controla el marco nativo de los diálogos de Apps Script. Su botón X no puede ocultarse ni bloquearse completamente desde el HTML del proyecto. Si el usuario lo utiliza durante un proceso, la operación podrá quedar completada solo hasta el último paso ejecutado y deberá poder reanudarse de forma segura.
 

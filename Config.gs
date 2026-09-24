@@ -16,9 +16,18 @@ const CP = Object.freeze({
   UI: Object.freeze({
     AUTHOR: 'Mikel Aingeru Jorge Soteras',
     AUTHOR_EMAIL: 'mjorgesote@educacion.navarra.es',
+    INIT_CONFIRMATION_ID: 'confirm-initialize-notebook',
     INIT_PROCESS_ID: 'initialize-notebook',
+    INIT_ACTION_ID: 'open-initialize-progress',
+    CONFIRMATION_DIALOG_WIDTH: 460,
+    CONFIRMATION_DIALOG_HEIGHT: 430,
     PROGRESS_DIALOG_WIDTH: 480,
     PROGRESS_DIALOG_HEIGHT: 560,
+    CONFIRMATION_VARIANTS: Object.freeze({
+      NORMAL: 'normal',
+      WARNING: 'warning',
+      DANGER: 'danger',
+    }),
   }),
 });
 

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <?!= includeUiFile_('UiStyles'); ?>
+  </head>
+  <body>
+    <main class="app">
+      <header class="brand-header">
+        <img class="brand-logo" src="<?!= branding.icon ?>" alt="">
+        <div class="brand-copy">
+          <p class="brand-name"><?= uiConfig.projectName ?></p>
+          <span class="environment-badge">Entorno <?= uiConfig.environment ?></span>
+        </div>
+      </header>
+
+      <section class="confirmation confirmation-<?= confirmation.variant ?>" aria-labelledby="confirmation-title">
+        <h1 id="confirmation-title"><?= confirmation.title ?></h1>
+        <p class="confirmation-message"><?= confirmation.message ?></p>
+        <? if (confirmation.helperText) { ?>
+          <p class="confirmation-helper"><?= confirmation.helperText ?></p>
+        <? } ?>
+
+        <p class="confirmation-error" id="confirmation-error" role="alert"></p>
+
+        <div class="actions">
+          <button class="button button-secondary" id="cancel-button" type="button">Cancelar</button>
+          <button class="button" id="confirm-button" type="button"><?= confirmation.confirmText ?></button>
+        </div>
+      </section>
+
+      <footer class="author-footer">
+        <?= uiConfig.author ?> ·
+        <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a>
+      </footer>
+    </main>
+
+    <script>
+      const CONFIRMATION = <?!= JSON.stringify(confirmation) ?>;
+      const cancelButton = document.getElementById('cancel-button');
+      const confirmButton = document.getElementById('confirm-button');
+      const errorElement = document.getElementById('confirmation-error');
+
+      const confirmButtonClasses = {
+        normal: 'button',
+        warning: 'button button-warning',
+        danger: 'button button-danger',
+      };
+      confirmButton.className = confirmButtonClasses[CONFIRMATION.variant];
+
+      cancelButton.addEventListener('click', function() {
+        google.script.host.close();
+      });
+
+      confirmButton.addEventListener('click', function() {
+        cancelButton.disabled = true;
+        confirmButton.disabled = true;
+        confirmButton.textContent = 'Abriendo...';
+        errorElement.textContent = '';
+
+        google.script.run
+          .withFailureHandler(handleActionError)
+          .ejecutarAccionConfirmadaUi(CONFIRMATION.actionId);
+      });
+
+      function handleActionError(error) {
+        const message = error && error.message ? error.message : 'No se ha podido iniciar la acci\u00f3n.';
+        errorElement.textContent = message;
+        cancelButton.disabled = false;
+        confirmButton.disabled = false;
+        confirmButton.textContent = CONFIRMATION.confirmText;
+      }
+    </script>
+  </body>
+</html>
