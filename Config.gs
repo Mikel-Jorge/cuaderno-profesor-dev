@@ -1,10 +1,13 @@
 const CP = Object.freeze({
   PROJECT_NAME: 'Cuaderno del Profesor',
-  NOTEBOOK_VERSION: '1.2.3',
-  SCHEMA_VERSION: '2',
+  NOTEBOOK_VERSION: '1.2.4',
+  SCHEMA_VERSION: '3',
   SHEETS: Object.freeze({
     COVER: '0 Portada',
     CONFIG: '_CONFIG',
+    CALENDAR_TYPES: '_CAL_TIPOS',
+    CALENDAR_EVALUATIONS: '_CAL_EVALUACIONES',
+    CALENDAR_DATES: '_FECHAS',
     META: '_META',
   }),
   CONFIG_KEYS: Object.freeze({
@@ -27,6 +30,7 @@ const CP = Object.freeze({
     INIT: '🔄 Inicializar / reparar estructura',
     CONFIG: '⚙️ Configuración',
     GENERAL_DATA: '👤 Datos generales',
+    CALENDAR_CONFIG: '📅 Configurar calendario',
     HELP: '❓ Ayuda',
   }),
   UI: Object.freeze({
@@ -42,6 +46,8 @@ const CP = Object.freeze({
     CONFIRMATION_DIALOG_HEIGHT: 430,
     GENERAL_CONFIG_DIALOG_WIDTH: 620,
     GENERAL_CONFIG_DIALOG_HEIGHT: 780,
+    CALENDAR_CONFIG_DIALOG_WIDTH: 780,
+    CALENDAR_CONFIG_DIALOG_HEIGHT: 820,
     NEW_COURSE_DIALOG_WIDTH: 640,
     NEW_COURSE_DIALOG_HEIGHT: 760,
     PROGRESS_DIALOG_WIDTH: 480,

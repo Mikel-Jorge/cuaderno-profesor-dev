@@ -9,7 +9,11 @@ function moveSheetToFirstPosition_(spreadsheet, sheet) {
 }
 
 function hideTechnicalSheets_(spreadsheet) {
-  [CP.SHEETS.CONFIG, CP.SHEETS.META].forEach(function(sheetName) {
+  Object.keys(CP.SHEETS).map(function(key) {
+    return CP.SHEETS[key];
+  }).filter(function(sheetName) {
+    return sheetName.charAt(0) === '_';
+  }).forEach(function(sheetName) {
     const sheet = spreadsheet.getSheetByName(sheetName);
     if (sheet) {
       sheet.hideSheet();

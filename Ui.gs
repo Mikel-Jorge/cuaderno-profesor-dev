@@ -147,6 +147,11 @@ function getUiProcessDefinition_(processId, processInput) {
           run: initializeConfigStructure_,
         },
         {
+          label: 'Preparando el calendario...',
+          completedMessage: 'Estructura tecnica del calendario comprobada.',
+          run: initializeCalendarStructure_,
+        },
+        {
           label: 'Actualizando metadatos...',
           completedMessage: 'Metadatos actualizados.',
           run: initializeMetaStructure_,

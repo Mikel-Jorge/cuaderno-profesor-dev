@@ -205,10 +205,26 @@ function normalizeSchoolWebsite_(value) {
 }
 
 function validateAcademicYear_(academicYear) {
+  parseAcademicYear_(academicYear);
+}
+
+function parseAcademicYear_(academicYear) {
   const match = /^(\d{4})-(\d{4})$/.exec(academicYear);
   if (!match || Number(match[2]) !== Number(match[1]) + 1) {
     throw new Error('El curso académico debe tener el formato YYYY-YYYY, por ejemplo 2026-2027.');
   }
+  return {
+    startYear: Number(match[1]),
+    endYear: Number(match[2]),
+  };
+}
+
+function getAcademicYearBounds_(academicYear, timeZone) {
+  const years = parseAcademicYear_(academicYear);
+  return {
+    start: Utilities.parseDate(years.startYear + '-08-01', timeZone, 'yyyy-MM-dd'),
+    end: Utilities.parseDate(years.endYear + '-07-31', timeZone, 'yyyy-MM-dd'),
+  };
 }
 
 function getConfigRows_(sheet) {

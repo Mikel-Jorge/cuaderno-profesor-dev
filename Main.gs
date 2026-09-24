@@ -1,7 +1,8 @@
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
   const configMenu = ui.createMenu(CP.MENU.CONFIG)
-    .addItem(CP.MENU.GENERAL_DATA, 'abrirDatosGenerales');
+    .addItem(CP.MENU.GENERAL_DATA, 'abrirDatosGenerales')
+    .addItem(CP.MENU.CALENDAR_CONFIG, 'abrirConfiguracionCalendario');
 
   ui
     .createMenu(CP.MENU.NAME)

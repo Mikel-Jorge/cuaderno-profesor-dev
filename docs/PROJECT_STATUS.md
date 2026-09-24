@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-09-24  
-**Estado general:** copia automática y renombrado del cuaderno activos en Preparar nuevo curso, versión 1.2.3
+**Estado general:** Fase 2 iniciada con modelo y configuración de calendario, versión 1.2.4
 
 ## Completado
 
@@ -31,7 +31,7 @@
 - Web del centro normalizada y validada aunque se introduzca sin protocolo.
 - Utilidades globales para ampliar hojas y recortarlas al layout; aplicadas a la Portada `A:H` con filas dinámicas.
 - `_META` escribe las versiones como texto para evitar su conversión a fecha.
-- Versión central del cuaderno `1.2.3` y esquema `2`.
+- Versión central del cuaderno `1.2.4` y esquema `3`.
 - Infraestructura HTML común para diálogos de Apps Script implementada.
 - Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
 - La inicialización se ejecuta desde el diálogo en cuatro pasos idempotentes.
@@ -57,11 +57,18 @@
 - Recuperación defensiva de configuración, Portada, metadatos, nombre y ubicación originales, conservando siempre la copia.
 - Proceso de nuevo curso mediante el diálogo común de progreso, con pasos condicionales y detención ante errores.
 - Actualización validada de `_CONFIG`, Portada, índice y `_META`, sin crear ni borrar estructuras futuras.
+- Hojas técnicas `_CAL_TIPOS`, `_CAL_EVALUACIONES` y `_FECHAS` creadas y reparadas de forma idempotente.
+- Modal `📅 Configurar calendario` con tipos de enseñanza, evaluaciones variables, prácticas, repaso y fechas especiales.
+- Guardado coherente del calendario con validación completa, bloqueo, escrituras por bloques y restauración ante errores.
+- Fechas reales, límites derivados del curso académico y tratamiento explícito de zona horaria.
+- Consultas reutilizables para tipos, evaluaciones, eventos, prioridad visual y días no lectivos.
+- Solapamientos conservados como datos independientes; fines de semana derivados sin filas técnicas.
 
 ## Pendiente inmediato
 
 - Probar manualmente las seis paletas, el cierre del diálogo, la URL normalizada y el recorte de la Portada en `CP_DEV`.
 - Ampliar Preparar nuevo curso cuando existan calendario, tramos, módulos y horario.
+- Construir la hoja visible `1 Calendario` a partir del modelo ya implementado.
 
 ## Fase 1 prevista
 
@@ -82,6 +89,7 @@ Estado actual de la fase:
 - Completado: estructura base, configuración general, `_CONFIG`, `_META`, `0 Portada`, índice dinámico, menú inicial e infraestructura UI común.
 - Completado: panel lateral básico de ayuda y estado.
 - En curso: Preparar nuevo curso dispone de una primera versión para las áreas ya implementadas.
+- En curso: Fase 2 Calendario; modelo, persistencia y configuración completados, renderizado visible pendiente.
 - Pendiente: ampliar el asistente con calendario, tramos, módulos y horario cuando existan.
 
 ## Regla de actualización

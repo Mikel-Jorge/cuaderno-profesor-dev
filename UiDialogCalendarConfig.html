@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <style><?!= uiThemeCss ?></style>
+    <?!= includeUiFile_('UiStyles'); ?>
+  </head>
+  <body>
+    <main class="app">
+      <header class="brand-header">
+        <img class="brand-logo" src="<?!= branding.icon ?>" alt="">
+        <div class="brand-copy">
+          <p class="brand-name"><?= uiConfig.projectName ?></p>
+          <span class="version-label"><?= uiConfig.versionLabel ?></span>
+        </div>
+      </header>
+
+      <form class="config-form" id="calendar-form">
+        <div class="config-scroll">
+          <p class="calendar-course" id="calendar-course"></p>
+          <div class="result" id="blocking-error" role="alert"></div>
+
+          <section class="form-section" aria-labelledby="types-title">
+            <h2 id="types-title">Tipos de ense&ntilde;anza</h2>
+            <div id="types-list"></div>
+          </section>
+
+          <section class="form-section" aria-labelledby="events-title">
+            <div class="section-heading">
+              <h2 id="events-title">Fechas especiales</h2>
+              <button class="button button-secondary compact-button" id="add-event" type="button">+ A&ntilde;adir fecha</button>
+            </div>
+            <div class="calendar-list" id="events-list"></div>
+          </section>
+        </div>
+
+        <div class="config-feedback">
+          <div class="result" id="form-result" role="status"></div>
+          <div class="actions">
+            <button class="button button-secondary" id="close-button" type="button">Cancelar</button>
+            <button class="button" id="save-button" type="submit" disabled>Guardar</button>
+          </div>
+        </div>
+      </form>
+
+      <footer class="author-footer">
+        &copy; <?= uiConfig.author ?> &middot;
+        <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a>
+      </footer>
+    </main>
+
+    <script>
+      const INITIAL_CALENDAR_CONFIG = <?!= JSON.stringify(calendarConfig) ?>;
+      const form = document.getElementById('calendar-form');
+      const typesList = document.getElementById('types-list');
+      const eventsList = document.getElementById('events-list');
+      const addEventButton = document.getElementById('add-event');
+      const closeButton = document.getElementById('close-button');
+      const saveButton = document.getElementById('save-button');
+      const resultElement = document.getElementById('form-result');
+      const blockingErrorElement = document.getElementById('blocking-error');
+      let calendarData = cloneData(INITIAL_CALENDAR_CONFIG);
+      let baseline = '';
+      let isSaving = false;
+      const isBlocked = Boolean(calendarData.blockingError);
+
+      document.getElementById('calendar-course').textContent = calendarData.academicYear
+        ? 'Curso académico ' + calendarData.academicYear
+        : 'Curso académico sin configurar';
+      if (isBlocked) {
+        blockingErrorElement.textContent = calendarData.blockingError;
+        blockingErrorElement.className = 'result visible error';
+      }
+
+      renderAll();
+      baseline = serializeData();
+      updateSaveButton();
+
+      form.addEventListener('input', handleFieldChange);
+      form.addEventListener('change', handleFieldChange);
+      form.addEventListener('click', handleActionClick);
+      form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        if (isBlocked || isSaving || !isDirty() || !form.reportValidity()) {
+          return;
+        }
+        setSavingState(true);
+        hideResult();
+        google.script.run
+          .withSuccessHandler(handleSaveSuccess)
+          .withFailureHandler(handleSaveError)
+          .guardarConfiguracionCalendario(cloneData(calendarData));
+      });
+
+      closeButton.addEventListener('click', function() {
+        google.script.host.close();
+      });
+
+      function renderAll() {
+        renderTypes();
+        renderEvents();
+        addEventButton.disabled = isBlocked;
+        if (isBlocked) {
+          form.querySelectorAll('input, select, button').forEach(function(control) {
+            if (control !== closeButton) {
+              control.disabled = true;
+            }
+          });
+        }
+      }
+
+      function renderTypes() {
+        typesList.innerHTML = calendarData.types.map(function(type, typeIndex) {
+          const evaluations = type.evaluations.map(function(evaluation, evaluationIndex) {
+            return '<div class="calendar-row evaluation-row">' +
+              fieldInput('Nombre', 'text', evaluation.name, 'evaluation', typeIndex, evaluationIndex, 'name', type.active) +
+              fieldInput('Fecha final', 'date', evaluation.endDate, 'evaluation', typeIndex, evaluationIndex, 'endDate', type.active) +
+              removeButton('evaluation', typeIndex, evaluationIndex, 'Eliminar evaluación') +
+            '</div>';
+          }).join('');
+          const detailsClass = type.active ? 'calendar-type-details' : 'calendar-type-details is-hidden';
+          return '<article class="calendar-type">' +
+            '<label class="calendar-type-toggle">' +
+              '<input type="checkbox" data-kind="type" data-type-index="' + typeIndex + '" data-field="active"' +
+                (type.active ? ' checked' : '') + '>' +
+              '<span>' + escapeHtml(type.name) + '</span>' +
+            '</label>' +
+            '<div class="' + detailsClass + '">' +
+              '<div class="calendar-date-grid">' +
+                fieldInput('Inicio', 'date', type.startDate, 'type', typeIndex, '', 'startDate', type.active) +
+                fieldInput('Fin', 'date', type.endDate, 'type', typeIndex, '', 'endDate', type.active) +
+              '</div>' +
+              '<div class="calendar-subsection">' +
+                '<div class="section-heading"><h3>Evaluaciones</h3>' +
+                  '<button class="button button-secondary compact-button" type="button" data-action="add-evaluation" data-type-index="' + typeIndex + '">+ Añadir evaluación</button></div>' +
+                '<div class="calendar-list">' + (evaluations || '<p class="calendar-empty">Sin evaluaciones configuradas.</p>') + '</div>' +
+              '</div>' +
+              '<div class="calendar-subsection">' +
+                '<h3>Prácticas</h3><div class="calendar-date-grid">' +
+                  fieldInput('Inicio', 'date', type.practicesStart, 'type', typeIndex, '', 'practicesStart', false) +
+                  fieldInput('Fin', 'date', type.practicesEnd, 'type', typeIndex, '', 'practicesEnd', false) +
+                '</div>' +
+              '</div>' +
+              '<div class="calendar-subsection">' +
+                '<h3>Repaso</h3><div class="calendar-date-grid">' +
+                  fieldInput('Inicio', 'date', type.reviewStart, 'type', typeIndex, '', 'reviewStart', false) +
+                  fieldInput('Fin', 'date', type.reviewEnd, 'type', typeIndex, '', 'reviewEnd', false) +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</article>';
+        }).join('');
+      }
+
+      function renderEvents() {
+        if (!calendarData.events.length) {
+          eventsList.innerHTML = '<p class="calendar-empty">No hay fechas especiales configuradas.</p>';
+          return;
+        }
+        eventsList.innerHTML = calendarData.events.map(function(event, eventIndex) {
+          return '<article class="calendar-event">' +
+            '<div class="calendar-event-grid">' +
+              fieldInput('Inicio', 'date', event.startDate, 'event', '', eventIndex, 'startDate', true) +
+              fieldInput('Fin', 'date', event.endDate, 'event', '', eventIndex, 'endDate', false) +
+              selectField('Categoría', event.category, calendarData.categories, 'category', eventIndex) +
+              selectField('Aplicación', event.typeId, [{id:'', name:'Todos'}].concat(calendarData.types), 'typeId', eventIndex) +
+              fieldInput('Descripción', 'text', event.description, 'event', '', eventIndex, 'description', false, 'wide') +
+              removeButton('event', '', eventIndex, 'Eliminar fecha especial') +
+            '</div>' +
+          '</article>';
+        }).join('');
+      }
+
+      function fieldInput(label, type, value, kind, typeIndex, itemIndex, field, required, extraClass) {
+        return '<label class="form-field calendar-field ' + (extraClass || '') + '">' +
+          '<span>' + escapeHtml(label) + '</span>' +
+          '<input type="' + type + '" value="' + escapeAttribute(value || '') + '" data-kind="' + kind + '"' +
+            dataIndexAttributes(typeIndex, itemIndex) + ' data-field="' + field + '"' + (required ? ' required' : '') + '>' +
+        '</label>';
+      }
+
+      function selectField(label, value, options, field, eventIndex) {
+        const optionHtml = options.map(function(option) {
+          const optionLabel = option.label || option.name;
+          return '<option value="' + escapeAttribute(option.id) + '"' +
+            (option.id === value ? ' selected' : '') + '>' + escapeHtml(optionLabel) + '</option>';
+        }).join('');
+        return '<label class="form-field calendar-field"><span>' + escapeHtml(label) + '</span>' +
+          '<select data-kind="event" data-item-index="' + eventIndex + '" data-field="' + field + '">' +
+            optionHtml + '</select></label>';
+      }
+
+      function removeButton(kind, typeIndex, itemIndex, title) {
+        return '<button class="icon-action" type="button" title="' + escapeAttribute(title) + '" aria-label="' +
+          escapeAttribute(title) + '" data-action="remove-' + kind + '"' + dataIndexAttributes(typeIndex, itemIndex) + '>&times;</button>';
+      }
+
+      function dataIndexAttributes(typeIndex, itemIndex) {
+        return (typeIndex === '' ? '' : ' data-type-index="' + typeIndex + '"') +
+          (itemIndex === '' ? '' : ' data-item-index="' + itemIndex + '"');
+      }
+
+      function handleFieldChange(event) {
+        const target = event.target;
+        const kind = target.dataset.kind;
+        if (!kind) {
+          return;
+        }
+        const field = target.dataset.field;
+        const value = target.type === 'checkbox' ? target.checked : target.value;
+        if (kind === 'type') {
+          calendarData.types[Number(target.dataset.typeIndex)][field] = value;
+          if (field === 'active' && event.type === 'change') {
+            renderTypes();
+          }
+        } else if (kind === 'evaluation') {
+          calendarData.types[Number(target.dataset.typeIndex)].evaluations[Number(target.dataset.itemIndex)][field] = value;
+        } else if (kind === 'event') {
+          calendarData.events[Number(target.dataset.itemIndex)][field] = value;
+        }
+        hideResult();
+        updateSaveButton();
+      }
+
+      function handleActionClick(event) {
+        const button = event.target.closest('[data-action]');
+        if (!button || isBlocked || isSaving) {
+          return;
+        }
+        const action = button.dataset.action;
+        const typeIndex = Number(button.dataset.typeIndex);
+        const itemIndex = Number(button.dataset.itemIndex);
+        if (action === 'add-evaluation') {
+          const evaluations = calendarData.types[typeIndex].evaluations;
+          evaluations.push({ id: '', name: (evaluations.length + 1) + 'ª evaluación', endDate: '' });
+          renderTypes();
+        } else if (action === 'remove-evaluation') {
+          calendarData.types[typeIndex].evaluations.splice(itemIndex, 1);
+          renderTypes();
+        } else if (action === 'remove-event') {
+          calendarData.events.splice(itemIndex, 1);
+          renderEvents();
+        }
+        hideResult();
+        updateSaveButton();
+      }
+
+      addEventButton.addEventListener('click', function() {
+        if (isSaving || isBlocked) {
+          return;
+        }
+        calendarData.events.push({
+          id: '', startDate: '', endDate: '', category: 'FESTIVO', typeId: '', description: '',
+        });
+        renderEvents();
+        hideResult();
+        updateSaveButton();
+      });
+
+      function handleSaveSuccess(response) {
+        if (response && response.data) {
+          calendarData = cloneData(response.data);
+        }
+        baseline = serializeData();
+        setSavingState(false);
+        closeButton.textContent = 'Cerrar';
+        showResult(response.message, 'success');
+        window.setTimeout(function() { google.script.host.close(); }, 450);
+      }
+
+      function handleSaveError(error) {
+        setSavingState(false);
+        showResult(error && error.message ? error.message : 'No se ha podido guardar el calendario.', 'error');
+      }
+
+      function serializeData() {
+        return JSON.stringify({ types: calendarData.types, events: calendarData.events });
+      }
+
+      function isDirty() {
+        return serializeData() !== baseline;
+      }
+
+      function updateSaveButton() {
+        saveButton.disabled = isBlocked || isSaving || !isDirty();
+      }
+
+      function setSavingState(saving) {
+        isSaving = saving;
+        closeButton.disabled = saving;
+        addEventButton.disabled = saving || isBlocked;
+        saveButton.textContent = saving ? 'Guardando...' : 'Guardar';
+        updateSaveButton();
+      }
+
+      function showResult(message, state) {
+        resultElement.textContent = message;
+        resultElement.className = 'result visible ' + state;
+      }
+
+      function hideResult() {
+        resultElement.textContent = '';
+        resultElement.className = 'result';
+      }
+
+      function cloneData(value) {
+        return JSON.parse(JSON.stringify(value));
+      }
+
+      function escapeHtml(value) {
+        const element = document.createElement('div');
+        element.textContent = value === null || value === undefined ? '' : String(value);
+        return element.innerHTML;
+      }
+
+      function escapeAttribute(value) {
+        return escapeHtml(value).replace(/"/g, '&quot;');
+      }
+    </script>
+  </body>
+</html>

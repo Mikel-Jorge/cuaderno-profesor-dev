@@ -1,6 +1,7 @@
 function inicializarCuaderno() {
   initializeCoverStructure_();
   initializeConfigStructure_();
+  initializeCalendarStructure_();
   initializeMetaStructure_();
   finishStructureInitialization_();
 }

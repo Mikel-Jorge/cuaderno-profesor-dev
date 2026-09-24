@@ -97,11 +97,8 @@ function normalizeNewCourseFileName_(value) {
 }
 
 function buildNotebookNameFromAcademicYear_(academicYear) {
-  validateAcademicYear_(academicYear);
-  const years = academicYear.split('-').map(function(year) {
-    return Number(year);
-  });
-  const suffix = years.map(function(year) {
+  const academicYears = parseAcademicYear_(academicYear);
+  const suffix = [academicYears.startYear, academicYears.endYear].map(function(year) {
     return String(year % 100).padStart(2, '0');
   }).join('');
   return 'CuadernoProfesor_' + suffix;

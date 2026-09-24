@@ -13,7 +13,7 @@ especificación.
 ## Definición funcional del proyecto
 
 **Estado:** Especificación funcional inicial cerrada  
-**Versión del documento:** 1.9
+**Versión del documento:** 2.0
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 ---
@@ -78,6 +78,8 @@ Conjunto inicial:
 
 ```text
 _CONFIG
+_CAL_TIPOS
+_CAL_EVALUACIONES
 _FECHAS
 _TRAMOS
 _MODULOS
@@ -100,7 +102,7 @@ Todas las hojas visibles generadas por el sistema se ajustarán a su área útil
 ├── 🆕 Preparar nuevo curso
 ├── Configuración
 │   ├── 👤 Datos generales
-│   ├── Fechas y calendario
+│   ├── 📅 Configurar calendario
 │   ├── Tramos horarios
 │   └── Módulos y grupos
 ├── Módulos
@@ -297,17 +299,32 @@ También podrán definirse:
 - Reuniones, si se usan.
 - Otros eventos simples.
 
-## 7.3. `_FECHAS`
-
-Se usará una tabla sencilla. Como referencia funcional:
+Los tipos de enseñanza se almacenarán en `_CAL_TIPOS` con IDs estables independientes de su nombre visible:
 
 ```text
-Tipo
-Ámbito
-Fecha inicio
-Fecha fin
-Descripción
-Color
+tipo_id | nombre                    | activo | fecha_inicio | fecha_fin | practicas_inicio | practicas_fin | repaso_inicio | repaso_fin
+FP1     | 1º                        | false  |              |           |                  |               |               |
+FP2     | 2º                        | false  |              |           |                  |               |               |
+ONLINE  | Online                    | false  |              |           |                  |               |               |
+CE      | Curso de Especialización  | false  |              |           |                  |               |               |
+```
+
+Las fechas de prácticas y repaso serán opcionales, se almacenarán como rangos completos y deberán quedar dentro del periodo del tipo. Desactivar un tipo no eliminará sus datos, aunque dejará de participar en los cálculos.
+
+Las evaluaciones se almacenarán normalizadas en `_CAL_EVALUACIONES`:
+
+```text
+evaluacion_id | tipo_id | orden | nombre | fecha_fin
+```
+
+Cada tipo podrá tener una cantidad diferente de evaluaciones. El orden visual determinará `orden`; las fechas finales serán estrictamente ascendentes y quedarán dentro del periodo lectivo. El inicio de cada evaluación se derivará de la fecha inicial del tipo o del día posterior al final de la evaluación anterior y no se almacenará.
+
+## 7.3. `_FECHAS`
+
+Las excepciones y eventos se almacenarán como datos estructurados:
+
+```text
+fecha_id | fecha_inicio | fecha_fin | categoria | tipo_id | descripcion | prioridad
 ```
 
 Para eventos de un día:
@@ -316,7 +333,7 @@ Para eventos de un día:
 Fecha inicio = Fecha fin
 ```
 
-Se evitarán columnas innecesarias.
+Las categorías iniciales serán `FESTIVO`, `VACACIONES`, `NO_LECTIVO`, `REUNION` y `DESTACADO`. Un `tipo_id` vacío tendrá alcance global; con `FP1`, `FP2`, `ONLINE` o `CE` se aplicará solo a ese tipo. Los registros tendrán identificadores estables y podrán solaparse sin fusionarse ni eliminarse.
 
 ## 7.4. Conflictos visuales
 
@@ -324,11 +341,11 @@ Si una fecha tiene más de un significado:
 
 > Se mostrará visualmente el primero que corresponda según el orden/prioridad definido.
 
-No se añadirán iconos, subdivisiones ni indicadores secundarios en V1.
+La prioridad visual por defecto será: `FESTIVO` 10, `VACACIONES` 20, `NO_LECTIVO` 30, `REUNION` 40 y `DESTACADO` 50; un número menor domina visualmente. Resolver el evento dominante no elimina ni oculta los demás datos. No se añadirán iconos, subdivisiones ni indicadores secundarios en V1.
 
 ## 7.5. Colores
 
-Serán configurables. Preferentemente tonos pastel para contenido.
+Serán una propiedad de presentación del futuro calendario visible, nunca la fuente de verdad. Su definición concreta queda pendiente. Preferentemente se usarán tonos pastel para contenido.
 
 Tipos posibles:
 
@@ -340,6 +357,8 @@ Tipos posibles:
 - Fecha destacada.
 - Reunión.
 - Día actual.
+
+Los sábados y domingos se derivarán de la fecha y serán no lectivos en V1; no se almacenarán como filas de `_FECHAS`. También serán no lectivos `FESTIVO`, `VACACIONES` y `NO_LECTIVO`. `REUNION` y `DESTACADO` no convertirán por sí solos el día en no lectivo.
 
 ## 7.6. Color del mes
 
@@ -1126,8 +1145,8 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.2.3
-Versión del esquema: 2
+Versión del cuaderno: 1.2.4
+Versión del esquema: 3
 ```
 
 La versión podrá mostrarse discretamente en Portada o panel.
@@ -1274,6 +1293,8 @@ Preparar nuevo curso
 
 ## Fase 2 — Calendario
 ```text
+_CAL_TIPOS
+_CAL_EVALUACIONES
 _FECHAS
 Calendario
 Tipos de enseñanza

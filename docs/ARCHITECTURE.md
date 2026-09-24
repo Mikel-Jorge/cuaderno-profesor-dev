@@ -39,12 +39,14 @@ La implementación inicial utiliza una separación sencilla de responsabilidades
 - `Main.gs`: construcción del menú y puntos de entrada públicos generales.
 - `Setup.gs`: inicialización idempotente de la estructura base.
 - `GeneralConfig.gs`: definición, migración, lectura, validación y persistencia diferencial de la configuración general y visual.
+- `Calendar.gs`: modelo normalizado, reparación, validación, persistencia y consultas del calendario.
 - `Portada.gs`: reparación de estructura, actualización diferencial de datos, aplicación del tema y generación del índice navegable.
 - `Utils.gs`: utilidades comunes de acceso, organización, expansión y recorte de hojas.
 - `Ui.gs`: apertura de diálogos, registro de procesos UI y ejecución secuencial de pasos.
 - `UiDialogProgress.html`: diálogo reutilizable para procesos con progreso, resultado y log.
 - `UiDialogConfirmation.html`: confirmación reutilizable con variantes normal, warning y danger.
 - `UiDialogGeneralConfig.html`: edición de los datos generales almacenados en `_CONFIG`.
+- `UiDialogCalendarConfig.html`: edición de tipos, evaluaciones, prácticas, repaso y fechas especiales.
 - `NewCourse.gs`: datos, validación y pasos ejecutables de la preparación parcial de un nuevo curso.
 - `DriveFolders.gs`: acceso validado a carpetas de Mi unidad y construcción de vistas navegables.
 - `UiDialogNewCourse.html`: asistente de cinco pasos y navegador de carpetas integrado.
@@ -90,6 +92,8 @@ Según la definición funcional actual:
 
 ```text
 _CONFIG
+_CAL_TIPOS
+_CAL_EVALUACIONES
 _FECHAS
 _TRAMOS
 _MODULOS
@@ -100,13 +104,23 @@ _META
 
 Podrán variar si la implementación demuestra que una estructura más sencilla es suficiente.
 
-En la estructura base inicial solo se crean `_CONFIG` y `_META`. El resto de hojas técnicas se crearán cuando se implemente la funcionalidad correspondiente.
+La estructura actualmente implementada crea `_CONFIG`, `_META`, `_CAL_TIPOS`, `_CAL_EVALUACIONES` y `_FECHAS`. El resto de hojas técnicas se crearán cuando se implemente la funcionalidad correspondiente.
 
 `_CONFIG` mantiene un modelo estricto de dos columnas, clave/valor, y conserva las claves desconocidas al reparar o migrar su estructura. Incluye los datos generales y la selección/personalización del tema. La web del centro se normaliza en servidor y recibe `https://` cuando no incluye protocolo. `0 Portada` es una vista generada desde esta configuración y no actúa como fuente de datos. `_META` contiene únicamente proyecto, versión del cuaderno y versión del esquema, obteniendo las versiones de `Config.gs`; sus valores de versión se formatean como texto antes de escribirse para impedir conversiones automáticas de Sheets.
 
 La inicialización puede reconstruir la estructura gestionada de la Portada. Un guardado ordinario no ejecuta ese renderizado completo: compara la configuración anterior, persiste solo las claves modificadas, actualiza los rangos de datos afectados y reaplica exclusivamente los estilos cuando cambia el tema.
 
 Los presets comparten una base clara y solo varían los colores de identidad. Las hojas visibles generadas utilizan `ensureSheetSize_()` antes de escribir y `trimSheetToBounds_()` al finalizar. La Portada calcula sus filas a partir del contenido e índice y limita sus columnas a `A:H`; los futuros generadores aplicarán el mismo patrón con sus propios límites.
+
+## Modelo de calendario
+
+`_CAL_TIPOS` mantiene los cuatro IDs estables `FP1`, `FP2`, `ONLINE` y `CE`, su activación y sus periodos lectivo, de prácticas y de repaso. `_CAL_EVALUACIONES` usa una fila por evaluación y permite cantidades variables por tipo. `_FECHAS` almacena eventos globales o asociados a un tipo, incluidos sus IDs y prioridad visual. Todas las fechas se escriben como valores `Date` y se presentan con formato `dd/MM/yyyy`.
+
+El transporte con la UI usa `yyyy-MM-dd`, formato nativo de los controles HTML de fecha. `Calendar.gs` convierte y compara esos valores con la zona horaria del Spreadsheet y reutiliza el parser central del curso académico para limitar el intervalo entre el 1 de agosto y el 31 de julio.
+
+El guardado normaliza y valida el modelo completo antes de escribir. Después adquiere un bloqueo de documento, conserva snapshots de las tres tablas y realiza escrituras por bloques; si una escritura falla, intenta restaurar las tres tablas. Los IDs no dependen de filas físicas y la reparación conserva registros desconocidos fuera del modelo soportado.
+
+Las consultas de dominio devuelven todos los eventos aplicables y resuelven por separado el evento visual dominante. Los solapamientos permanecen íntegros. Los fines de semana y el carácter no lectivo se derivan en código; no se materializan como eventos. El color queda exclusivamente en la futura capa de presentación de `1 Calendario`.
 
 ## Restricciones técnicas vigentes
 
