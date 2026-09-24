@@ -9,7 +9,7 @@ const CP = Object.freeze({
     META: '_META',
   }),
   MENU: Object.freeze({
-    NAME: '📘 Cuaderno del Profesor',
+    NAME: '📘 Cuaderno del Profesor 📘',
     INIT: '🔄 Inicializar / reparar estructura',
     HELP: '❓ Ayuda',
   }),
