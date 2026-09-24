@@ -1,7 +1,7 @@
 const CP = Object.freeze({
   PROJECT_NAME: 'Cuaderno del Profesor',
-  NOTEBOOK_VERSION: '1.0.0',
-  SCHEMA_VERSION: '1',
+  NOTEBOOK_VERSION: '1.1.0',
+  SCHEMA_VERSION: '2',
   SHEETS: Object.freeze({
     COVER: '0 Portada',
     CONFIG: '_CONFIG',
@@ -10,11 +10,16 @@ const CP = Object.freeze({
   CONFIG_KEYS: Object.freeze({
     ACADEMIC_YEAR: 'curso_academico',
     TEACHER: 'profesor',
+    TEACHER_EMAIL: 'profesor_email',
     SCHOOL: 'centro',
     SCHOOL_ADDRESS: 'centro_direccion',
     SCHOOL_PHONE: 'centro_telefono',
     SCHOOL_EMAIL: 'centro_email',
     SCHOOL_WEB: 'centro_web',
+    THEME_PRESET: 'tema_preset',
+    THEME_PRIMARY: 'tema_primary',
+    THEME_SECONDARY: 'tema_secondary',
+    THEME_ACCENT: 'tema_accent',
   }),
   MENU: Object.freeze({
     NAME: '📘 Cuaderno del Profesor 📘',
@@ -31,8 +36,8 @@ const CP = Object.freeze({
     INIT_ACTION_ID: 'open-initialize-progress',
     CONFIRMATION_DIALOG_WIDTH: 460,
     CONFIRMATION_DIALOG_HEIGHT: 430,
-    GENERAL_CONFIG_DIALOG_WIDTH: 560,
-    GENERAL_CONFIG_DIALOG_HEIGHT: 700,
+    GENERAL_CONFIG_DIALOG_WIDTH: 620,
+    GENERAL_CONFIG_DIALOG_HEIGHT: 780,
     PROGRESS_DIALOG_WIDTH: 480,
     PROGRESS_DIALOG_HEIGHT: 560,
     CONFIRMATION_VARIANTS: Object.freeze({
@@ -41,14 +46,4 @@ const CP = Object.freeze({
       DANGER: 'danger',
     }),
   }),
-});
-
-const CP_COLORS = Object.freeze({
-  DARK: '#1F2937',
-  PRIMARY: '#2563EB',
-  PRIMARY_LIGHT: '#DBEAFE',
-  MUTED: '#F3F4F6',
-  BORDER: '#CBD5E1',
-  ACCENT: '#0F766E',
-  WHITE: '#FFFFFF',
 });

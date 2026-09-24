@@ -3,6 +3,7 @@
   <head>
     <base target="_top">
     <meta charset="utf-8">
+    <style><?!= uiThemeCss ?></style>
     <?!= includeUiFile_('UiStyles'); ?>
   </head>
   <body>
@@ -16,94 +17,154 @@
       </header>
 
       <form class="config-form" id="config-form">
-        <div class="form-grid">
-          <div class="form-field">
-            <label for="curso_academico">Curso acad&eacute;mico</label>
-            <input id="curso_academico" name="curso_academico" type="text" inputmode="numeric" autocomplete="off">
-            <p class="form-help">Formato YYYY-YYYY</p>
-          </div>
+        <div class="config-scroll">
+          <section class="form-section" aria-labelledby="teacher-section-title">
+            <h2 id="teacher-section-title">Informaci&oacute;n docente</h2>
+            <div class="form-grid">
+              <div class="form-field">
+                <label for="curso_academico">Curso acad&eacute;mico</label>
+                <input id="curso_academico" name="curso_academico" type="text" inputmode="numeric" autocomplete="off">
+                <p class="form-help">Formato YYYY-YYYY</p>
+              </div>
 
-          <div class="form-field">
-            <label for="profesor">Nombre y apellidos del profesor</label>
-            <input id="profesor" name="profesor" type="text" autocomplete="name">
-          </div>
+              <div class="form-field">
+                <label for="profesor">Nombre y apellidos del profesor</label>
+                <input id="profesor" name="profesor" type="text" autocomplete="name">
+              </div>
 
-          <div class="form-field form-field-wide">
-            <label for="centro">Nombre del centro</label>
-            <input id="centro" name="centro" type="text" autocomplete="organization">
-          </div>
+              <div class="form-field form-field-wide">
+                <label for="profesor_email">Correo del profesor</label>
+                <input id="profesor_email" name="profesor_email" type="email" autocomplete="email">
+              </div>
+            </div>
+          </section>
 
-          <div class="form-field form-field-wide">
-            <label for="centro_direccion">Direcci&oacute;n</label>
-            <input id="centro_direccion" name="centro_direccion" type="text" autocomplete="street-address">
-          </div>
+          <section class="form-section" aria-labelledby="school-section-title">
+            <h2 id="school-section-title">Centro educativo</h2>
+            <div class="form-grid">
+              <div class="form-field form-field-wide">
+                <label for="centro">Nombre del centro</label>
+                <input id="centro" name="centro" type="text" autocomplete="organization">
+              </div>
 
-          <div class="form-field">
-            <label for="centro_telefono">Tel&eacute;fono</label>
-            <input id="centro_telefono" name="centro_telefono" type="text" inputmode="tel" autocomplete="tel">
-          </div>
+              <div class="form-field form-field-wide">
+                <label for="centro_direccion">Direcci&oacute;n</label>
+                <input id="centro_direccion" name="centro_direccion" type="text" autocomplete="street-address">
+              </div>
 
-          <div class="form-field">
-            <label for="centro_email">Correo electr&oacute;nico</label>
-            <input id="centro_email" name="centro_email" type="text" inputmode="email" autocomplete="email">
-          </div>
+              <div class="form-field">
+                <label for="centro_telefono">Tel&eacute;fono</label>
+                <input id="centro_telefono" name="centro_telefono" type="tel" autocomplete="tel">
+              </div>
 
-          <div class="form-field form-field-wide">
-            <label for="centro_web">Web</label>
-            <input id="centro_web" name="centro_web" type="text" inputmode="url" autocomplete="url">
-          </div>
+              <div class="form-field">
+                <label for="centro_email">Correo del centro</label>
+                <input id="centro_email" name="centro_email" type="email">
+              </div>
+
+              <div class="form-field form-field-wide">
+                <label for="centro_web">Web del centro</label>
+                <input id="centro_web" name="centro_web" type="url" autocomplete="url">
+              </div>
+            </div>
+          </section>
+
+          <section class="form-section" aria-labelledby="appearance-section-title">
+            <h2 id="appearance-section-title">Apariencia</h2>
+            <div class="form-grid">
+              <div class="form-field form-field-wide">
+                <label for="tema_preset">Tema activo</label>
+                <select id="tema_preset" name="tema_preset"></select>
+              </div>
+
+              <div class="theme-colors form-field-wide">
+                <label class="color-field" for="tema_primary">
+                  <span>Principal</span>
+                  <input id="tema_primary" name="tema_primary" type="color">
+                </label>
+                <label class="color-field" for="tema_secondary">
+                  <span>Secundario</span>
+                  <input id="tema_secondary" name="tema_secondary" type="color">
+                </label>
+                <label class="color-field" for="tema_accent">
+                  <span>Acento</span>
+                  <input id="tema_accent" name="tema_accent" type="color">
+                </label>
+              </div>
+            </div>
+          </section>
         </div>
 
-        <div class="result" id="form-result" role="status"></div>
-
-        <div class="actions">
-          <button class="button button-secondary" id="close-button" type="button">Cancelar</button>
-          <button class="button" id="save-button" type="submit">Guardar</button>
+        <div class="config-feedback">
+          <div class="result" id="form-result" role="status"></div>
+          <div class="actions">
+            <button class="button button-secondary" id="close-button" type="button">Cancelar</button>
+            <button class="button" id="save-button" type="submit" disabled>Guardar</button>
+          </div>
         </div>
       </form>
 
       <footer class="author-footer">
-        &copy; <?= uiConfig.author ?> ·
+        &copy; <?= uiConfig.author ?> &middot;
         <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a>
       </footer>
     </main>
 
     <script>
       const GENERAL_CONFIG = <?!= JSON.stringify(generalConfig) ?>;
+      const THEME_CONFIG = <?!= JSON.stringify(themeConfig) ?>;
       const fieldNames = [
         'curso_academico',
         'profesor',
+        'profesor_email',
         'centro',
         'centro_direccion',
         'centro_telefono',
         'centro_email',
         'centro_web',
+        'tema_preset',
+        'tema_primary',
+        'tema_secondary',
+        'tema_accent',
       ];
+      const themeColorFields = ['tema_primary', 'tema_secondary', 'tema_accent'];
       const form = document.getElementById('config-form');
+      const presetSelect = document.getElementById('tema_preset');
       const closeButton = document.getElementById('close-button');
       const saveButton = document.getElementById('save-button');
       const resultElement = document.getElementById('form-result');
+      let baseline = '';
+      let isSaving = false;
 
-      fieldNames.forEach(function(fieldName) {
-        document.getElementById(fieldName).value = GENERAL_CONFIG[fieldName] || '';
+      THEME_CONFIG.presets.forEach(function(preset) {
+        const option = document.createElement('option');
+        option.value = preset.id;
+        option.textContent = preset.label;
+        presetSelect.appendChild(option);
       });
+
+      setFormValues(GENERAL_CONFIG);
+      baseline = serializeValues(collectValues());
+      updateSaveButton();
+
+      form.addEventListener('input', handleFormChange);
+      form.addEventListener('change', handleFormChange);
 
       form.addEventListener('submit', function(event) {
         event.preventDefault();
-        const values = fieldNames.reduce(function(config, fieldName) {
-          config[fieldName] = document.getElementById(fieldName).value.trim();
-          return config;
-        }, {});
+        if (isSaving || !isDirty()) {
+          return;
+        }
 
-        if (!/^\d{4}-\d{4}$/.test(values.curso_academico)) {
-          showResult('El curso acad\u00e9mico debe tener el formato YYYY-YYYY.', 'error');
+        const values = collectValues();
+        const academicYearMatch = /^(\d{4})-(\d{4})$/.exec(values.curso_academico);
+        if (!academicYearMatch || Number(academicYearMatch[2]) !== Number(academicYearMatch[1]) + 1) {
+          showResult('El curso académico debe tener el formato YYYY-YYYY.', 'error');
           return;
         }
 
         setSavingState(true);
-        resultElement.className = 'result';
-        resultElement.textContent = '';
-
+        hideResult();
         google.script.run
           .withSuccessHandler(handleSaveSuccess)
           .withFailureHandler(handleSaveError)
@@ -114,17 +175,99 @@
         google.script.host.close();
       });
 
+      function handleFormChange(event) {
+        if (event.target === presetSelect && event.type === 'change') {
+          applySelectedPreset();
+        }
+        if (event.target === presetSelect || themeColorFields.indexOf(event.target.name) !== -1) {
+          applyThemePreview();
+        }
+        if (resultElement.classList.contains('success')) {
+          hideResult();
+        }
+        updateSaveButton();
+      }
+
       function handleSaveSuccess(response) {
-        showResult(response.message, 'success');
-        closeButton.textContent = 'Cerrar';
-        saveButton.className = 'button is-hidden';
+        if (response && response.values) {
+          setFormValues(response.values);
+        }
+        baseline = serializeValues(collectValues());
         setSavingState(false);
+        closeButton.textContent = 'Cerrar';
+        showResult(response.message, 'success');
+        updateSaveButton();
       }
 
       function handleSaveError(error) {
-        const message = error && error.message ? error.message : 'No se han podido guardar los datos.';
-        showResult(message, 'error');
+        const message = error && error.message ? error.message : 'No se ha podido guardar la configuración.';
         setSavingState(false);
+        showResult(message, 'error');
+        updateSaveButton();
+      }
+
+      function setFormValues(values) {
+        fieldNames.forEach(function(fieldName) {
+          document.getElementById(fieldName).value = values[fieldName] || '';
+        });
+      }
+
+      function collectValues() {
+        return fieldNames.reduce(function(config, fieldName) {
+          config[fieldName] = document.getElementById(fieldName).value.trim();
+          return config;
+        }, {});
+      }
+
+      function serializeValues(values) {
+        return JSON.stringify(values);
+      }
+
+      function isDirty() {
+        return serializeValues(collectValues()) !== baseline;
+      }
+
+      function updateSaveButton() {
+        saveButton.disabled = isSaving || !isDirty();
+      }
+
+      function setSavingState(saving) {
+        isSaving = saving;
+        closeButton.disabled = saving;
+        saveButton.textContent = saving ? 'Guardando...' : 'Guardar';
+        updateSaveButton();
+      }
+
+      function applySelectedPreset() {
+        const preset = getSelectedPreset();
+        if (!preset) {
+          return;
+        }
+        document.getElementById('tema_primary').value = preset.colors.primary;
+        document.getElementById('tema_secondary').value = preset.colors.secondary;
+        document.getElementById('tema_accent').value = preset.colors.accent;
+      }
+
+      function applyThemePreview() {
+        const preset = getSelectedPreset();
+        if (preset) {
+          document.documentElement.style.colorScheme = preset.isDark ? 'dark' : 'light';
+          Object.keys(preset.colors).forEach(function(token) {
+            const cssToken = '--' + token.replace(/[A-Z]/g, function(letter) {
+              return '-' + letter.toLowerCase();
+            });
+            document.documentElement.style.setProperty(cssToken, preset.colors[token]);
+          });
+        }
+        document.documentElement.style.setProperty('--primary', document.getElementById('tema_primary').value);
+        document.documentElement.style.setProperty('--secondary', document.getElementById('tema_secondary').value);
+        document.documentElement.style.setProperty('--accent', document.getElementById('tema_accent').value);
+      }
+
+      function getSelectedPreset() {
+        return THEME_CONFIG.presets.find(function(preset) {
+          return preset.id === presetSelect.value;
+        });
       }
 
       function showResult(message, state) {
@@ -132,10 +275,9 @@
         resultElement.className = 'result visible ' + state;
       }
 
-      function setSavingState(isSaving) {
-        closeButton.disabled = isSaving;
-        saveButton.disabled = isSaving;
-        saveButton.textContent = isSaving ? 'Guardando...' : 'Guardar';
+      function hideResult() {
+        resultElement.textContent = '';
+        resultElement.className = 'result';
       }
     </script>
   </body>

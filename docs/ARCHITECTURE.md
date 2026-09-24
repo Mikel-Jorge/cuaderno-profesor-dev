@@ -34,11 +34,12 @@ Se recurrirá a edición manual únicamente cuando resulte claramente más senci
 
 La implementación inicial utiliza una separación sencilla de responsabilidades:
 
-- `Config.gs`: constantes compartidas, nombres de hojas, versiones y colores base.
+- `Config.gs`: constantes compartidas, nombres de hojas y fuente central de la versión del cuaderno.
+- `Theme.gs`: tokens visuales, presets, personalizaciones y adaptación del tema a Sheets y CSS.
 - `Main.gs`: funciones públicas de UI, incluyendo `onOpen()` y ayuda temporal.
 - `Setup.gs`: inicialización idempotente de la estructura base.
-- `GeneralConfig.gs`: definición, lectura, validación y persistencia de la configuración general, incluida la propuesta de curso académico.
-- `Portada.gs`: renderizado completo de `0 Portada` y generación de su índice navegable.
+- `GeneralConfig.gs`: definición, migración, lectura, validación y persistencia diferencial de la configuración general y visual.
+- `Portada.gs`: reparación de estructura, actualización diferencial de datos, aplicación del tema y generación del índice navegable.
 - `Utils.gs`: utilidades comunes de acceso y organización de hojas.
 - `Ui.gs`: apertura de diálogos, registro de procesos UI y ejecución secuencial de pasos.
 - `UiDialogProgress.html`: diálogo reutilizable para procesos con progreso, resultado y log.
@@ -60,7 +61,7 @@ No crear capas o abstracciones hasta que exista una necesidad real.
 
 ## UI HTML y procesos largos
 
-Los diálogos se construyen con plantillas de `HtmlService` y parciales compartidos. La cabecera común recibe el nombre del proyecto y la versión desde `Config.gs`, evitando hardcodearlos en HTML. Los títulos nativos y el menú reutilizan las etiquetas con iconos funcionales centralizadas en `CP.MENU`.
+Los diálogos se construyen con plantillas de `HtmlService` y parciales compartidos. La cabecera común recibe el nombre del proyecto y la versión desde `Config.gs`, evitando hardcodearlos en HTML. Los títulos nativos y el menú reutilizan las etiquetas con iconos funcionales centralizadas en `CP.MENU`. `Theme.gs` resuelve el preset y las personalizaciones almacenadas, y los inyecta como variables CSS en todas las plantillas comunes.
 
 Un proceso UI declara sus pasos en servidor; el cliente los invoca en secuencia mediante `google.script.run`, actualizando el estado después de cada respuesta. Las funciones de dominio continúan siendo ejecutables directamente sin depender del diálogo.
 
@@ -88,7 +89,9 @@ Podrán variar si la implementación demuestra que una estructura más sencilla 
 
 En la estructura base inicial solo se crean `_CONFIG` y `_META`. El resto de hojas técnicas se crearán cuando se implemente la funcionalidad correspondiente.
 
-`_CONFIG` mantiene un modelo clave/valor y conserva las claves desconocidas al reparar su estructura. `0 Portada` es una vista generada desde esta configuración y no actúa como fuente de datos. `_META` contiene únicamente proyecto, versión del cuaderno y versión del esquema.
+`_CONFIG` mantiene un modelo estricto de dos columnas, clave/valor, y conserva las claves desconocidas al reparar o migrar su estructura. Incluye los datos generales y la selección/personalización del tema. `0 Portada` es una vista generada desde esta configuración y no actúa como fuente de datos. `_META` contiene únicamente proyecto, versión del cuaderno y versión del esquema, obteniendo las versiones de `Config.gs`.
+
+La inicialización puede reconstruir la estructura gestionada de la Portada. Un guardado ordinario no ejecuta ese renderizado completo: compara la configuración anterior, persiste solo las claves modificadas, actualiza los rangos de datos afectados y reaplica exclusivamente los estilos cuando cambia el tema.
 
 ## Restricciones técnicas vigentes
 

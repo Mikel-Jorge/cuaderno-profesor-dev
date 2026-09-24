@@ -10,7 +10,7 @@ function initializeCoverStructure_() {
 
   const coverSheet = getOrCreateSheet_(spreadsheet, CP.SHEETS.COVER);
   moveSheetToFirstPosition_(spreadsheet, coverSheet);
-  renderPortada_(coverSheet);
+  createOrRepairCover_(coverSheet);
 }
 
 function initializeConfigStructure_() {
@@ -38,6 +38,7 @@ function finishStructureInitialization_() {
 }
 
 function initializeMetaSheet_(sheet) {
+  const theme = getActiveTheme_(sheet.getParent());
   sheet.clearFormats();
   sheet.clearContents();
 
@@ -50,8 +51,8 @@ function initializeMetaSheet_(sheet) {
 
   sheet.getRange(1, 1, values.length, values[0].length).setValues(values);
   sheet.getRange('A1:B1')
-    .setBackground(CP_COLORS.DARK)
-    .setFontColor(CP_COLORS.WHITE)
+    .setBackground(theme.colors.primary)
+    .setFontColor(theme.colors.onPrimary)
     .setFontWeight('bold');
   sheet.setFrozenRows(1);
   sheet.autoResizeColumns(1, values[0].length);

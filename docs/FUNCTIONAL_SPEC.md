@@ -13,7 +13,7 @@ especificación.
 ## Definición funcional del proyecto
 
 **Estado:** Especificación funcional inicial cerrada  
-**Versión del documento:** 1.4
+**Versión del documento:** 1.5
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 ---
@@ -127,6 +127,7 @@ Debe mostrar:
 CUADERNO DEL PROFESOR
 Curso académico
 Nombre y apellidos del docente
+Correo del profesor
 Centro
 Dirección
 Teléfono
@@ -151,7 +152,13 @@ Ejemplo:
 
 La propuesta podrá corregirse manualmente.
 
-## 5.2. Índice dinámico
+## 5.2. Datos generales y apariencia
+
+La configuración general permitirá editar los datos del profesor y del centro, aunque algunos campos permanezcan vacíos. El correo del profesor y el correo del centro se mostrarán como enlaces `mailto:` en la Portada cuando tengan valor.
+
+El mismo diálogo permitirá seleccionar el tema visual activo y personalizar sus colores principales. El botón `Guardar` permanecerá visible: estará deshabilitado sin cambios o durante el guardado y volverá a habilitarse al modificar cualquier campo. Tras guardar correctamente se establecerá un nuevo estado base, permitiendo nuevos guardados sin cerrar el diálogo; si se produce un error, los cambios continuarán pendientes.
+
+## 5.3. Índice dinámico
 
 A la derecha habrá un índice visual y clicable construido a partir de las hojas visibles existentes:
 
@@ -1017,9 +1024,15 @@ Principios:
 - Rojo intenso para nota 0 y avisos críticos.
 - Alternancia visual de UT.
 
-Los colores generales se centralizarán en configuración cuando sea razonable.
+Los colores generales se centralizarán en una configuración global de tema y no se repartirán como valores independientes entre funcionalidades.
 
-## 23.1. UI común y branding
+## 23.1. Temas visuales
+
+El cuaderno dispondrá de tokens comunes para color principal, secundario, acento, fondo, superficie, texto, tono neutro, borde, éxito, advertencia y peligro. La Portada, los diálogos y las futuras hojas consumirán esta fuente común cuando corresponda.
+
+Se ofrecerán al menos los presets `Claro azul`, `Claro verde`, `Oscuro azul` y `Oscuro verde`, con `Claro azul` como valor inicial. El usuario podrá seleccionar el preset activo y personalizar de forma sencilla los colores principal, secundario y de acento.
+
+## 23.2. UI común y branding
 
 Los diálogos y el futuro panel lateral compartirán una base visual común:
 
@@ -1100,8 +1113,8 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.0.0
-Versión del esquema: 1
+Versión del cuaderno: 1.1.0
+Versión del esquema: 2
 ```
 
 La versión podrá mostrarse discretamente en Portada o panel.

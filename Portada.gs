@@ -1,15 +1,21 @@
-function renderPortada_(sheet) {
+function createOrRepairCover_(sheet) {
   const spreadsheet = sheet.getParent();
   const config = getGeneralConfigValues_(spreadsheet);
-  const academicYear = config[CP.CONFIG_KEYS.ACADEMIC_YEAR] || proponerCursoAcademico_(
-    new Date(),
-    spreadsheet.getSpreadsheetTimeZone()
-  );
+  if (!config[CP.CONFIG_KEYS.ACADEMIC_YEAR]) {
+    config[CP.CONFIG_KEYS.ACADEMIC_YEAR] = proponerCursoAcademico_(
+      new Date(),
+      spreadsheet.getSpreadsheetTimeZone()
+    );
+  }
 
-  prepareCoverCanvas_(sheet);
-  renderCoverHeader_(sheet, academicYear);
-  renderCoverGeneralData_(sheet, config);
+  prepareCoverStructure_(sheet);
+  updateCoverData_(sheet, config);
+  applyCoverTheme_(sheet, getActiveTheme_(spreadsheet, config));
   renderCoverIndex_(sheet);
+}
+
+function renderPortada_(sheet) {
+  createOrRepairCover_(sheet);
 }
 
 function actualizarIndicePortada() {
@@ -20,7 +26,7 @@ function actualizarIndicePortada() {
   }
 }
 
-function prepareCoverCanvas_(sheet) {
+function prepareCoverStructure_(sheet) {
   const managedRows = 60;
   const managedColumns = 12;
   ensureSheetSize_(sheet, managedRows, managedColumns);
@@ -29,13 +35,10 @@ function prepareCoverCanvas_(sheet) {
   canvas.breakApart();
   canvas.clear();
   canvas
-    .setBackground(CP_COLORS.WHITE)
-    .setFontColor(CP_COLORS.DARK)
     .setFontFamily('Arial')
     .setVerticalAlignment('middle');
 
   sheet.setHiddenGridlines(true);
-  sheet.setTabColor(CP_COLORS.PRIMARY);
   sheet.setFrozenRows(0);
   sheet.setFrozenColumns(0);
 
@@ -49,105 +52,173 @@ function prepareCoverCanvas_(sheet) {
   sheet.setRowHeight(4, 30);
   sheet.setRowHeight(5, 46);
   sheet.setRowHeight(7, 34);
-  sheet.setRowHeights(9, 6, 40);
-}
+  sheet.setRowHeights(9, 7, 40);
 
-function renderCoverHeader_(sheet, academicYear) {
   setMergedRangeValue_(sheet.getRange('B2:L3'), 'CUADERNO DEL PROFESOR')
-    .setBackground(CP_COLORS.DARK)
-    .setFontColor(CP_COLORS.WHITE)
     .setFontWeight('bold')
     .setFontSize(24)
     .setHorizontalAlignment('center');
 
-  setMergedRangeValue_(
-    sheet.getRange('B4:L5'),
-    'CURSO ACAD\u00c9MICO  \u00b7  ' + academicYear
-  )
-    .setBackground(CP_COLORS.ACCENT)
-    .setFontColor(CP_COLORS.WHITE)
+  setMergedRangeValue_(sheet.getRange('B4:L5'), '')
     .setFontWeight('bold')
     .setFontSize(16)
     .setHorizontalAlignment('center');
-}
 
-function renderCoverGeneralData_(sheet, config) {
   setMergedRangeValue_(sheet.getRange('B7:F7'), 'DATOS GENERALES')
-    .setBackground(CP_COLORS.PRIMARY)
-    .setFontColor(CP_COLORS.WHITE)
+    .setFontWeight('bold')
+    .setHorizontalAlignment('left');
+  setMergedRangeValue_(sheet.getRange('H7:L7'), 'ÍNDICE DEL CUADERNO')
     .setFontWeight('bold')
     .setHorizontalAlignment('left');
 
-  const rows = [
-    ['Profesor', config[CP.CONFIG_KEYS.TEACHER]],
-    ['Centro', config[CP.CONFIG_KEYS.SCHOOL]],
-    ['Direcci\u00f3n', config[CP.CONFIG_KEYS.SCHOOL_ADDRESS]],
-    ['Tel\u00e9fono', config[CP.CONFIG_KEYS.SCHOOL_PHONE]],
-    ['Correo', config[CP.CONFIG_KEYS.SCHOOL_EMAIL]],
-    ['Web', config[CP.CONFIG_KEYS.SCHOOL_WEB]],
+  const labels = [
+    ['Profesor'],
+    ['Correo del profesor'],
+    ['Centro'],
+    ['Dirección'],
+    ['Teléfono'],
+    ['Correo del centro'],
+    ['Web del centro'],
   ];
+  sheet.getRange(9, 2, labels.length, 1).setValues(labels).setFontWeight('bold');
 
-  sheet.getRange(9, 2, rows.length, 1).setValues(rows.map(function(row) {
-    return [row[0]];
-  }));
-  sheet.getRange(9, 2, rows.length, 1)
-    .setBackground(CP_COLORS.PRIMARY_LIGHT)
-    .setFontWeight('bold')
-    .setFontColor(CP_COLORS.DARK);
+  for (let row = 9; row <= 15; row += 1) {
+    sheet.getRange(row, 3, 1, 4).merge().setWrap(true);
+  }
+}
 
-  rows.forEach(function(row, index) {
-    const valueRange = sheet.getRange(9 + index, 3, 1, 4);
-    valueRange.merge();
-    valueRange
-      .setValue(row[1] || '')
-      .setBackground(CP_COLORS.WHITE)
-      .setBorder(true, true, true, true, false, false, CP_COLORS.BORDER, SpreadsheetApp.BorderStyle.SOLID)
-      .setWrap(true);
+function updateCoverData_(sheet, config, changedKeys) {
+  const keysToUpdate = changedKeys || [
+    CP.CONFIG_KEYS.ACADEMIC_YEAR,
+    CP.CONFIG_KEYS.TEACHER,
+    CP.CONFIG_KEYS.TEACHER_EMAIL,
+    CP.CONFIG_KEYS.SCHOOL,
+    CP.CONFIG_KEYS.SCHOOL_ADDRESS,
+    CP.CONFIG_KEYS.SCHOOL_PHONE,
+    CP.CONFIG_KEYS.SCHOOL_EMAIL,
+    CP.CONFIG_KEYS.SCHOOL_WEB,
+  ];
+  const theme = getActiveTheme_(sheet.getParent(), config);
+  const fields = {};
+  fields[CP.CONFIG_KEYS.TEACHER] = { range: 'C9:F9' };
+  fields[CP.CONFIG_KEYS.TEACHER_EMAIL] = { range: 'C10:F10', linkType: 'mailto:' };
+  fields[CP.CONFIG_KEYS.SCHOOL] = { range: 'C11:F11' };
+  fields[CP.CONFIG_KEYS.SCHOOL_ADDRESS] = { range: 'C12:F12' };
+  fields[CP.CONFIG_KEYS.SCHOOL_PHONE] = { range: 'C13:F13' };
+  fields[CP.CONFIG_KEYS.SCHOOL_EMAIL] = { range: 'C14:F14', linkType: 'mailto:' };
+  fields[CP.CONFIG_KEYS.SCHOOL_WEB] = { range: 'C15:F15', linkType: 'web' };
+
+  keysToUpdate.forEach(function(key) {
+    if (key === CP.CONFIG_KEYS.ACADEMIC_YEAR) {
+      sheet.getRange('B4:L5').setValue(
+        'CURSO ACADÉMICO  ·  ' + (config[key] || '')
+      );
+      return;
+    }
+
+    const field = fields[key];
+    if (!field) {
+      return;
+    }
+    const range = sheet.getRange(field.range);
+    if (field.linkType) {
+      setCoverLink_(range, config[key], field.linkType, theme.colors.accent);
+    } else {
+      range.setValue(config[key] || '');
+    }
   });
+}
 
-  setCoverLink_(sheet.getRange('C13:F13'), config[CP.CONFIG_KEYS.SCHOOL_EMAIL], 'mailto:');
-  setCoverLink_(sheet.getRange('C14:F14'), config[CP.CONFIG_KEYS.SCHOOL_WEB], 'web');
+function applyCoverTheme_(sheet, theme) {
+  const colors = theme.colors;
+  sheet.getRange(1, 1, 60, 12)
+    .setBackground(colors.background)
+    .setFontColor(colors.text);
+  sheet.setTabColor(colors.primary);
+
+  sheet.getRange('B2:L3')
+    .setBackground(colors.primary)
+    .setFontColor(colors.onPrimary);
+  sheet.getRange('B4:L5')
+    .setBackground(colors.secondary)
+    .setFontColor(colors.onSecondary);
+  sheet.getRange('B7:F7')
+    .setBackground(colors.primary)
+    .setFontColor(colors.onPrimary);
+  sheet.getRange('H7:L7')
+    .setBackground(colors.accent)
+    .setFontColor(colors.onAccent);
+  sheet.getRange('B9:B15')
+    .setBackground(colors.muted)
+    .setFontColor(colors.text);
+  sheet.getRange('C9:F15')
+    .setBackground(colors.surface)
+    .setFontColor(colors.text);
+
+  for (let row = 9; row <= 15; row += 1) {
+    sheet.getRange(row, 3, 1, 4).setBorder(
+      true, true, true, true, false, false,
+      colors.border,
+      SpreadsheetApp.BorderStyle.SOLID
+    );
+  }
+  sheet.getRange('C10:F10').setFontColor(colors.accent);
+  sheet.getRange('C14:F15').setFontColor(colors.accent);
+
+  applyCoverIndexTheme_(sheet, theme);
+}
+
+function applyCoverIndexTheme_(sheet, theme) {
+  const colors = theme.colors;
+  const visibleSheetCount = getVisibleNotebookSheets_(sheet.getParent()).length;
+  sheet.getRange('H9:L60')
+    .setBackground(colors.surface)
+    .setFontColor(colors.text)
+    .setFontWeight('normal');
+  if (visibleSheetCount) {
+    sheet.getRange(9, 8, visibleSheetCount, 5)
+      .setBackground(colors.muted)
+      .setFontColor(colors.accent)
+      .setBorder(false, false, true, false, false, false, colors.border, SpreadsheetApp.BorderStyle.SOLID);
+  }
 }
 
 function renderCoverIndex_(coverSheet) {
   const spreadsheet = coverSheet.getParent();
-  const visibleSheets = spreadsheet.getSheets().filter(function(sheet) {
-    return !sheet.isSheetHidden() && sheet.getName().charAt(0) !== '_';
-  });
-
-  setMergedRangeValue_(coverSheet.getRange('H7:L7'), '\u00cdNDICE DEL CUADERNO')
-    .setBackground(CP_COLORS.ACCENT)
-    .setFontColor(CP_COLORS.WHITE)
-    .setFontWeight('bold')
-    .setHorizontalAlignment('left');
-
+  const visibleSheets = getVisibleNotebookSheets_(spreadsheet);
+  const theme = getActiveTheme_(spreadsheet);
   const clearRowCount = Math.min(52, coverSheet.getMaxRows() - 8);
-  coverSheet.getRange(9, 8, clearRowCount, 5)
-    .clearContent()
-    .setBackground(CP_COLORS.WHITE)
-    .setFontColor(CP_COLORS.DARK)
-    .setFontWeight('normal');
+  coverSheet.getRange(9, 8, clearRowCount, 5).clearContent();
 
   if (!visibleSheets.length) {
+    applyCoverIndexTheme_(coverSheet, theme);
     return;
   }
 
   const spreadsheetUrl = spreadsheet.getUrl();
+  const linkStyle = SpreadsheetApp.newTextStyle()
+    .setForegroundColor(theme.colors.accent)
+    .setUnderline(true)
+    .build();
   const richTextValues = visibleSheets.map(function(sheet) {
     const label = formatCoverIndexLabel_(sheet.getName());
-    const richText = SpreadsheetApp.newRichTextValue()
+    return [SpreadsheetApp.newRichTextValue()
       .setText(label)
       .setLinkUrl(spreadsheetUrl + '#gid=' + sheet.getSheetId())
-      .build();
-    return [richText];
+      .setTextStyle(linkStyle)
+      .build()];
   });
 
   coverSheet.getRange(9, 8, richTextValues.length, 1).setRichTextValues(richTextValues);
-  coverSheet.getRange(9, 8, richTextValues.length, 5)
-    .setBackground(CP_COLORS.MUTED)
-    .setBorder(false, false, true, false, false, false, CP_COLORS.BORDER, SpreadsheetApp.BorderStyle.SOLID)
-    .setFontSize(11);
+  coverSheet.getRange(9, 8, richTextValues.length, 5).setFontSize(11);
   coverSheet.setRowHeights(9, richTextValues.length, 32);
+  applyCoverIndexTheme_(coverSheet, theme);
+}
+
+function getVisibleNotebookSheets_(spreadsheet) {
+  return spreadsheet.getSheets().filter(function(sheet) {
+    return !sheet.isSheetHidden() && sheet.getName().charAt(0) !== '_';
+  });
 }
 
 function formatCoverIndexLabel_(sheetName) {
@@ -155,9 +226,10 @@ function formatCoverIndexLabel_(sheetName) {
   return match ? match[1] + ' \u00b7 ' + match[2] : sheetName;
 }
 
-function setCoverLink_(range, value, linkType) {
+function setCoverLink_(range, value, linkType, color) {
   const text = value || '';
   if (!text) {
+    range.clearContent();
     return;
   }
 
@@ -168,11 +240,15 @@ function setCoverLink_(range, value, linkType) {
     url = 'https://' + text;
   }
 
-  const richText = SpreadsheetApp.newRichTextValue()
+  const textStyle = SpreadsheetApp.newTextStyle()
+    .setForegroundColor(color)
+    .setUnderline(true)
+    .build();
+  range.setRichTextValue(SpreadsheetApp.newRichTextValue()
     .setText(text)
     .setLinkUrl(url)
-    .build();
-  range.setRichTextValue(richText);
+    .setTextStyle(textStyle)
+    .build());
 }
 
 function ensureSheetSize_(sheet, minimumRows, minimumColumns) {

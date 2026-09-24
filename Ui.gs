@@ -73,7 +73,10 @@ function validateUiConfirmation_(confirmation) {
 }
 
 function setCommonUiTemplateData_(template) {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const theme = getActiveTheme_(spreadsheet);
   template.branding = getUiBranding_();
+  template.uiThemeCss = createUiThemeCss_(theme);
   template.uiConfig = {
     projectName: CP.PROJECT_NAME,
     versionLabel: 'v' + CP.NOTEBOOK_VERSION,

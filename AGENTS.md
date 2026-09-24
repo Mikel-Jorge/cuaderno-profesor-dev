@@ -104,6 +104,16 @@ Usa mensajes breves, concretos y relacionados con una sola tarea:
 
 No uses mensajes genéricos como `cambios`, `update`, `fix` o `prueba`.
 
+## Política de versionado
+
+La versión del cuaderno sigue SemVer y tiene una única fuente de verdad en `Config.gs`:
+
+- Cada commit normal incrementa `PATCH`: `1.0.0` → `1.0.1` → `1.0.2`.
+- Cuando una funcionalidad o bloque se considera cerrado, se incrementa `MINOR` y se reinicia `PATCH`: `1.0.x` → `1.1.0`.
+- `MAJOR` se reserva para cambios incompatibles o hitos grandes y solo se incrementa por decisión explícita.
+
+El commit debe actualizar la versión central conforme a esta política. No dupliques la versión como constante en otros archivos; `_META` y la UI deben obtenerla de la fuente central.
+
 ## Relación Git / clasp
 
 - GitHub es la fuente de verdad del **código versionado**.

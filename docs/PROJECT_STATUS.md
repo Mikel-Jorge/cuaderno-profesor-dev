@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-09-24  
-**Estado general:** núcleo de configuración general y portada funcional implementados
+**Estado general:** bloque de configuración general, temas y portada cerrado en versión 1.1.0
 
 ## Completado
 
@@ -18,13 +18,16 @@
   - `🔄 Inicializar / reparar estructura`.
   - `⚙️ Configuración > 👤 Datos generales`.
   - `❓ Ayuda` temporal mediante diálogo.
-- Hoja visible `0 Portada` terminada, generada por Apps Script y alimentada desde `_CONFIG`.
+- Hoja visible `0 Portada` terminada, generada por Apps Script y alimentada desde `_CONFIG`, con correos diferenciados y enlaces navegables.
 - Índice dinámico navegable de hojas visibles implementado en la portada.
 - Hojas técnicas `_CONFIG` y `_META` creadas y ocultas.
 - `_META` incluye únicamente proyecto, versión del cuaderno y versión del esquema.
-- `_CONFIG` contiene curso, profesor y datos completos del centro en formato clave/valor.
+- `_CONFIG` utiliza dos columnas clave/valor y contiene curso, profesor, correo del profesor, datos completos del centro y preferencias de tema.
 - Propuesta automática del curso académico según fecha y zona horaria del Spreadsheet.
-- Diálogo de datos generales con carga, validación, guardado y actualización inmediata de la portada.
+- Diálogo de datos generales con carga, validación, guardados sucesivos, estado dirty/clean y actualización diferencial de la portada.
+- Sistema global de temas con tokens centralizados, personalización de colores principales y presets Claro azul, Claro verde, Oscuro azul y Oscuro verde.
+- Portada separada en reparación estructural, actualización de datos, aplicación de tema e índice.
+- Versión central del cuaderno `1.1.0` y esquema `2`.
 - Infraestructura HTML común para diálogos de Apps Script implementada.
 - Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
 - La inicialización se ejecuta desde el diálogo en cuatro pasos idempotentes.
@@ -39,7 +42,7 @@
 
 ## Pendiente inmediato
 
-- Probar manualmente la configuración general, la portada y los enlaces del índice en `CP_DEV`.
+- Probar manualmente los cuatro temas, los guardados sucesivos y los enlaces de la portada en `CP_DEV`.
 - Implementar el panel lateral básico.
 - Implementar el asistente de preparación de nuevo curso.
 
