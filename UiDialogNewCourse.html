@@ -18,7 +18,7 @@
 
       <form class="wizard" id="new-course-form">
         <div class="wizard-scroll">
-          <p class="wizard-progress" id="wizard-progress">Paso 1 de 4</p>
+          <p class="wizard-progress" id="wizard-progress">Paso 1 de 5</p>
 
           <section class="wizard-step" data-step="0" aria-labelledby="course-step-title">
             <h2 id="course-step-title">Curso acad&eacute;mico</h2>
@@ -81,13 +81,28 @@
             </div>
           </section>
 
-          <section class="wizard-step is-hidden" data-step="3" aria-labelledby="summary-step-title">
+          <section class="wizard-step is-hidden" data-step="3" aria-labelledby="location-step-title">
+            <h2 id="location-step-title">Ubicaci&oacute;n del cuaderno</h2>
+            <p class="wizard-intro">Por defecto, el cuaderno permanecer&aacute; en su carpeta actual.</p>
+            <dl class="location-summary">
+              <div><dt>Carpeta actual</dt><dd id="current-folder-name"></dd></div>
+              <div><dt>Destino</dt><dd id="destination-folder-name"></dd></div>
+            </dl>
+            <button class="button button-secondary choose-folder-button" id="choose-folder-button" type="button">
+              &#x1f4c1; Elegir carpeta
+            </button>
+          </section>
+
+          <section class="wizard-step is-hidden" data-step="4" aria-labelledby="summary-step-title">
             <h2 id="summary-step-title">Resumen</h2>
             <dl class="wizard-summary">
-              <div><dt>Curso acad&eacute;mico</dt><dd id="summary-course"></dd></div>
+              <div><dt>Curso</dt><dd id="summary-course"></dd></div>
               <div><dt>Profesor</dt><dd id="summary-teacher"></dd></div>
               <div><dt>Centro</dt><dd id="summary-school"></dd></div>
-              <div><dt>Tema</dt><dd id="summary-theme"></dd></div>
+              <div><dt>Apariencia</dt><dd id="summary-theme"></dd></div>
+              <div><dt>Backup</dt><dd id="summary-backup"></dd></div>
+              <div><dt>Backup se guardar&aacute; en</dt><dd id="summary-backup-folder"></dd></div>
+              <div><dt id="summary-location-label"></dt><dd id="summary-location"></dd></div>
             </dl>
             <div class="wizard-change-list">
               <p>Al preparar el curso:</p>
@@ -114,6 +129,24 @@
         </div>
       </form>
 
+      <section class="folder-picker is-hidden" id="folder-picker" aria-modal="true" role="dialog" aria-labelledby="folder-picker-title">
+        <div class="folder-picker-dialog">
+          <h2 id="folder-picker-title">Seleccionar carpeta</h2>
+          <p class="folder-path" id="folder-path"></p>
+          <div class="folder-toolbar">
+            <button class="button button-secondary folder-back-button" id="folder-back-button" type="button">
+              &larr; Volver
+            </button>
+          </div>
+          <div class="folder-list" id="folder-list" aria-live="polite"></div>
+          <p class="folder-picker-error" id="folder-picker-error" role="alert"></p>
+          <div class="actions">
+            <button class="button button-secondary" id="folder-cancel-button" type="button">Cancelar</button>
+            <button class="button" id="folder-select-button" type="button">Usar esta carpeta</button>
+          </div>
+        </div>
+      </section>
+
       <footer class="author-footer">
         &copy; <?= uiConfig.author ?> &middot;
         <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a>
@@ -122,6 +155,7 @@
 
     <script>
       const CURRENT_ACADEMIC_YEAR = <?!= JSON.stringify(currentAcademicYear) ?>;
+      const CURRENT_LOCATION = <?!= JSON.stringify(currentLocation) ?>;
       const INITIAL_CONFIG = <?!= JSON.stringify(wizardConfig) ?>;
       const THEME_CONFIG = <?!= JSON.stringify(themeConfig) ?>;
       const fieldNames = [
@@ -142,9 +176,17 @@
       const resultElement = document.getElementById('wizard-result');
       const presetSelect = document.getElementById('tema_preset');
       const backupCheckbox = document.getElementById('create-backup');
+      const folderPicker = document.getElementById('folder-picker');
+      const folderList = document.getElementById('folder-list');
+      const folderBackButton = document.getElementById('folder-back-button');
+      const folderSelectButton = document.getElementById('folder-select-button');
+      const folderPickerError = document.getElementById('folder-picker-error');
       let currentStep = 0;
       let isBusy = false;
       let workingConfig = Object.assign({}, INITIAL_CONFIG);
+      let originalFolder = Object.assign({}, CURRENT_LOCATION);
+      let selectedFolder = Object.assign({}, CURRENT_LOCATION);
+      let pickerFolder = null;
 
       document.getElementById('current-academic-year').textContent =
         CURRENT_ACADEMIC_YEAR || 'Sin configurar';
@@ -158,6 +200,8 @@
         presetSelect.appendChild(option);
       });
       presetSelect.value = workingConfig.tema_preset;
+      document.getElementById('current-folder-name').textContent = originalFolder.name;
+      renderSelectedFolder();
       renderPalette();
 
       form.addEventListener('submit', function(event) {
@@ -171,6 +215,31 @@
         workingConfig.tema_secondary = preset.colors.secondary;
         workingConfig.tema_accent = preset.colors.accent;
         renderPalette();
+      });
+
+      backupCheckbox.addEventListener('change', function() {
+        if (currentStep === steps.length - 1) {
+          renderSummary();
+        }
+      });
+
+      document.getElementById('choose-folder-button').addEventListener('click', openFolderPicker);
+      document.getElementById('folder-cancel-button').addEventListener('click', closeFolderPicker);
+      folderSelectButton.addEventListener('click', function() {
+        if (!pickerFolder) {
+          return;
+        }
+        selectedFolder = {
+          id: pickerFolder.id,
+          name: pickerFolder.name,
+        };
+        renderSelectedFolder();
+        closeFolderPicker();
+      });
+      folderBackButton.addEventListener('click', function() {
+        if (pickerFolder && pickerFolder.parentId) {
+          loadFolderPickerView(pickerFolder.parentId);
+        }
       });
 
       cancelButton.addEventListener('click', function() {
@@ -195,11 +264,11 @@
         if (currentStep === 1 && !form.reportValidity()) {
           return;
         }
-        if (currentStep < 2) {
+        if (currentStep < 3) {
           showStep(currentStep + 1);
           return;
         }
-        if (currentStep === 2) {
+        if (currentStep === 3) {
           validateAndShowSummary();
           return;
         }
@@ -234,6 +303,8 @@
         return {
           config: Object.assign({}, workingConfig),
           createBackup: backupCheckbox.checked,
+          originalFolderId: originalFolder.id,
+          destinationFolderId: selectedFolder.id,
         };
       }
 
@@ -242,12 +313,22 @@
         google.script.run
           .withSuccessHandler(function(normalizedInput) {
             workingConfig = normalizedInput.config;
+            originalFolder = {
+              id: normalizedInput.originalFolderId,
+              name: normalizedInput.originalFolderName,
+            };
+            selectedFolder = {
+              id: normalizedInput.destinationFolderId,
+              name: normalizedInput.destinationFolderName,
+            };
             fieldNames.forEach(function(fieldName) {
               document.getElementById(fieldName).value = workingConfig[fieldName] || '';
             });
+            document.getElementById('current-folder-name').textContent = originalFolder.name;
+            renderSelectedFolder();
             renderSummary();
             setBusy(false);
-            showStep(3);
+            showStep(4);
           })
           .withFailureHandler(handleError)
           .validarPreparacionNuevoCurso(collectInput());
@@ -268,6 +349,90 @@
           return item.id === workingConfig.tema_preset;
         });
         document.getElementById('summary-theme').textContent = preset ? preset.label : workingConfig.tema_preset;
+        document.getElementById('summary-backup').textContent = backupCheckbox.checked ? 'Sí' : 'No';
+        document.getElementById('summary-backup-folder').textContent = backupCheckbox.checked
+          ? originalFolder.name
+          : 'No se creará una copia';
+        const moving = selectedFolder.id !== originalFolder.id;
+        document.getElementById('summary-location-label').textContent = moving
+          ? 'Cuaderno activo se ubicará en'
+          : 'Cuaderno activo permanecerá en';
+        document.getElementById('summary-location').textContent = selectedFolder.name;
+      }
+
+      function renderSelectedFolder() {
+        document.getElementById('destination-folder-name').textContent = selectedFolder.name;
+      }
+
+      function openFolderPicker() {
+        folderPicker.classList.remove('is-hidden');
+        setFolderPickerLoading();
+        google.script.run
+          .withSuccessHandler(renderFolderPickerView)
+          .withFailureHandler(handleFolderPickerError)
+          .obtenerRaizSelectorCarpetas();
+      }
+
+      function closeFolderPicker() {
+        folderPicker.classList.add('is-hidden');
+        pickerFolder = null;
+        folderPickerError.textContent = '';
+      }
+
+      function loadFolderPickerView(folderId) {
+        setFolderPickerLoading();
+        google.script.run
+          .withSuccessHandler(renderFolderPickerView)
+          .withFailureHandler(handleFolderPickerError)
+          .obtenerVistaSelectorCarpetas(folderId);
+      }
+
+      function renderFolderPickerView(view) {
+        pickerFolder = view;
+        folderPickerError.textContent = '';
+        document.getElementById('folder-path').textContent = view.path.map(function(item) {
+          return item.name;
+        }).join(' / ');
+        folderBackButton.disabled = !view.parentId;
+        folderSelectButton.disabled = false;
+        folderList.replaceChildren();
+
+        if (!view.folders.length) {
+          const empty = document.createElement('p');
+          empty.className = 'folder-empty';
+          empty.textContent = 'Esta carpeta no contiene subcarpetas.';
+          folderList.appendChild(empty);
+          return;
+        }
+
+        view.folders.forEach(function(folder) {
+          const button = document.createElement('button');
+          button.className = 'folder-row';
+          button.type = 'button';
+          button.textContent = '\u{1F4C1} ' + folder.name;
+          button.addEventListener('click', function() {
+            loadFolderPickerView(folder.id);
+          });
+          folderList.appendChild(button);
+        });
+      }
+
+      function setFolderPickerLoading() {
+        pickerFolder = null;
+        folderPickerError.textContent = '';
+        folderBackButton.disabled = true;
+        folderSelectButton.disabled = true;
+        folderList.textContent = 'Cargando carpetas...';
+      }
+
+      function handleFolderPickerError(error) {
+        const message = error && error.message
+          ? error.message
+          : 'No se han podido cargar las carpetas de Mi unidad.';
+        folderList.replaceChildren();
+        folderPickerError.textContent = message;
+        folderBackButton.disabled = !pickerFolder || !pickerFolder.parentId;
+        folderSelectButton.disabled = !pickerFolder;
       }
 
       function renderPalette() {

@@ -450,7 +450,8 @@
     margin: 0;
   }
 
-  .wizard-summary div {
+  .wizard-summary div,
+  .location-summary div {
     display: grid;
     grid-template-columns: minmax(120px, 0.8fr) minmax(0, 1.2fr);
     gap: 12px;
@@ -458,16 +459,26 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .wizard-summary dt {
+  .wizard-summary dt,
+  .location-summary dt {
     color: var(--muted-text);
     font-size: 12px;
     font-weight: 700;
   }
 
-  .wizard-summary dd {
+  .wizard-summary dd,
+  .location-summary dd {
     min-width: 0;
     margin: 0;
     overflow-wrap: anywhere;
+  }
+
+  .location-summary {
+    margin: 0 0 18px;
+  }
+
+  .choose-folder-button {
+    min-width: 150px;
   }
 
   .wizard-change-list {
@@ -503,6 +514,103 @@
     flex: 0 0 18px;
     margin: 1px 0 0;
     accent-color: var(--primary);
+  }
+
+  .folder-picker {
+    position: fixed;
+    z-index: 10;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(23, 32, 51, 0.42);
+  }
+
+  .folder-picker.is-hidden {
+    display: none;
+  }
+
+  .folder-picker-dialog {
+    display: flex;
+    width: min(100%, 520px);
+    max-height: calc(100vh - 40px);
+    flex-direction: column;
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    box-shadow: 0 12px 30px rgba(23, 32, 51, 0.2);
+  }
+
+  .folder-picker-dialog h2 {
+    margin: 0 0 8px;
+    font-size: 17px;
+    letter-spacing: 0;
+  }
+
+  .folder-path {
+    min-height: 20px;
+    margin: 0 0 10px;
+    color: var(--muted-text);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .folder-toolbar {
+    margin-bottom: 8px;
+  }
+
+  .folder-back-button {
+    min-width: 96px;
+  }
+
+  .folder-list {
+    min-height: 180px;
+    max-height: 320px;
+    overflow-y: auto;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .folder-row {
+    display: block;
+    width: 100%;
+    padding: 10px 8px;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+
+  .folder-row:hover,
+  .folder-row:focus-visible {
+    background: var(--muted);
+    color: var(--primary);
+    outline: 0;
+  }
+
+  .folder-empty {
+    margin: 0;
+    padding: 18px 8px;
+    color: var(--muted-text);
+    text-align: center;
+  }
+
+  .folder-picker-error {
+    min-height: 20px;
+    margin: 8px 0 0;
+    color: var(--danger);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .folder-picker-dialog .actions {
+    gap: 10px;
+    margin-top: 10px;
   }
 
   .sidebar-app {
@@ -675,6 +783,12 @@
 
     .theme-colors {
       grid-template-columns: 1fr;
+    }
+
+    .wizard-summary div,
+    .location-summary div {
+      grid-template-columns: 1fr;
+      gap: 2px;
     }
   }
 </style>

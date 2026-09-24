@@ -13,7 +13,7 @@ especificación.
 ## Definición funcional del proyecto
 
 **Estado:** Especificación funcional inicial cerrada  
-**Versión del documento:** 1.8
+**Versión del documento:** 1.9
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 ---
@@ -202,9 +202,17 @@ No se realizará ninguna acción destructiva sin confirmación expresa.
 
 ## 6.2. Copia de seguridad
 
-El resumen ofrecerá crear una copia de seguridad antes de aplicar cambios y la opción estará activada por defecto. Si se mantiene activada, se copiará el Spreadsheet mediante `DriveApp`, preferentemente en la misma carpeta y con un nombre que incluya el curso y la fecha. Si la carpeta no puede determinarse o la copia falla, el proceso se detendrá sin aplicar cambios posteriores. El usuario podrá desactivar expresamente la copia.
+El resumen ofrecerá crear una copia de seguridad antes de aplicar cambios y la opción estará activada por defecto. Si se mantiene activada, se copiará el Spreadsheet mediante `DriveApp` en la carpeta original y con un nombre que incluya el curso y la fecha. La copia siempre precederá al movimiento y a cualquier modificación del cuaderno. Si la carpeta no puede determinarse, la copia falla o no puede verificarse, el proceso se detendrá sin mover el archivo ni aplicar cambios posteriores. El usuario podrá desactivar expresamente la copia.
 
-## 6.3. Asistente breve
+## 6.3. Ubicación del cuaderno
+
+El usuario podrá mantener el cuaderno en su carpeta actual, que será el comportamiento por defecto, o elegir otra carpeta de `Mi unidad` mediante un navegador propio. El selector mostrará sólo carpetas, permitirá entrar en subcarpetas, volver a la carpeta superior, consultar la ruta actual, cancelar sin alterar la selección y usar la carpeta abierta como destino. No mostrará IDs técnicos ni permitirá crear, renombrar o eliminar carpetas.
+
+Si se elige otro destino, el backup permanecerá en la carpeta original y el archivo activo se moverá mediante `File.moveTo()` antes de actualizar la configuración. Si el movimiento falla, no se modificará la configuración. Si una modificación posterior falla, se intentará restaurar la configuración y devolver el archivo a la carpeta original, conservando siempre el backup.
+
+El alcance inicial se limita a carpetas de `Mi unidad` accesibles mediante `DriveApp`. No se garantiza soporte completo para Unidades compartidas.
+
+## 6.4. Asistente breve
 
 La primera implementación contiene únicamente pasos correspondientes a funciones disponibles:
 
@@ -212,14 +220,15 @@ La primera implementación contiene únicamente pasos correspondientes a funcion
 1. Curso académico
 2. Profesor y centro
 3. Apariencia
-4. Resumen
+4. Ubicación del cuaderno
+5. Resumen
 ```
 
 El curso propuesto seguirá la regla automática existente y podrá coincidir con el curso actual. Profesor, centro y apariencia se cargarán con sus valores actuales para conservarlos salvo edición expresa. El resumen indicará que sólo se actualizarán los datos generales, la Portada, el índice y los metadatos.
 
 Calendario, tipos de enseñanza, tramos horarios, módulos, horario, alumnado y programación de UT se incorporarán a este mismo asistente cuando esas áreas existan. No se mostrarán como pasos ni se crearán hojas vacías mientras no estén implementados.
 
-## 6.4. Conservación de datos
+## 6.5. Conservación de datos
 
 La primera implementación conserva y permite editar directamente:
 
@@ -1115,7 +1124,7 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.2.1
+Versión del cuaderno: 1.2.2
 Versión del esquema: 2
 ```
 

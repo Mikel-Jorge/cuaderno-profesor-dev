@@ -46,7 +46,8 @@ La implementación inicial utiliza una separación sencilla de responsabilidades
 - `UiDialogConfirmation.html`: confirmación reutilizable con variantes normal, warning y danger.
 - `UiDialogGeneralConfig.html`: edición de los datos generales almacenados en `_CONFIG`.
 - `NewCourse.gs`: datos, validación y pasos ejecutables de la preparación parcial de un nuevo curso.
-- `UiDialogNewCourse.html`: asistente de cuatro pasos para revisar la configuración disponible y solicitar el proceso.
+- `DriveFolders.gs`: acceso validado a carpetas de Mi unidad y construcción de vistas navegables.
+- `UiDialogNewCourse.html`: asistente de cinco pasos y navegador de carpetas integrado.
 - `Sidebar.gs`: preparación del estado, ayuda contextual y apertura del panel lateral.
 - `UiSidebar.html`: renderizado del estado, ayuda contextual y actualización manual en cliente.
 - `UiStyles.html`: estilos visuales comunes para HTML de Apps Script.
@@ -73,7 +74,11 @@ Un proceso UI declara sus pasos en servidor; el cliente los invoca en secuencia 
 
 Las confirmaciones se definen y validan en servidor mediante identificadores de acción permitidos. El cliente solo solicita la acción después de una pulsación expresa; no recibe nombres de funciones arbitrarios. Las variantes `normal`, `warning` y `danger` comparten plantilla y estilos, reservando `danger` para operaciones destructivas.
 
-El asistente de nuevo curso reutiliza las funciones de lectura, normalización y validación de `GeneralConfig.gs`, así como los presets de `Theme.gs`. Tras la confirmación `danger`, permite revisar únicamente las áreas implementadas y delega la ejecución en el diálogo común de progreso. Si se solicita backup, el primer paso usa `DriveApp` para copiar el Spreadsheet en su carpeta actual; cualquier error detiene la secuencia antes de persistir la configuración. Este paso puede solicitar autorización adicional de Drive y requiere permisos para copiar el archivo y escribir en su carpeta. Los pasos posteriores actualizan `_CONFIG`, regeneran la Portada y el índice, sincronizan `_META` y mantienen ocultas las hojas técnicas.
+El asistente de nuevo curso reutiliza las funciones de lectura, normalización y validación de `GeneralConfig.gs`, así como los presets de `Theme.gs`. Tras la confirmación `danger`, permite revisar únicamente las áreas implementadas y delega la ejecución en el diálogo común de progreso.
+
+El navegador de carpetas se implementa con `DriveApp`: comienza en `Mi unidad`, devuelve sólo subcarpetas accesibles y valida que la ruta alcance la raíz de Mi unidad. Los IDs se transportan como datos internos, pero la UI sólo muestra nombres y rutas. Google Picker queda fuera por ahora para evitar depender de un proyecto estándar de Google Cloud, Picker API y API keys. El soporte se limita inicialmente a Mi unidad; una ampliación para Shared Drives podrá usar en el futuro la Drive API o su servicio avanzado.
+
+El orden de ejecución es backup en la carpeta original, movimiento opcional mediante `File.moveTo()` y modificación del cuaderno. Mover el archivo contenedor conserva su proyecto Apps Script vinculado. La copia se verifica antes de continuar. Un error de backup impide mover y escribir; un error de movimiento conserva el backup y evita la configuración. Las operaciones posteriores conservan una instantánea de `_CONFIG` y, si fallan después del movimiento, intentan restaurar configuración, Portada, `_META` y ubicación original sin eliminar el backup. El uso de Drive puede solicitar autorización adicional y requiere permisos para copiar el archivo y escribir en las carpetas de origen y destino.
 
 Los logos originales se conservan en `branding/`. Para que Apps Script pueda mostrarlos sin publicar archivos ni depender de URLs externas, `Branding.gs` contiene copias reducidas como `data:` URI. Estas constantes confiables se imprimen sin escape contextual en los atributos `src`; el resto de datos visibles permanece escapado. Si un recurso embebido no está disponible, se genera un fallback SVG simple. El recurso splash permanece disponible para usos futuros, pero no se renderiza en los diálogos comunes actuales.
 

@@ -73,7 +73,7 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'new-course',
       title: 'Preparar nuevo curso',
-      text: 'Permite revisar curso, profesor, centro y apariencia, y crear una copia de seguridad. Calendario y horario se incorporarán cuando esas áreas estén disponibles.',
+      text: 'Permite revisar curso, profesor, centro y apariencia, crear una copia de seguridad y elegir una carpeta de Mi unidad. Calendario y horario se incorporarán cuando esas áreas estén disponibles.',
     },
     {
       id: 'initialize',
