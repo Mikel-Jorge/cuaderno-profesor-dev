@@ -71,6 +71,11 @@ function getSidebarHelpSections_(contextSectionId) {
       text: 'Guarda el curso académico, el profesor, el centro y la apariencia. Los cambios actualizan la portada.',
     },
     {
+      id: 'new-course',
+      title: 'Preparar nuevo curso',
+      text: 'Permite revisar curso, profesor, centro y apariencia, y crear una copia de seguridad. Calendario y horario se incorporarán cuando esas áreas estén disponibles.',
+    },
+    {
       id: 'initialize',
       title: 'Inicializar / reparar',
       text: 'Comprueba la estructura base, reaplica la portada y actualiza el índice sin eliminar la configuración guardada.',

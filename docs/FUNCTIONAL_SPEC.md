@@ -13,7 +13,7 @@ especificación.
 ## Definición funcional del proyecto
 
 **Estado:** Especificación funcional inicial cerrada  
-**Versión del documento:** 1.7
+**Versión del documento:** 1.8
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 ---
@@ -97,7 +97,7 @@ Todas las hojas visibles generadas por el sistema se ajustarán a su área útil
 ```text
 📘 Cuaderno del Profesor 📘
 ├── Abrir panel / Ayuda
-├── Preparar nuevo curso
+├── 🆕 Preparar nuevo curso
 ├── Configuración
 │   ├── 👤 Datos generales
 │   ├── Fechas y calendario
@@ -114,7 +114,7 @@ Todas las hojas visibles generadas por el sistema se ajustarán a su área útil
 
 Google Calendar, People API y sincronizaciones avanzadas quedan fuera de la V1.
 
-El menú y sus acciones utilizarán un icono funcional únicamente cuando facilite su identificación rápida. Las etiquetas iniciales serán `🔄 Inicializar / reparar estructura` y `❓ Ayuda`, manteniendo el mismo icono en el título nativo del diálogo asociado.
+El menú y sus acciones utilizarán un icono funcional únicamente cuando facilite su identificación rápida. Las etiquetas iniciales serán `🆕 Preparar nuevo curso`, `🔄 Inicializar / reparar estructura` y `❓ Ayuda`, manteniendo el mismo icono en el título nativo del diálogo asociado.
 
 Las acciones sensibles solicitarán confirmación expresa antes de ejecutarse. Las operaciones destructivas utilizarán una confirmación destacada en rojo y explicarán claramente su efecto. Las acciones que puedan tardar varios segundos continuarán después en un diálogo de progreso común.
 
@@ -186,13 +186,14 @@ La acción principal será **Preparar nuevo curso**.
 
 ## 6.1. Aviso inicial
 
-El primer popup mostrará en rojo una advertencia clara:
+El primer popup utilizará la confirmación común `danger` y mostrará una advertencia clara:
 
 ```text
 ATENCIÓN
 
-Esta operación prepara el cuaderno para un nuevo curso académico
-y puede sustituir información correspondiente al curso actual.
+Esta operación prepara el cuaderno para un nuevo curso académico y puede
+sustituir información del curso actual cuando existan datos específicos
+del curso.
 
 ¿Deseas continuar?
 ```
@@ -201,32 +202,34 @@ No se realizará ninguna acción destructiva sin confirmación expresa.
 
 ## 6.2. Copia de seguridad
 
-Antes de limpiar información del curso anterior, el sistema deberá crear u ofrecer claramente una copia de seguridad.
+El resumen ofrecerá crear una copia de seguridad antes de aplicar cambios y la opción estará activada por defecto. Si se mantiene activada, se copiará el Spreadsheet mediante `DriveApp`, preferentemente en la misma carpeta y con un nombre que incluya el curso y la fecha. Si la carpeta no puede determinarse o la copia falla, el proceso se detendrá sin aplicar cambios posteriores. El usuario podrá desactivar expresamente la copia.
 
 ## 6.3. Asistente breve
 
-Propuesta de pasos:
+La primera implementación contiene únicamente pasos correspondientes a funciones disponibles:
 
 ```text
 1. Curso académico
 2. Profesor y centro
-3. Tipos de enseñanza y fechas principales
-4. Tramos horarios
-5. Módulos y grupos
-6. Horario semanal
-7. Finalización
+3. Apariencia
+4. Resumen
 ```
 
-El alumnado y la programación de UT podrán añadirse más adelante.
+El curso propuesto seguirá la regla automática existente y podrá coincidir con el curso actual. Profesor, centro y apariencia se cargarán con sus valores actuales para conservarlos salvo edición expresa. El resumen indicará que sólo se actualizarán los datos generales, la Portada, el índice y los metadatos.
+
+Calendario, tipos de enseñanza, tramos horarios, módulos, horario, alumnado y programación de UT se incorporarán a este mismo asistente cuando esas áreas existan. No se mostrarán como pasos ni se crearán hojas vacías mientras no estén implementados.
 
 ## 6.4. Conservación de datos
 
-Se propondrá conservar:
+La primera implementación conserva y permite editar directamente:
 
 - Profesor.
 - Datos del centro.
 - Preferencias visuales.
 - Colores.
+
+Cuando existan esas áreas, el asistente podrá proponer conservar también:
+
 - Tramos horarios.
 - Catálogo de módulos, si interesa.
 
@@ -237,7 +240,7 @@ Actualmente utilizas estos datos del centro.
 ¿Son correctos?
 ```
 
-Si son correctos, se mantienen sin volver a preguntar campo a campo.
+Los datos se muestran prellenados y se mantienen sin una batería de preguntas campo por campo. La primera implementación no borra hojas técnicas ni datos arbitrarios.
 
 
 # 7. Calendario escolar
@@ -972,7 +975,7 @@ El cuaderno solo recibe la nota vigente/final de la UT.
 
 # 22. Panel lateral
 
-Será una pieza central de ayuda, estado y acceso rápido. La opción `❓ Ayuda` del menú abrirá el panel sin iniciar procesos ni modificar datos.
+Será una pieza central de ayuda y estado. La opción `❓ Ayuda` del menú abrirá el panel sin iniciar procesos ni modificar datos.
 
 ## 22.1. Estado
 
@@ -988,7 +991,7 @@ Alumnado
 
 Los datos generales se considerarán completos cuando existan curso académico, profesor y centro. Las áreas todavía no implementadas se identificarán como no disponibles y nunca se presentarán como completadas.
 
-## 22.2. Ayuda colapsable
+## 22.2. ❓ Ayuda colapsable
 
 La primera versión incluirá únicamente apartados relacionados con funciones disponibles:
 
@@ -996,6 +999,7 @@ La primera versión incluirá únicamente apartados relacionados con funciones d
 Primeros pasos
 Portada
 Datos generales
+Preparar nuevo curso
 Inicializar / reparar
 Temas y apariencia
 Problemas frecuentes
@@ -1007,9 +1011,9 @@ La ayuda será breve y clara. Se ampliará cuando se incorporen nuevas funciones
 
 El panel detectará la hoja activa y priorizará la ayuda relacionada cuando exista. En `0 Portada`, el apartado Portada aparecerá primero y abierto.
 
-## 22.4. Acciones y actualización
+## 22.4. Actualización
 
-El panel ofrecerá accesos a `Datos generales` y `Inicializar / reparar estructura`, reutilizando respectivamente el diálogo de configuración y la confirmación existentes. Incluirá una actualización manual del estado y del contexto, sin sondeo periódico ni triggers instalables.
+El panel no duplicará acciones del menú principal. Incluirá una actualización manual del estado y del contexto, sin sondeo periódico ni triggers instalables.
 
 # 23. Estilo visual
 
@@ -1111,7 +1115,7 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.2.0
+Versión del cuaderno: 1.2.1
 Versión del esquema: 2
 ```
 

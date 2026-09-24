@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-09-24  
-**Estado general:** panel lateral básico de ayuda y estado completado en versión 1.2.0
+**Estado general:** primera base funcional de Preparar nuevo curso implementada en versión 1.2.1
 
 ## Completado
 
@@ -15,6 +15,7 @@
 - `README.md` de configuración creado.
 - Función pública `inicializarCuaderno()` implementada.
 - Menú `📘 Cuaderno del Profesor` implementado con:
+  - `🆕 Preparar nuevo curso`.
   - `🔄 Inicializar / reparar estructura`.
   - `⚙️ Configuración > 👤 Datos generales`.
   - `❓ Ayuda` mediante panel lateral.
@@ -30,7 +31,7 @@
 - Web del centro normalizada y validada aunque se introduzca sin protocolo.
 - Utilidades globales para ampliar hojas y recortarlas al layout; aplicadas a la Portada `A:H` con filas dinámicas.
 - `_META` escribe las versiones como texto para evitar su conversión a fecha.
-- Versión central del cuaderno `1.2.0` y esquema `2`.
+- Versión central del cuaderno `1.2.1` y esquema `2`.
 - Infraestructura HTML común para diálogos de Apps Script implementada.
 - Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
 - La inicialización se ejecuta desde el diálogo en cuatro pasos idempotentes.
@@ -44,14 +45,19 @@
 - Títulos nativos y opciones de menú con iconografía funcional coherente.
 - Panel lateral permanente con branding, tema activo, versión y copyright compartidos.
 - Estado real de datos generales y señalización explícita de áreas todavía no disponibles.
-- Accesos rápidos a Datos generales y a la confirmación de Inicializar / reparar.
 - Ayuda breve colapsable, con Portada priorizada cuando esa hoja está activa.
 - Actualización manual del estado, contexto y tema sin polling ni triggers.
+- Sidebar simplificado sin duplicar las acciones disponibles en el menú principal.
+- Confirmación `danger` previa a Preparar nuevo curso, sin cambios antes de la aceptación expresa.
+- Primera versión del asistente de nuevo curso con curso académico, profesor y centro, apariencia y resumen.
+- Copia de seguridad opcional, activada por defecto y creada con `DriveApp` antes de cualquier cambio.
+- Proceso de nuevo curso mediante el diálogo común de progreso, con pasos condicionales y detención ante errores.
+- Actualización validada de `_CONFIG`, Portada, índice y `_META`, sin crear ni borrar estructuras futuras.
 
 ## Pendiente inmediato
 
 - Probar manualmente las seis paletas, el cierre del diálogo, la URL normalizada y el recorte de la Portada en `CP_DEV`.
-- Implementar el asistente de preparación de nuevo curso.
+- Ampliar Preparar nuevo curso cuando existan calendario, tramos, módulos y horario.
 
 ## Fase 1 prevista
 
@@ -70,8 +76,9 @@ Preparar nuevo curso
 Estado actual de la fase:
 
 - Completado: estructura base, configuración general, `_CONFIG`, `_META`, `0 Portada`, índice dinámico, menú inicial e infraestructura UI común.
-- Completado: panel lateral básico de ayuda, estado y accesos rápidos.
-- Pendiente: preparar nuevo curso.
+- Completado: panel lateral básico de ayuda y estado.
+- En curso: Preparar nuevo curso dispone de una primera versión para las áreas ya implementadas.
+- Pendiente: ampliar el asistente con calendario, tramos, módulos y horario cuando existan.
 
 ## Regla de actualización
 

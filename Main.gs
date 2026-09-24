@@ -5,6 +5,7 @@ function onOpen() {
 
   ui
     .createMenu(CP.MENU.NAME)
+    .addItem(CP.MENU.NEW_COURSE, 'abrirPrepararNuevoCurso')
     .addItem(CP.MENU.INIT, 'abrirDialogoInicializacion')
     .addSubMenu(configMenu)
     .addSeparator()

@@ -2,6 +2,10 @@ function abrirDialogoInicializacion() {
   showConfirmationDialog_(CP.UI.INIT_CONFIRMATION_ID);
 }
 
+function abrirPrepararNuevoCurso() {
+  showConfirmationDialog_(CP.UI.NEW_COURSE_CONFIRMATION_ID);
+}
+
 function showConfirmationDialog_(confirmationId) {
   const confirmation = getUiConfirmationDefinition_(confirmationId);
   const template = HtmlService.createTemplateFromFile('UiDialogConfirmation');
@@ -16,15 +20,21 @@ function showConfirmationDialog_(confirmationId) {
 }
 
 function ejecutarAccionConfirmadaUi(actionId) {
-  if (actionId !== CP.UI.INIT_ACTION_ID) {
-    throw new Error('La acci\u00f3n confirmada no existe.');
+  if (actionId === CP.UI.INIT_ACTION_ID) {
+    showProgressDialog_(CP.UI.INIT_PROCESS_ID);
+    return;
   }
 
-  showProgressDialog_(CP.UI.INIT_PROCESS_ID);
+  if (actionId === CP.UI.NEW_COURSE_ACTION_ID) {
+    abrirAsistenteNuevoCurso();
+    return;
+  }
+
+  throw new Error('La acci\u00f3n confirmada no existe.');
 }
 
-function showProgressDialog_(processId) {
-  const process = getUiProcessDefinition_(processId);
+function showProgressDialog_(processId, processInput) {
+  const process = getUiProcessDefinition_(processId, processInput);
   const template = HtmlService.createTemplateFromFile('UiDialogProgress');
   template.uiProcess = {
     id: process.id,
@@ -34,6 +44,7 @@ function showProgressDialog_(processId) {
       return { label: step.label };
     }),
   };
+  template.processInput = process.input || {};
   setCommonUiTemplateData_(template);
 
   const output = template.evaluate()
@@ -45,19 +56,31 @@ function showProgressDialog_(processId) {
 }
 
 function getUiConfirmationDefinition_(confirmationId) {
-  if (confirmationId !== CP.UI.INIT_CONFIRMATION_ID) {
-    throw new Error('La confirmacion solicitada no existe.');
+  if (confirmationId === CP.UI.INIT_CONFIRMATION_ID) {
+    return validateUiConfirmation_({
+      id: CP.UI.INIT_CONFIRMATION_ID,
+      title: CP.MENU.INIT,
+      message: 'Se comprobar\u00e1 y reparar\u00e1 la estructura base del cuaderno.',
+      helperText: 'Los datos existentes no se eliminar\u00e1n.',
+      confirmText: 'Continuar',
+      variant: CP.UI.CONFIRMATION_VARIANTS.NORMAL,
+      actionId: CP.UI.INIT_ACTION_ID,
+    });
   }
 
-  return validateUiConfirmation_({
-    id: CP.UI.INIT_CONFIRMATION_ID,
-    title: CP.MENU.INIT,
-    message: 'Se comprobar\u00e1 y reparar\u00e1 la estructura base del cuaderno.',
-    helperText: 'Los datos existentes no se eliminar\u00e1n.',
-    confirmText: 'Continuar',
-    variant: CP.UI.CONFIRMATION_VARIANTS.NORMAL,
-    actionId: CP.UI.INIT_ACTION_ID,
-  });
+  if (confirmationId === CP.UI.NEW_COURSE_CONFIRMATION_ID) {
+    return validateUiConfirmation_({
+      id: CP.UI.NEW_COURSE_CONFIRMATION_ID,
+      title: CP.MENU.NEW_COURSE,
+      message: 'Esta operaci\u00f3n prepara el cuaderno para un nuevo curso acad\u00e9mico.',
+      helperText: 'Puede sustituir informaci\u00f3n del curso actual cuando existan datos espec\u00edficos del curso.',
+      confirmText: 'Preparar nuevo curso',
+      variant: CP.UI.CONFIRMATION_VARIANTS.DANGER,
+      actionId: CP.UI.NEW_COURSE_ACTION_ID,
+    });
+  }
+
+  throw new Error('La confirmacion solicitada no existe.');
 }
 
 function validateUiConfirmation_(confirmation) {
@@ -85,54 +108,59 @@ function setCommonUiTemplateData_(template) {
   };
 }
 
-function ejecutarPasoProcesoUi(processId, stepIndex) {
-  const process = getUiProcessDefinition_(processId);
+function ejecutarPasoProcesoUi(processId, stepIndex, processInput) {
+  const process = getUiProcessDefinition_(processId, processInput);
   if (!Number.isInteger(stepIndex) || stepIndex < 0 || stepIndex >= process.steps.length) {
     throw new Error('El paso solicitado no es valido.');
   }
 
   const step = process.steps[stepIndex];
-  step.run();
+  const resultMessage = step.run(process.input);
 
   return {
     completedStep: stepIndex + 1,
     totalSteps: process.steps.length,
-    message: step.completedMessage,
+    message: resultMessage || step.completedMessage,
   };
 }
 
-function getUiProcessDefinition_(processId) {
-  if (processId !== CP.UI.INIT_PROCESS_ID) {
-    throw new Error('El proceso solicitado no existe.');
+function getUiProcessDefinition_(processId, processInput) {
+  if (processId === CP.UI.NEW_COURSE_PROCESS_ID) {
+    return getNewCourseProcessDefinition_(processInput);
   }
 
-  return {
-    id: CP.UI.INIT_PROCESS_ID,
-    title: CP.MENU.INIT,
-    successMessage: 'La estructura del cuaderno esta lista.',
-    steps: [
-      {
-        label: 'Preparando la portada...',
-        completedMessage: 'Portada creada o reparada.',
-        run: initializeCoverStructure_,
-      },
-      {
-        label: 'Preparando la configuracion...',
-        completedMessage: 'Configuracion comprobada.',
-        run: initializeConfigStructure_,
-      },
-      {
-        label: 'Actualizando metadatos...',
-        completedMessage: 'Metadatos actualizados.',
-        run: initializeMetaStructure_,
-      },
-      {
-        label: 'Finalizando la estructura...',
-        completedMessage: 'Hojas tecnicas ocultas y portada situada en primer lugar.',
-        run: finishStructureInitialization_,
-      },
-    ],
-  };
+  if (processId === CP.UI.INIT_PROCESS_ID) {
+    return {
+      id: CP.UI.INIT_PROCESS_ID,
+      title: CP.MENU.INIT,
+      successMessage: 'La estructura del cuaderno esta lista.',
+      input: {},
+      steps: [
+        {
+          label: 'Preparando la portada...',
+          completedMessage: 'Portada creada o reparada.',
+          run: initializeCoverStructure_,
+        },
+        {
+          label: 'Preparando la configuracion...',
+          completedMessage: 'Configuracion comprobada.',
+          run: initializeConfigStructure_,
+        },
+        {
+          label: 'Actualizando metadatos...',
+          completedMessage: 'Metadatos actualizados.',
+          run: initializeMetaStructure_,
+        },
+        {
+          label: 'Finalizando la estructura...',
+          completedMessage: 'Hojas tecnicas ocultas y portada situada en primer lugar.',
+          run: finishStructureInitialization_,
+        },
+      ],
+    };
+  }
+
+  throw new Error('El proceso solicitado no existe.');
 }
 
 function includeUiFile_(fileName) {

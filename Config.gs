@@ -1,6 +1,6 @@
 const CP = Object.freeze({
   PROJECT_NAME: 'Cuaderno del Profesor',
-  NOTEBOOK_VERSION: '1.2.0',
+  NOTEBOOK_VERSION: '1.2.1',
   SCHEMA_VERSION: '2',
   SHEETS: Object.freeze({
     COVER: '0 Portada',
@@ -23,6 +23,7 @@ const CP = Object.freeze({
   }),
   MENU: Object.freeze({
     NAME: '📘 Cuaderno del Profesor 📘',
+    NEW_COURSE: '🆕 Preparar nuevo curso',
     INIT: '🔄 Inicializar / reparar estructura',
     CONFIG: '⚙️ Configuración',
     GENERAL_DATA: '👤 Datos generales',
@@ -34,10 +35,15 @@ const CP = Object.freeze({
     INIT_CONFIRMATION_ID: 'confirm-initialize-notebook',
     INIT_PROCESS_ID: 'initialize-notebook',
     INIT_ACTION_ID: 'open-initialize-progress',
+    NEW_COURSE_CONFIRMATION_ID: 'confirm-prepare-new-course',
+    NEW_COURSE_PROCESS_ID: 'prepare-new-course',
+    NEW_COURSE_ACTION_ID: 'open-new-course-wizard',
     CONFIRMATION_DIALOG_WIDTH: 460,
     CONFIRMATION_DIALOG_HEIGHT: 430,
     GENERAL_CONFIG_DIALOG_WIDTH: 620,
     GENERAL_CONFIG_DIALOG_HEIGHT: 780,
+    NEW_COURSE_DIALOG_WIDTH: 640,
+    NEW_COURSE_DIALOG_HEIGHT: 760,
     PROGRESS_DIALOG_WIDTH: 480,
     PROGRESS_DIALOG_HEIGHT: 560,
     CONFIRMATION_VARIANTS: Object.freeze({

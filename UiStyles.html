@@ -380,6 +380,131 @@
     color: inherit;
   }
 
+  .wizard {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .wizard-scroll {
+    min-height: 0;
+    flex: 1;
+    padding: 18px 20px;
+    overflow-y: auto;
+  }
+
+  .wizard-progress {
+    margin: 0 0 14px;
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .wizard-step.is-hidden {
+    display: none;
+  }
+
+  .wizard-step h2 {
+    margin: 0 0 8px;
+    font-size: 18px;
+    letter-spacing: 0;
+  }
+
+  .wizard-intro {
+    margin: 0 0 18px;
+    color: var(--muted-text);
+  }
+
+  .wizard-footer {
+    flex: 0 0 auto;
+    padding: 12px 20px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .wizard-footer .result {
+    margin: 0 0 12px;
+  }
+
+  .wizard-footer .actions {
+    gap: 10px;
+    margin-top: 0;
+  }
+
+  .palette-preview {
+    display: grid;
+    height: 54px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .palette-preview span {
+    border: 1px solid var(--border);
+    border-radius: 5px;
+  }
+
+  .wizard-summary {
+    margin: 0;
+  }
+
+  .wizard-summary div {
+    display: grid;
+    grid-template-columns: minmax(120px, 0.8fr) minmax(0, 1.2fr);
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .wizard-summary dt {
+    color: var(--muted-text);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .wizard-summary dd {
+    min-width: 0;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .wizard-change-list {
+    margin-top: 18px;
+    color: var(--muted-text);
+    font-size: 12px;
+  }
+
+  .wizard-change-list p {
+    margin: 0 0 6px;
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  .wizard-change-list ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  .backup-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin-top: 18px;
+    color: var(--text);
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .backup-option input {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    margin: 1px 0 0;
+    accent-color: var(--primary);
+  }
+
   .sidebar-app {
     width: 100%;
     min-width: 0;
@@ -503,17 +628,6 @@
   .status-copy small {
     color: var(--muted-text);
     font-size: 11px;
-  }
-
-  .sidebar-actions {
-    display: grid;
-    gap: 8px;
-  }
-
-  .sidebar-action {
-    width: 100%;
-    min-width: 0;
-    text-align: left;
   }
 
   .help-item {

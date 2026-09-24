@@ -45,6 +45,7 @@
 
     <script>
       const PROCESS = <?!= JSON.stringify(uiProcess) ?>;
+      const PROCESS_INPUT = <?!= JSON.stringify(processInput) ?>;
       let currentStep = 0;
 
       const statusElement = document.getElementById('status');
@@ -78,7 +79,7 @@
         google.script.run
           .withSuccessHandler(handleStepSuccess)
           .withFailureHandler(handleStepError)
-          .ejecutarPasoProcesoUi(PROCESS.id, currentStep);
+          .ejecutarPasoProcesoUi(PROCESS.id, currentStep, PROCESS_INPUT);
       }
 
       function handleStepSuccess(response) {

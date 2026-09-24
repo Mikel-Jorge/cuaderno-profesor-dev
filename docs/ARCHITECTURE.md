@@ -45,8 +45,10 @@ La implementación inicial utiliza una separación sencilla de responsabilidades
 - `UiDialogProgress.html`: diálogo reutilizable para procesos con progreso, resultado y log.
 - `UiDialogConfirmation.html`: confirmación reutilizable con variantes normal, warning y danger.
 - `UiDialogGeneralConfig.html`: edición de los datos generales almacenados en `_CONFIG`.
+- `NewCourse.gs`: datos, validación y pasos ejecutables de la preparación parcial de un nuevo curso.
+- `UiDialogNewCourse.html`: asistente de cuatro pasos para revisar la configuración disponible y solicitar el proceso.
 - `Sidebar.gs`: preparación del estado, ayuda contextual y apertura del panel lateral.
-- `UiSidebar.html`: renderizado del panel, accesos rápidos y actualización manual en cliente.
+- `UiSidebar.html`: renderizado del estado, ayuda contextual y actualización manual en cliente.
 - `UiStyles.html`: estilos visuales comunes para HTML de Apps Script.
 - `Branding.gs`: recursos de branding embebidos y fallback visual sin dependencias externas.
 
@@ -65,11 +67,13 @@ No crear capas o abstracciones hasta que exista una necesidad real.
 
 Los diálogos se construyen con plantillas de `HtmlService` y parciales compartidos. La cabecera común recibe el nombre del proyecto y la versión desde `Config.gs`, evitando hardcodearlos en HTML. Los títulos nativos y el menú reutilizan las etiquetas con iconos funcionales centralizadas en `CP.MENU`. `Theme.gs` resuelve el preset y las personalizaciones almacenadas, y los inyecta como variables CSS en todas las plantillas comunes.
 
-El panel lateral utiliza esa misma cabecera, tema y pie de autor. Su estado se calcula en servidor a partir de `_CONFIG`; la ayuda se ordena según la hoja activa mediante un mapa ampliable. Los accesos rápidos invocan los puntos de entrada públicos ya existentes. La actualización es manual y vuelve a solicitar estado, contexto y tema, sin polling ni triggers.
+El panel lateral utiliza esa misma cabecera, tema y pie de autor. Su estado se calcula en servidor a partir de `_CONFIG`; la ayuda se ordena según la hoja activa mediante un mapa ampliable. La actualización es manual y vuelve a solicitar estado, contexto y tema, sin polling ni triggers. Las acciones permanecen exclusivamente en el menú principal.
 
-Un proceso UI declara sus pasos en servidor; el cliente los invoca en secuencia mediante `google.script.run`, actualizando el estado después de cada respuesta. Las funciones de dominio continúan siendo ejecutables directamente sin depender del diálogo.
+Un proceso UI declara sus pasos en servidor; el cliente los invoca en secuencia mediante `google.script.run`, actualizando el estado después de cada respuesta. El diálogo puede transportar una entrada validada para construir pasos condicionales, como omitir el backup cuando se desactiva. Las funciones de dominio continúan siendo ejecutables directamente sin depender del diálogo.
 
 Las confirmaciones se definen y validan en servidor mediante identificadores de acción permitidos. El cliente solo solicita la acción después de una pulsación expresa; no recibe nombres de funciones arbitrarios. Las variantes `normal`, `warning` y `danger` comparten plantilla y estilos, reservando `danger` para operaciones destructivas.
+
+El asistente de nuevo curso reutiliza las funciones de lectura, normalización y validación de `GeneralConfig.gs`, así como los presets de `Theme.gs`. Tras la confirmación `danger`, permite revisar únicamente las áreas implementadas y delega la ejecución en el diálogo común de progreso. Si se solicita backup, el primer paso usa `DriveApp` para copiar el Spreadsheet en su carpeta actual; cualquier error detiene la secuencia antes de persistir la configuración. Este paso puede solicitar autorización adicional de Drive y requiere permisos para copiar el archivo y escribir en su carpeta. Los pasos posteriores actualizan `_CONFIG`, regeneran la Portada y el índice, sincronizan `_META` y mantienen ocultas las hojas técnicas.
 
 Los logos originales se conservan en `branding/`. Para que Apps Script pueda mostrarlos sin publicar archivos ni depender de URLs externas, `Branding.gs` contiene copias reducidas como `data:` URI. Estas constantes confiables se imprimen sin escape contextual en los atributos `src`; el resto de datos visibles permanece escapado. Si un recurso embebido no está disponible, se genera un fallback SVG simple. El recurso splash permanece disponible para usos futuros, pero no se renderiza en los diálogos comunes actuales.
 

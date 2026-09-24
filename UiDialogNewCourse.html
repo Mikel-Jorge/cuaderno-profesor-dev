@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <style><?!= uiThemeCss ?></style>
+    <?!= includeUiFile_('UiStyles'); ?>
+  </head>
+  <body>
+    <main class="app">
+      <header class="brand-header">
+        <img class="brand-logo" src="<?!= branding.icon ?>" alt="">
+        <div class="brand-copy">
+          <p class="brand-name"><?= uiConfig.projectName ?></p>
+          <span class="version-label"><?= uiConfig.versionLabel ?></span>
+        </div>
+      </header>
+
+      <form class="wizard" id="new-course-form">
+        <div class="wizard-scroll">
+          <p class="wizard-progress" id="wizard-progress">Paso 1 de 4</p>
+
+          <section class="wizard-step" data-step="0" aria-labelledby="course-step-title">
+            <h2 id="course-step-title">Curso acad&eacute;mico</h2>
+            <p class="wizard-intro">
+              Curso actual: <strong id="current-academic-year"></strong>
+            </p>
+            <div class="form-field">
+              <label for="curso_academico">Curso que se preparar&aacute;</label>
+              <input id="curso_academico" name="curso_academico" type="text" inputmode="numeric" pattern="\d{4}-\d{4}" autocomplete="off" required>
+              <p class="form-help">Propuesta seg&uacute;n la fecha actual. Formato YYYY-YYYY.</p>
+            </div>
+          </section>
+
+          <section class="wizard-step is-hidden" data-step="1" aria-labelledby="people-step-title">
+            <h2 id="people-step-title">Profesor y centro</h2>
+            <p class="wizard-intro">Revisa los datos actuales y modifica s&oacute;lo lo necesario.</p>
+            <div class="form-grid">
+              <div class="form-field form-field-wide">
+                <label for="profesor">Nombre y apellidos del profesor</label>
+                <input id="profesor" name="profesor" type="text" autocomplete="name">
+              </div>
+              <div class="form-field form-field-wide">
+                <label for="profesor_email">Correo del profesor</label>
+                <input id="profesor_email" name="profesor_email" type="email" autocomplete="email">
+              </div>
+              <div class="form-field form-field-wide">
+                <label for="centro">Nombre del centro</label>
+                <input id="centro" name="centro" type="text" autocomplete="organization">
+              </div>
+              <div class="form-field form-field-wide">
+                <label for="centro_direccion">Direcci&oacute;n</label>
+                <input id="centro_direccion" name="centro_direccion" type="text" autocomplete="street-address">
+              </div>
+              <div class="form-field">
+                <label for="centro_telefono">Tel&eacute;fono</label>
+                <input id="centro_telefono" name="centro_telefono" type="tel" autocomplete="tel">
+              </div>
+              <div class="form-field">
+                <label for="centro_email">Correo del centro</label>
+                <input id="centro_email" name="centro_email" type="email">
+              </div>
+              <div class="form-field form-field-wide">
+                <label for="centro_web">Web del centro</label>
+                <input id="centro_web" name="centro_web" type="text" inputmode="url" autocomplete="url">
+              </div>
+            </div>
+          </section>
+
+          <section class="wizard-step is-hidden" data-step="2" aria-labelledby="theme-step-title">
+            <h2 id="theme-step-title">Apariencia</h2>
+            <p class="wizard-intro">Se conservar&aacute; el tema actual salvo que selecciones otro preset.</p>
+            <div class="form-field">
+              <label for="tema_preset">Tema del cuaderno</label>
+              <select id="tema_preset" name="tema_preset"></select>
+            </div>
+            <div class="palette-preview" aria-label="Vista previa de la paleta">
+              <span id="primary-swatch" title="Color principal"></span>
+              <span id="secondary-swatch" title="Color secundario"></span>
+              <span id="accent-swatch" title="Color de acento"></span>
+            </div>
+          </section>
+
+          <section class="wizard-step is-hidden" data-step="3" aria-labelledby="summary-step-title">
+            <h2 id="summary-step-title">Resumen</h2>
+            <dl class="wizard-summary">
+              <div><dt>Curso acad&eacute;mico</dt><dd id="summary-course"></dd></div>
+              <div><dt>Profesor</dt><dd id="summary-teacher"></dd></div>
+              <div><dt>Centro</dt><dd id="summary-school"></dd></div>
+              <div><dt>Tema</dt><dd id="summary-theme"></dd></div>
+            </dl>
+            <div class="wizard-change-list">
+              <p>Al preparar el curso:</p>
+              <ul>
+                <li>se actualizar&aacute;n los datos generales y la apariencia;</li>
+                <li>se actualizar&aacute;n la Portada, el &iacute;ndice y los metadatos;</li>
+                <li>no se reiniciar&aacute;n calendarios, horarios, m&oacute;dulos ni alumnado porque todav&iacute;a no existen.</li>
+              </ul>
+            </div>
+            <label class="backup-option" for="create-backup">
+              <input id="create-backup" type="checkbox" checked>
+              <span>Crear copia de seguridad antes de aplicar cambios</span>
+            </label>
+          </section>
+        </div>
+
+        <div class="wizard-footer">
+          <div class="result" id="wizard-result" role="alert"></div>
+          <div class="actions">
+            <button class="button button-secondary" id="cancel-button" type="button">Cancelar</button>
+            <button class="button button-secondary is-hidden" id="back-button" type="button">Anterior</button>
+            <button class="button" id="next-button" type="button">Continuar</button>
+          </div>
+        </div>
+      </form>
+
+      <footer class="author-footer">
+        &copy; <?= uiConfig.author ?> &middot;
+        <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a>
+      </footer>
+    </main>
+
+    <script>
+      const CURRENT_ACADEMIC_YEAR = <?!= JSON.stringify(currentAcademicYear) ?>;
+      const INITIAL_CONFIG = <?!= JSON.stringify(wizardConfig) ?>;
+      const THEME_CONFIG = <?!= JSON.stringify(themeConfig) ?>;
+      const fieldNames = [
+        'curso_academico',
+        'profesor',
+        'profesor_email',
+        'centro',
+        'centro_direccion',
+        'centro_telefono',
+        'centro_email',
+        'centro_web',
+      ];
+      const steps = Array.from(document.querySelectorAll('.wizard-step'));
+      const form = document.getElementById('new-course-form');
+      const backButton = document.getElementById('back-button');
+      const cancelButton = document.getElementById('cancel-button');
+      const nextButton = document.getElementById('next-button');
+      const resultElement = document.getElementById('wizard-result');
+      const presetSelect = document.getElementById('tema_preset');
+      const backupCheckbox = document.getElementById('create-backup');
+      let currentStep = 0;
+      let isBusy = false;
+      let workingConfig = Object.assign({}, INITIAL_CONFIG);
+
+      document.getElementById('current-academic-year').textContent =
+        CURRENT_ACADEMIC_YEAR || 'Sin configurar';
+      fieldNames.forEach(function(fieldName) {
+        document.getElementById(fieldName).value = workingConfig[fieldName] || '';
+      });
+      THEME_CONFIG.presets.forEach(function(preset) {
+        const option = document.createElement('option');
+        option.value = preset.id;
+        option.textContent = preset.label;
+        presetSelect.appendChild(option);
+      });
+      presetSelect.value = workingConfig.tema_preset;
+      renderPalette();
+
+      form.addEventListener('submit', function(event) {
+        event.preventDefault();
+      });
+
+      presetSelect.addEventListener('change', function() {
+        const preset = getSelectedPreset();
+        workingConfig.tema_preset = preset.id;
+        workingConfig.tema_primary = preset.colors.primary;
+        workingConfig.tema_secondary = preset.colors.secondary;
+        workingConfig.tema_accent = preset.colors.accent;
+        renderPalette();
+      });
+
+      cancelButton.addEventListener('click', function() {
+        google.script.host.close();
+      });
+
+      backButton.addEventListener('click', function() {
+        if (!isBusy && currentStep > 0) {
+          showStep(currentStep - 1);
+        }
+      });
+
+      nextButton.addEventListener('click', function() {
+        if (isBusy) {
+          return;
+        }
+        hideResult();
+
+        if (currentStep === 0 && !validateAcademicYear()) {
+          return;
+        }
+        if (currentStep === 1 && !form.reportValidity()) {
+          return;
+        }
+        if (currentStep < 2) {
+          showStep(currentStep + 1);
+          return;
+        }
+        if (currentStep === 2) {
+          validateAndShowSummary();
+          return;
+        }
+        startPreparation();
+      });
+
+      function showStep(stepIndex) {
+        currentStep = stepIndex;
+        steps.forEach(function(step, index) {
+          step.classList.toggle('is-hidden', index !== currentStep);
+        });
+        document.getElementById('wizard-progress').textContent =
+          'Paso ' + (currentStep + 1) + ' de ' + steps.length;
+        backButton.classList.toggle('is-hidden', currentStep === 0);
+        nextButton.textContent = currentStep === steps.length - 1 ? 'Preparar curso' : 'Continuar';
+      }
+
+      function validateAcademicYear() {
+        const academicYear = document.getElementById('curso_academico').value.trim();
+        const match = /^(\d{4})-(\d{4})$/.exec(academicYear);
+        if (!match || Number(match[2]) !== Number(match[1]) + 1) {
+          showResult('El curso acad\u00e9mico debe tener el formato YYYY-YYYY.', 'error');
+          return false;
+        }
+        return true;
+      }
+
+      function collectInput() {
+        fieldNames.forEach(function(fieldName) {
+          workingConfig[fieldName] = document.getElementById(fieldName).value.trim();
+        });
+        return {
+          config: Object.assign({}, workingConfig),
+          createBackup: backupCheckbox.checked,
+        };
+      }
+
+      function validateAndShowSummary() {
+        setBusy(true, 'Validando...');
+        google.script.run
+          .withSuccessHandler(function(normalizedInput) {
+            workingConfig = normalizedInput.config;
+            fieldNames.forEach(function(fieldName) {
+              document.getElementById(fieldName).value = workingConfig[fieldName] || '';
+            });
+            renderSummary();
+            setBusy(false);
+            showStep(3);
+          })
+          .withFailureHandler(handleError)
+          .validarPreparacionNuevoCurso(collectInput());
+      }
+
+      function startPreparation() {
+        setBusy(true, 'Abriendo...');
+        google.script.run
+          .withFailureHandler(handleError)
+          .iniciarPreparacionNuevoCurso(collectInput());
+      }
+
+      function renderSummary() {
+        document.getElementById('summary-course').textContent = workingConfig.curso_academico || 'Sin indicar';
+        document.getElementById('summary-teacher').textContent = workingConfig.profesor || 'Sin indicar';
+        document.getElementById('summary-school').textContent = workingConfig.centro || 'Sin indicar';
+        const preset = THEME_CONFIG.presets.find(function(item) {
+          return item.id === workingConfig.tema_preset;
+        });
+        document.getElementById('summary-theme').textContent = preset ? preset.label : workingConfig.tema_preset;
+      }
+
+      function renderPalette() {
+        document.getElementById('primary-swatch').style.backgroundColor = workingConfig.tema_primary;
+        document.getElementById('secondary-swatch').style.backgroundColor = workingConfig.tema_secondary;
+        document.getElementById('accent-swatch').style.backgroundColor = workingConfig.tema_accent;
+      }
+
+      function getSelectedPreset() {
+        return THEME_CONFIG.presets.find(function(preset) {
+          return preset.id === presetSelect.value;
+        });
+      }
+
+      function setBusy(busy, label) {
+        isBusy = busy;
+        cancelButton.disabled = busy;
+        backButton.disabled = busy;
+        nextButton.disabled = busy;
+        nextButton.textContent = busy
+          ? label
+          : currentStep === steps.length - 1 ? 'Preparar curso' : 'Continuar';
+      }
+
+      function handleError(error) {
+        const message = error && error.message
+          ? error.message
+          : 'No se ha podido preparar el nuevo curso.';
+        setBusy(false);
+        showResult(message, 'error');
+      }
+
+      function showResult(message, state) {
+        resultElement.textContent = message;
+        resultElement.className = 'result visible ' + state;
+      }
+
+      function hideResult() {
+        resultElement.textContent = '';
+        resultElement.className = 'result';
+      }
+    </script>
+  </body>
+</html>

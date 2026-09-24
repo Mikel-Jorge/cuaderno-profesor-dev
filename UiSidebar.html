@@ -25,20 +25,8 @@
           <div class="sidebar-status" id="status-list"></div>
         </section>
 
-        <section class="sidebar-section" aria-labelledby="access-title">
-          <h2 id="access-title">Acceso r&aacute;pido</h2>
-          <div class="sidebar-actions">
-            <button class="button sidebar-action" id="general-data-button" type="button">
-              &#x1f464; Datos generales
-            </button>
-            <button class="button button-secondary sidebar-action" id="initialize-button" type="button">
-              &#x1f504; Inicializar / reparar
-            </button>
-          </div>
-        </section>
-
         <section class="sidebar-section sidebar-help" aria-labelledby="help-title">
-          <h2 id="help-title">Ayuda</h2>
+          <h2 id="help-title">&#x2753; Ayuda</h2>
           <div id="help-sections"></div>
         </section>
       </div>
@@ -56,14 +44,6 @@
       const refreshButton = document.getElementById('refresh-button');
 
       renderSidebar(sidebarData);
-
-      document.getElementById('general-data-button').addEventListener('click', function() {
-        google.script.run.abrirDatosGenerales();
-      });
-
-      document.getElementById('initialize-button').addEventListener('click', function() {
-        google.script.run.abrirDialogoInicializacion();
-      });
 
       refreshButton.addEventListener('click', function() {
         refreshButton.disabled = true;

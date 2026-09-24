@@ -18,6 +18,14 @@ function abrirDatosGenerales() {
 }
 
 function guardarDatosGenerales(input) {
+  return saveGeneralConfig_(input, {
+    updateCover: true,
+    showToast: true,
+  });
+}
+
+function saveGeneralConfig_(input, options) {
+  const saveOptions = options || {};
   const values = normalizeGeneralConfigInput_(input);
   validateAcademicYear_(values[CP.CONFIG_KEYS.ACADEMIC_YEAR]);
   validateThemeConfig_(values);
@@ -36,7 +44,7 @@ function guardarDatosGenerales(input) {
   updateConfigValues_(configSheet, values, changedKeys);
 
   const coverSheet = spreadsheet.getSheetByName(CP.SHEETS.COVER);
-  if (coverSheet) {
+  if (saveOptions.updateCover !== false && coverSheet) {
     const changedGeneralKeys = changedKeys.filter(isGeneralDataConfigKey_);
     if (changedGeneralKeys.length) {
       updateCoverData_(coverSheet, values, changedGeneralKeys);
@@ -47,7 +55,9 @@ function guardarDatosGenerales(input) {
   }
 
   configSheet.hideSheet();
-  spreadsheet.toast('Configuración guardada.', CP.PROJECT_NAME, 4);
+  if (saveOptions.showToast !== false) {
+    spreadsheet.toast('Configuración guardada.', CP.PROJECT_NAME, 4);
+  }
   return {
     message: changedKeys.length
       ? 'La configuración se ha guardado y la portada se ha actualizado.'
