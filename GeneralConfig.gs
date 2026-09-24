@@ -76,7 +76,8 @@ function initializeConfigSheet_(sheet) {
 
   const configuredRows = fields.map(function(field) {
     const hasValue = Object.prototype.hasOwnProperty.call(currentValues, field.key);
-    return [field.key, hasValue ? currentValues[field.key] : field.defaultValue || ''];
+    const value = hasValue ? currentValues[field.key] : field.defaultValue || '';
+    return [field.key, normalizeConfigFieldValue_(field.key, value)];
   });
   const values = [['Clave', 'Valor']].concat(configuredRows, unknownRows);
   const rowsToClear = Math.max(sheet.getLastRow(), values.length);
@@ -124,9 +125,10 @@ function getGeneralConfigValues_(spreadsheet) {
 
   return getConfigFields_().reduce(function(values, field) {
     const storedValue = storedValues[field.key];
-    values[field.key] = storedValue === null || storedValue === undefined
+    const value = storedValue === null || storedValue === undefined
       ? field.defaultValue || ''
       : normalizeConfigValue_(storedValue);
+    values[field.key] = normalizeConfigFieldValue_(field.key, value);
     return values;
   }, {});
 }
@@ -143,14 +145,53 @@ function normalizeGeneralConfigInput_(input) {
     throw new Error('No se han recibido datos de configuración válidos.');
   }
 
-  return getConfigFields_().reduce(function(values, field) {
-    values[field.key] = normalizeConfigValue_(input[field.key] || field.defaultValue || '');
-    return values;
+  const values = getConfigFields_().reduce(function(config, field) {
+    config[field.key] = normalizeConfigValue_(input[field.key] || field.defaultValue || '');
+    return config;
   }, {});
+
+  values[CP.CONFIG_KEYS.THEME_PRESET] = normalizeThemePresetId_(
+    values[CP.CONFIG_KEYS.THEME_PRESET]
+  );
+  values[CP.CONFIG_KEYS.SCHOOL_WEB] = normalizeSchoolWebsite_(
+    values[CP.CONFIG_KEYS.SCHOOL_WEB]
+  );
+  return values;
 }
 
 function normalizeConfigValue_(value) {
   return value === null || value === undefined ? '' : String(value).trim();
+}
+
+function normalizeConfigFieldValue_(key, value) {
+  const normalizedValue = normalizeConfigValue_(value);
+  if (key === CP.CONFIG_KEYS.THEME_PRESET) {
+    return normalizeThemePresetId_(normalizedValue);
+  }
+  return normalizedValue;
+}
+
+function normalizeSchoolWebsite_(value) {
+  const website = normalizeConfigValue_(value);
+  if (!website) {
+    return '';
+  }
+
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(website) && !/^https?:\/\//i.test(website)) {
+    throw new Error('La web del centro debe utilizar http:// o https://.');
+  }
+
+  const normalizedWebsite = /^https?:\/\//i.test(website)
+    ? website.replace(/^https?:\/\//i, function(protocol) {
+      return protocol.toLowerCase();
+    })
+    : 'https://' + website;
+  const domainPattern = /^https?:\/\/[a-z0-9](?:[a-z0-9-]{0,62}\.)+[a-z]{2,63}(?::\d{1,5})?(?:[/?#][^\s]*)?$/i;
+
+  if (!domainPattern.test(normalizedWebsite)) {
+    throw new Error('Introduce una web válida, por ejemplo miweb.es o https://miweb.es.');
+  }
+  return normalizedWebsite;
 }
 
 function validateAcademicYear_(academicYear) {

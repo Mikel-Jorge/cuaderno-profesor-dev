@@ -45,10 +45,11 @@ function initializeMetaSheet_(sheet) {
   const values = [
     ['Clave', 'Valor'],
     ['proyecto', CP.PROJECT_NAME],
-    ['version_cuaderno', CP.NOTEBOOK_VERSION],
-    ['version_esquema', CP.SCHEMA_VERSION],
+    ['version_cuaderno', String(CP.NOTEBOOK_VERSION)],
+    ['version_esquema', String(CP.SCHEMA_VERSION)],
   ];
 
+  sheet.getRange(2, 2, values.length - 1, 1).setNumberFormat('@');
   sheet.getRange(1, 1, values.length, values[0].length).setValues(values);
   sheet.getRange('A1:B1')
     .setBackground(theme.colors.primary)

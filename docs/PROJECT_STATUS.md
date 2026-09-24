@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-09-24  
-**Estado general:** bloque de configuración general, temas y portada cerrado en versión 1.1.0
+**Estado general:** correcciones globales de configuración, temas y dimensiones completadas en versión 1.1.1
 
 ## Completado
 
@@ -24,10 +24,13 @@
 - `_META` incluye únicamente proyecto, versión del cuaderno y versión del esquema.
 - `_CONFIG` utiliza dos columnas clave/valor y contiene curso, profesor, correo del profesor, datos completos del centro y preferencias de tema.
 - Propuesta automática del curso académico según fecha y zona horaria del Spreadsheet.
-- Diálogo de datos generales con carga, validación, guardados sucesivos, estado dirty/clean y actualización diferencial de la portada.
-- Sistema global de temas con tokens centralizados, personalización de colores principales y presets Claro azul, Claro verde, Oscuro azul y Oscuro verde.
+- Diálogo de datos generales con carga, validación, estado dirty/clean, cierre tras éxito y actualización diferencial de la portada.
+- Sistema global de temas claros con tokens centralizados, colores personalizables y seis presets: Océano, Turquesa naranja, Verde natural, Coral menta, Burdeos lavanda y Azul clásico.
 - Portada separada en reparación estructural, actualización de datos, aplicación de tema e índice.
-- Versión central del cuaderno `1.1.0` y esquema `2`.
+- Web del centro normalizada y validada aunque se introduzca sin protocolo.
+- Utilidades globales para ampliar hojas y recortarlas al layout; aplicadas a la Portada `A:H` con filas dinámicas.
+- `_META` escribe las versiones como texto para evitar su conversión a fecha.
+- Versión central del cuaderno `1.1.1` y esquema `2`.
 - Infraestructura HTML común para diálogos de Apps Script implementada.
 - Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
 - La inicialización se ejecuta desde el diálogo en cuatro pasos idempotentes.
@@ -42,7 +45,7 @@
 
 ## Pendiente inmediato
 
-- Probar manualmente los cuatro temas, los guardados sucesivos y los enlaces de la portada en `CP_DEV`.
+- Probar manualmente las seis paletas, el cierre del diálogo, la URL normalizada y el recorte de la Portada en `CP_DEV`.
 - Implementar el panel lateral básico.
 - Implementar el asistente de preparación de nuevo curso.
 

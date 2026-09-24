@@ -58,6 +58,7 @@ Salvo que `docs/FUNCTIONAL_SPEC.md` se modifique explícitamente:
 - No inventar servicios, APIs, métodos ni permisos de Google.
 - Considerar siempre scopes, permisos y restricciones de Google Workspace.
 - Priorizar lecturas y escrituras por bloques frente a operaciones celda a celda.
+- Todas las hojas visibles generadas deben ajustar sus filas y columnas al layout real. Antes de escribir deben poder ampliarse y, al finalizar su generación, deben recortarse de forma segura a su área útil.
 - Evitar lógica basada en posiciones rígidas si puede modelarse mediante configuración.
 - Evitar operaciones destructivas salvo que estén expresamente diseñadas y confirmadas.
 - No introducir dependencias externas sin una necesidad clara.
@@ -112,7 +113,14 @@ La versión del cuaderno sigue SemVer y tiene una única fuente de verdad en `Co
 - Cuando una funcionalidad o bloque se considera cerrado, se incrementa `MINOR` y se reinicia `PATCH`: `1.0.x` → `1.1.0`.
 - `MAJOR` se reserva para cambios incompatibles o hitos grandes y solo se incrementa por decisión explícita.
 
-El commit debe actualizar la versión central conforme a esta política. No dupliques la versión como constante en otros archivos; `_META` y la UI deben obtenerla de la fuente central.
+Antes de cerrar cualquier commit que modifique el proyecto:
+
+1. Determina la siguiente versión según esta política.
+2. Actualiza la fuente central de versión en `Config.gs`.
+3. Comprueba que el código de inicialización sincroniza `_META` desde esa fuente como texto.
+4. Actualiza la documentación que muestre la versión vigente.
+
+No dupliques la versión como constante en otros archivos; `_META` y la UI deben obtenerla de la fuente central.
 
 ## Relación Git / clasp
 

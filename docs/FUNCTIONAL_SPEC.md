@@ -13,7 +13,7 @@ especificación.
 ## Definición funcional del proyecto
 
 **Estado:** Especificación funcional inicial cerrada  
-**Versión del documento:** 1.5
+**Versión del documento:** 1.6
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 ---
@@ -88,6 +88,10 @@ _META
 
 Estas hojas estarán ocultas normalmente, podrán protegerse y podrán desocultarse para mantenimiento. El usuario habitual trabajará desde paneles, menús y zonas editables.
 
+## 3.3. Dimensiones de las hojas visibles
+
+Todas las hojas visibles generadas por el sistema se ajustarán a su área útil, sin filas ni columnas vacías posteriores al layout. Los generadores podrán ampliar de nuevo la hoja antes de añadir contenido y la recortarán al terminar, por lo que las dimensiones no serán permanentes.
+
 # 4. Menú principal
 
 ```text
@@ -154,9 +158,9 @@ La propuesta podrá corregirse manualmente.
 
 ## 5.2. Datos generales y apariencia
 
-La configuración general permitirá editar los datos del profesor y del centro, aunque algunos campos permanezcan vacíos. El correo del profesor y el correo del centro se mostrarán como enlaces `mailto:` en la Portada cuando tengan valor.
+La configuración general permitirá editar los datos del profesor y del centro, aunque algunos campos permanezcan vacíos. El correo del profesor y el correo del centro se mostrarán como enlaces `mailto:` en la Portada cuando tengan valor. La web del centro podrá introducirse como dominio, con o sin `www`, y el sistema añadirá `https://` cuando no se haya indicado protocolo.
 
-El mismo diálogo permitirá seleccionar el tema visual activo y personalizar sus colores principales. El botón `Guardar` permanecerá visible: estará deshabilitado sin cambios o durante el guardado y volverá a habilitarse al modificar cualquier campo. Tras guardar correctamente se establecerá un nuevo estado base, permitiendo nuevos guardados sin cerrar el diálogo; si se produce un error, los cambios continuarán pendientes.
+El mismo diálogo permitirá seleccionar el tema visual activo y personalizar sus colores principales. El botón `Guardar` permanecerá visible y estará deshabilitado sin cambios o durante el guardado. Tras guardar correctamente, el diálogo se cerrará automáticamente; si se produce un error, permanecerá abierto, conservará los valores introducidos y permitirá reintentar.
 
 ## 5.3. Índice dinámico
 
@@ -1030,7 +1034,7 @@ Los colores generales se centralizarán en una configuración global de tema y n
 
 El cuaderno dispondrá de tokens comunes para color principal, secundario, acento, fondo, superficie, texto, tono neutro, borde, éxito, advertencia y peligro. La Portada, los diálogos y las futuras hojas consumirán esta fuente común cuando corresponda.
 
-Se ofrecerán al menos los presets `Claro azul`, `Claro verde`, `Oscuro azul` y `Oscuro verde`, con `Claro azul` como valor inicial. El usuario podrá seleccionar el preset activo y personalizar de forma sencilla los colores principal, secundario y de acento.
+Los presets utilizarán siempre fondo y superficie claros con texto oscuro; cambiarán la identidad cromática, no el modo claro/oscuro del cromo de Google. Se ofrecerán `Océano`, `Turquesa naranja`, `Verde natural`, `Coral menta`, `Burdeos lavanda` y `Azul clásico`, con `Océano` como valor inicial. El usuario podrá personalizar de forma sencilla los colores principal, secundario y de acento.
 
 ## 23.2. UI común y branding
 
@@ -1113,7 +1117,7 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.1.0
+Versión del cuaderno: 1.1.1
 Versión del esquema: 2
 ```
 

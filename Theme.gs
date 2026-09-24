@@ -1,60 +1,55 @@
-const CP_DEFAULT_THEME_PRESET = 'claro-azul';
+const CP_DEFAULT_THEME_PRESET = 'oceano';
 
 const CP_THEME_PRESETS = Object.freeze({
-  'claro-azul': createThemePreset_(
-    'claro-azul',
-    'Claro azul',
-    '#1D4ED8', '#0F766E', '#B45309', '#F8FAFC', '#FFFFFF',
-    '#172033', '#64748B', '#E8EEF6', '#CBD5E1', '#13795B', '#B54708', '#B42318'
+  oceano: createThemePreset_('oceano', 'Océano', '#004E64', '#006E8A', '#167D70'),
+  'turquesa-naranja': createThemePreset_(
+    'turquesa-naranja', 'Turquesa naranja', '#0A656A', '#087987', '#B85D02'
   ),
-  'claro-verde': createThemePreset_(
-    'claro-verde',
-    'Claro verde',
-    '#166534', '#155E75', '#A16207', '#F7FAF8', '#FFFFFF',
-    '#17251D', '#5F6F65', '#E4EFE8', '#B9CCC0', '#13795B', '#B54708', '#B42318'
+  'verde-natural': createThemePreset_(
+    'verde-natural', 'Verde natural', '#507255', '#3F773F', '#C5E063'
   ),
-  'oscuro-azul': createThemePreset_(
-    'oscuro-azul',
-    'Oscuro azul',
-    '#2563EB', '#0F766E', '#B45309', '#0F172A', '#1E293B',
-    '#F8FAFC', '#CBD5E1', '#334155', '#475569', '#34D399', '#B54708', '#F87171'
+  'coral-menta': createThemePreset_(
+    'coral-menta', 'Coral menta', '#B94F46', '#377771', '#4CE0B3'
   ),
-  'oscuro-verde': createThemePreset_(
-    'oscuro-verde',
-    'Oscuro verde',
-    '#15803D', '#0E7490', '#A16207', '#102019', '#172B22',
-    '#F2F8F4', '#B7C8BE', '#294638', '#466656', '#34D399', '#B54708', '#F87171'
+  'burdeos-lavanda': createThemePreset_(
+    'burdeos-lavanda', 'Burdeos lavanda', '#A30B37', '#734649', '#BBB6DF'
+  ),
+  'azul-clasico': createThemePreset_(
+    'azul-clasico', 'Azul clásico', '#1D4ED8', '#075985', '#0F766E'
   ),
 });
 
-function createThemePreset_(id, label, primary, secondary, accent, background, surface,
-  text, mutedText, muted, border, success, warning, danger) {
+function createThemePreset_(id, label, primary, secondary, accent) {
   return Object.freeze({
     id: id,
     label: label,
-    colors: Object.freeze({
-      primary: primary,
-      secondary: secondary,
-      accent: accent,
-      background: background,
-      surface: surface,
-      text: text,
-      mutedText: mutedText,
-      muted: muted,
-      border: border,
-      success: success,
-      warning: warning,
-      danger: danger,
-      onPrimary: '#FFFFFF',
-      onSecondary: '#FFFFFF',
-      onAccent: '#FFFFFF',
-    }),
+    colors: Object.freeze(createLightThemeColors_(primary, secondary, accent)),
   });
+}
+
+function createLightThemeColors_(primary, secondary, accent) {
+  return {
+    primary: primary,
+    secondary: secondary,
+    accent: accent,
+    background: '#F8FAFC',
+    surface: '#FFFFFF',
+    text: '#172033',
+    mutedText: '#64748B',
+    muted: '#E8EEF6',
+    border: '#CBD5E1',
+    success: '#13795B',
+    warning: '#B54708',
+    danger: '#B42318',
+    onPrimary: getAccessibleTextColor_(primary),
+    onSecondary: getAccessibleTextColor_(secondary),
+    onAccent: getAccessibleTextColor_(accent),
+  };
 }
 
 function getActiveTheme_(spreadsheet, configValues) {
   const values = configValues || getStoredConfigMap_(spreadsheet);
-  const requestedPreset = values[CP.CONFIG_KEYS.THEME_PRESET];
+  const requestedPreset = normalizeThemePresetId_(values[CP.CONFIG_KEYS.THEME_PRESET]);
   const preset = CP_THEME_PRESETS[requestedPreset] || CP_THEME_PRESETS[CP_DEFAULT_THEME_PRESET];
   const colors = Object.assign({}, preset.colors);
 
@@ -69,10 +64,13 @@ function getActiveTheme_(spreadsheet, configValues) {
     }
   });
 
+  colors.onPrimary = getAccessibleTextColor_(colors.primary);
+  colors.onSecondary = getAccessibleTextColor_(colors.secondary);
+  colors.onAccent = getAccessibleTextColor_(colors.accent);
+
   return {
     id: preset.id,
     label: preset.label,
-    isDark: preset.id.indexOf('oscuro-') === 0,
     colors: colors,
   };
 }
@@ -89,7 +87,6 @@ function getThemeConfigForUi_(spreadsheet, configValues) {
       return {
         id: preset.id,
         label: preset.label,
-        isDark: preset.id.indexOf('oscuro-') === 0,
         colors: Object.assign({}, preset.colors),
       };
     }),
@@ -97,7 +94,7 @@ function getThemeConfigForUi_(spreadsheet, configValues) {
 }
 
 function validateThemeConfig_(values) {
-  const presetId = values[CP.CONFIG_KEYS.THEME_PRESET];
+  const presetId = normalizeThemePresetId_(values[CP.CONFIG_KEYS.THEME_PRESET]);
   if (!CP_THEME_PRESETS[presetId]) {
     throw new Error('El tema visual seleccionado no existe.');
   }
@@ -113,9 +110,45 @@ function validateThemeConfig_(values) {
   });
 }
 
+function normalizeThemePresetId_(value) {
+  const presetId = value === null || value === undefined ? '' : String(value).trim();
+  const legacyPresets = {
+    'claro-azul': 'azul-clasico',
+    'oscuro-azul': 'azul-clasico',
+    'claro-verde': 'verde-natural',
+    'oscuro-verde': 'verde-natural',
+  };
+  const migratedPresetId = legacyPresets[presetId] || presetId;
+  return CP_THEME_PRESETS[migratedPresetId] ? migratedPresetId : CP_DEFAULT_THEME_PRESET;
+}
+
 function normalizeThemeColor_(value) {
   const color = value === null || value === undefined ? '' : String(value).trim().toUpperCase();
   return /^#[0-9A-F]{6}$/.test(color) ? color : '';
+}
+
+function getAccessibleTextColor_(backgroundColor) {
+  const white = '#FFFFFF';
+  const dark = '#172033';
+  return getContrastRatio_(backgroundColor, white) >= getContrastRatio_(backgroundColor, dark)
+    ? white
+    : dark;
+}
+
+function getContrastRatio_(firstColor, secondColor) {
+  const firstLuminance = getRelativeLuminance_(firstColor);
+  const secondLuminance = getRelativeLuminance_(secondColor);
+  const lighter = Math.max(firstLuminance, secondLuminance);
+  const darker = Math.min(firstLuminance, secondLuminance);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function getRelativeLuminance_(color) {
+  const channels = [1, 3, 5].map(function(start) {
+    const value = parseInt(color.slice(start, start + 2), 16) / 255;
+    return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
 }
 
 function getStoredConfigMap_(spreadsheet) {
@@ -126,7 +159,7 @@ function getStoredConfigMap_(spreadsheet) {
 function createUiThemeCss_(theme) {
   const colors = theme.colors;
   return ':root{' +
-    'color-scheme:' + (theme.isDark ? 'dark' : 'light') + ';' +
+    'color-scheme:light;' +
     '--primary:' + colors.primary + ';' +
     '--secondary:' + colors.secondary + ';' +
     '--accent:' + colors.accent + ';' +

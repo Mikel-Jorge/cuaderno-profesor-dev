@@ -27,12 +27,11 @@ function actualizarIndicePortada() {
 }
 
 function prepareCoverStructure_(sheet) {
-  const managedRows = 60;
-  const managedColumns = 12;
-  ensureSheetSize_(sheet, managedRows, managedColumns);
+  const bounds = getCoverLayoutBounds_(sheet.getParent());
+  ensureSheetSize_(sheet, bounds.rows, bounds.columns);
 
-  const canvas = sheet.getRange(1, 1, managedRows, managedColumns);
-  canvas.breakApart();
+  sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).breakApart();
+  const canvas = sheet.getRange(1, 1, bounds.rows, bounds.columns);
   canvas.clear();
   canvas
     .setFontFamily('Arial')
@@ -42,24 +41,24 @@ function prepareCoverStructure_(sheet) {
   sheet.setFrozenRows(0);
   sheet.setFrozenColumns(0);
 
-  const columnWidths = [24, 130, 90, 90, 90, 90, 32, 280, 20, 20, 20, 20];
+  const columnWidths = [24, 130, 90, 90, 90, 90, 32, 280];
   columnWidths.forEach(function(width, index) {
     sheet.setColumnWidth(index + 1, width);
   });
 
-  sheet.setRowHeights(1, managedRows, 28);
+  sheet.setRowHeights(1, bounds.rows, 28);
   sheet.setRowHeights(2, 2, 34);
   sheet.setRowHeight(4, 30);
   sheet.setRowHeight(5, 46);
   sheet.setRowHeight(7, 34);
   sheet.setRowHeights(9, 7, 40);
 
-  setMergedRangeValue_(sheet.getRange('B2:L3'), 'CUADERNO DEL PROFESOR')
+  setMergedRangeValue_(sheet.getRange('B2:H3'), 'CUADERNO DEL PROFESOR')
     .setFontWeight('bold')
     .setFontSize(24)
     .setHorizontalAlignment('center');
 
-  setMergedRangeValue_(sheet.getRange('B4:L5'), '')
+  setMergedRangeValue_(sheet.getRange('B4:H5'), '')
     .setFontWeight('bold')
     .setFontSize(16)
     .setHorizontalAlignment('center');
@@ -67,7 +66,7 @@ function prepareCoverStructure_(sheet) {
   setMergedRangeValue_(sheet.getRange('B7:F7'), 'DATOS GENERALES')
     .setFontWeight('bold')
     .setHorizontalAlignment('left');
-  setMergedRangeValue_(sheet.getRange('H7:L7'), 'ÍNDICE DEL CUADERNO')
+  sheet.getRange('H7').setValue('ÍNDICE DEL CUADERNO')
     .setFontWeight('bold')
     .setHorizontalAlignment('left');
 
@@ -110,7 +109,7 @@ function updateCoverData_(sheet, config, changedKeys) {
 
   keysToUpdate.forEach(function(key) {
     if (key === CP.CONFIG_KEYS.ACADEMIC_YEAR) {
-      sheet.getRange('B4:L5').setValue(
+      sheet.getRange('B4:H5').setValue(
         'CURSO ACADÉMICO  ·  ' + (config[key] || '')
       );
       return;
@@ -131,21 +130,23 @@ function updateCoverData_(sheet, config, changedKeys) {
 
 function applyCoverTheme_(sheet, theme) {
   const colors = theme.colors;
-  sheet.getRange(1, 1, 60, 12)
+  const bounds = getCoverLayoutBounds_(sheet.getParent());
+  ensureSheetSize_(sheet, bounds.rows, bounds.columns);
+  sheet.getRange(1, 1, bounds.rows, bounds.columns)
     .setBackground(colors.background)
     .setFontColor(colors.text);
   sheet.setTabColor(colors.primary);
 
-  sheet.getRange('B2:L3')
+  sheet.getRange('B2:H3')
     .setBackground(colors.primary)
     .setFontColor(colors.onPrimary);
-  sheet.getRange('B4:L5')
+  sheet.getRange('B4:H5')
     .setBackground(colors.secondary)
     .setFontColor(colors.onSecondary);
   sheet.getRange('B7:F7')
     .setBackground(colors.primary)
     .setFontColor(colors.onPrimary);
-  sheet.getRange('H7:L7')
+  sheet.getRange('H7')
     .setBackground(colors.accent)
     .setFontColor(colors.onAccent);
   sheet.getRange('B9:B15')
@@ -170,13 +171,14 @@ function applyCoverTheme_(sheet, theme) {
 
 function applyCoverIndexTheme_(sheet, theme) {
   const colors = theme.colors;
+  const bounds = getCoverLayoutBounds_(sheet.getParent());
   const visibleSheetCount = getVisibleNotebookSheets_(sheet.getParent()).length;
-  sheet.getRange('H9:L60')
+  sheet.getRange(9, 8, bounds.rows - 8, 1)
     .setBackground(colors.surface)
     .setFontColor(colors.text)
     .setFontWeight('normal');
   if (visibleSheetCount) {
-    sheet.getRange(9, 8, visibleSheetCount, 5)
+    sheet.getRange(9, 8, visibleSheetCount, 1)
       .setBackground(colors.muted)
       .setFontColor(colors.accent)
       .setBorder(false, false, true, false, false, false, colors.border, SpreadsheetApp.BorderStyle.SOLID);
@@ -187,11 +189,13 @@ function renderCoverIndex_(coverSheet) {
   const spreadsheet = coverSheet.getParent();
   const visibleSheets = getVisibleNotebookSheets_(spreadsheet);
   const theme = getActiveTheme_(spreadsheet);
-  const clearRowCount = Math.min(52, coverSheet.getMaxRows() - 8);
-  coverSheet.getRange(9, 8, clearRowCount, 5).clearContent();
+  const bounds = getCoverLayoutBounds_(spreadsheet);
+  ensureSheetSize_(coverSheet, bounds.rows, bounds.columns);
+  coverSheet.getRange(9, 8, coverSheet.getMaxRows() - 8, 1).clearContent();
 
   if (!visibleSheets.length) {
     applyCoverIndexTheme_(coverSheet, theme);
+    trimSheetToBounds_(coverSheet, bounds.rows, bounds.columns);
     return;
   }
 
@@ -210,9 +214,17 @@ function renderCoverIndex_(coverSheet) {
   });
 
   coverSheet.getRange(9, 8, richTextValues.length, 1).setRichTextValues(richTextValues);
-  coverSheet.getRange(9, 8, richTextValues.length, 5).setFontSize(11);
+  coverSheet.getRange(9, 8, richTextValues.length, 1).setFontSize(11);
   coverSheet.setRowHeights(9, richTextValues.length, 32);
   applyCoverIndexTheme_(coverSheet, theme);
+  trimSheetToBounds_(coverSheet, bounds.rows, bounds.columns);
+}
+
+function getCoverLayoutBounds_(spreadsheet) {
+  return {
+    rows: Math.max(15, 8 + getVisibleNotebookSheets_(spreadsheet).length),
+    columns: 8,
+  };
 }
 
 function getVisibleNotebookSheets_(spreadsheet) {
@@ -249,13 +261,4 @@ function setCoverLink_(range, value, linkType, color) {
     .setLinkUrl(url)
     .setTextStyle(textStyle)
     .build());
-}
-
-function ensureSheetSize_(sheet, minimumRows, minimumColumns) {
-  if (sheet.getMaxRows() < minimumRows) {
-    sheet.insertRowsAfter(sheet.getMaxRows(), minimumRows - sheet.getMaxRows());
-  }
-  if (sheet.getMaxColumns() < minimumColumns) {
-    sheet.insertColumnsAfter(sheet.getMaxColumns(), minimumColumns - sheet.getMaxColumns());
-  }
 }

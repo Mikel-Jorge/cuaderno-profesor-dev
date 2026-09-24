@@ -40,7 +40,7 @@ La implementación inicial utiliza una separación sencilla de responsabilidades
 - `Setup.gs`: inicialización idempotente de la estructura base.
 - `GeneralConfig.gs`: definición, migración, lectura, validación y persistencia diferencial de la configuración general y visual.
 - `Portada.gs`: reparación de estructura, actualización diferencial de datos, aplicación del tema y generación del índice navegable.
-- `Utils.gs`: utilidades comunes de acceso y organización de hojas.
+- `Utils.gs`: utilidades comunes de acceso, organización, expansión y recorte de hojas.
 - `Ui.gs`: apertura de diálogos, registro de procesos UI y ejecución secuencial de pasos.
 - `UiDialogProgress.html`: diálogo reutilizable para procesos con progreso, resultado y log.
 - `UiDialogConfirmation.html`: confirmación reutilizable con variantes normal, warning y danger.
@@ -89,9 +89,11 @@ Podrán variar si la implementación demuestra que una estructura más sencilla 
 
 En la estructura base inicial solo se crean `_CONFIG` y `_META`. El resto de hojas técnicas se crearán cuando se implemente la funcionalidad correspondiente.
 
-`_CONFIG` mantiene un modelo estricto de dos columnas, clave/valor, y conserva las claves desconocidas al reparar o migrar su estructura. Incluye los datos generales y la selección/personalización del tema. `0 Portada` es una vista generada desde esta configuración y no actúa como fuente de datos. `_META` contiene únicamente proyecto, versión del cuaderno y versión del esquema, obteniendo las versiones de `Config.gs`.
+`_CONFIG` mantiene un modelo estricto de dos columnas, clave/valor, y conserva las claves desconocidas al reparar o migrar su estructura. Incluye los datos generales y la selección/personalización del tema. La web del centro se normaliza en servidor y recibe `https://` cuando no incluye protocolo. `0 Portada` es una vista generada desde esta configuración y no actúa como fuente de datos. `_META` contiene únicamente proyecto, versión del cuaderno y versión del esquema, obteniendo las versiones de `Config.gs`; sus valores de versión se formatean como texto antes de escribirse para impedir conversiones automáticas de Sheets.
 
 La inicialización puede reconstruir la estructura gestionada de la Portada. Un guardado ordinario no ejecuta ese renderizado completo: compara la configuración anterior, persiste solo las claves modificadas, actualiza los rangos de datos afectados y reaplica exclusivamente los estilos cuando cambia el tema.
+
+Los presets comparten una base clara y solo varían los colores de identidad. Las hojas visibles generadas utilizan `ensureSheetSize_()` antes de escribir y `trimSheetToBounds_()` al finalizar. La Portada calcula sus filas a partir del contenido e índice y limita sus columnas a `A:H`; los futuros generadores aplicarán el mismo patrón con sus propios límites.
 
 ## Restricciones técnicas vigentes
 

@@ -40,3 +40,35 @@ function setMergedRangeValue_(range, value) {
   }
   return range.setValue(value);
 }
+
+function ensureSheetSize_(sheet, requiredRows, requiredColumns) {
+  validateSheetBounds_(requiredRows, requiredColumns);
+  const currentRows = sheet.getMaxRows();
+  const currentColumns = sheet.getMaxColumns();
+
+  if (currentRows < requiredRows) {
+    sheet.insertRowsAfter(currentRows, requiredRows - currentRows);
+  }
+  if (currentColumns < requiredColumns) {
+    sheet.insertColumnsAfter(currentColumns, requiredColumns - currentColumns);
+  }
+}
+
+function trimSheetToBounds_(sheet, maxRows, maxColumns) {
+  validateSheetBounds_(maxRows, maxColumns);
+  const currentRows = sheet.getMaxRows();
+  const currentColumns = sheet.getMaxColumns();
+
+  if (currentRows > maxRows) {
+    sheet.deleteRows(maxRows + 1, currentRows - maxRows);
+  }
+  if (currentColumns > maxColumns) {
+    sheet.deleteColumns(maxColumns + 1, currentColumns - maxColumns);
+  }
+}
+
+function validateSheetBounds_(rows, columns) {
+  if (!Number.isInteger(rows) || rows < 1 || !Number.isInteger(columns) || columns < 1) {
+    throw new Error('Las dimensiones de la hoja deben ser enteros positivos.');
+  }
+}
