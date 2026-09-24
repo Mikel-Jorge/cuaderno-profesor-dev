@@ -91,7 +91,7 @@ Estas hojas estarán ocultas normalmente, podrán protegerse y podrán desoculta
 # 4. Menú principal
 
 ```text
-📘 Cuaderno del Profesor
+📘 Cuaderno del Profesor 📘
 ├── Abrir panel / Ayuda
 ├── Preparar nuevo curso
 ├── Configuración
