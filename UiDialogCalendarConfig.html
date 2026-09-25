@@ -43,11 +43,9 @@
   let isSaving = false;
   const isBlocked = Boolean(calendarData.blockingError);
   const expandedTypes = {};
-  const firstActiveTypeIndex = calendarData.types.findIndex(function(type) { return type.active; });
-  if (firstActiveTypeIndex >= 0) expandedTypes[firstActiveTypeIndex] = true;
-  let eventsExpanded = true;
+  let eventsExpanded = false;
   let nextEventUiKey = 1;
-  const expandedEvents = {};
+  let expandedEvents = {};
   ensureEventUiKeys();
 
   document.getElementById('calendar-course').textContent = calendarData.academicYear
@@ -157,9 +155,8 @@
         '<span class="calendar-accordion-indicator" aria-hidden="true">' + (eventsExpanded ? '&#9662;' : '&#9656;') + '</span>' +
         '<span class="calendar-accordion-title">Fechas especiales</span><span class="calendar-status">' + calendarData.events.length + '</span></button></div>' +
       '<div class="calendar-accordion-panel' + (eventsExpanded ? '' : ' is-hidden') + '">' +
-        '<div class="section-heading calendar-events-heading"><p>Un d&iacute;a concreto o un rango, global o para varios tipos.</p>' +
-          '<button class="button button-secondary compact-button" data-action="add-event" type="button">+ A&ntilde;adir fecha</button></div>' +
-        '<div class="calendar-list">' + (events || '<p class="calendar-empty">No hay fechas especiales configuradas.</p>') + '</div></div></section>';
+        '<div class="calendar-list">' + events + '</div>' +
+        '<div class="calendar-events-actions"><button class="button button-secondary compact-button" data-action="add-event" type="button">+ A&ntilde;adir fecha</button></div></div></section>';
   }
 
   function fieldInput(label, type, value, kind, typeIndex, itemIndex, field, required, enabled, extraClass) {
@@ -264,6 +261,7 @@
     } else if (action === 'add-event') {
       const newEvent = { id: '', startDate: '', endDate: '', isRange: false, category: 'FESTIVO', appliesToAll: true, typeIds: [], description: '' };
       assignEventUiKey(newEvent);
+      expandedEvents = {};
       calendarData.events.push(newEvent);
       expandedEvents[newEvent.__uiKey] = true;
       eventsExpanded = true;

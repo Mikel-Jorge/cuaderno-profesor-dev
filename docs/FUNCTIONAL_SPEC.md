@@ -320,7 +320,7 @@ evaluacion_id | tipo_id | orden | nombre | fecha_fin
 
 Cada tipo podrá tener una cantidad diferente de evaluaciones. El orden visual determinará `orden`; las fechas finales serán estrictamente ascendentes y quedarán dentro del periodo lectivo. El inicio de cada evaluación se derivará de la fecha inicial del tipo o del día posterior al final de la evaluación anterior y no se almacenará.
 
-El diálogo organizará `1º`, `2º`, `Online`, `Curso de Especialización` y `Fechas especiales` como cinco acordeones colapsables claramente separados mediante el color principal del tema. La activación del tipo se mostrará en su cabecera; al desactivar un tipo, su acordeón se colapsará automáticamente sin borrar los datos introducidos. Los tipos inactivos conservarán sus datos y no desplegarán innecesariamente todo el formulario.
+El diálogo organizará `1º`, `2º`, `Online`, `Curso de Especialización` y `Fechas especiales` como cinco acordeones colapsables claramente separados mediante el color principal del tema. Todos los acordeones principales se abrirán inicialmente cerrados, con independencia de si el tipo está activo. La activación del tipo se mostrará en su cabecera; al desactivar un tipo, su acordeón se colapsará automáticamente sin borrar los datos introducidos. Los tipos inactivos conservarán sus datos y no desplegarán innecesariamente todo el formulario.
 
 Al indicar el inicio de un periodo lectivo, de prácticas o de repaso con el final vacío, la interfaz propondrá como final el día siguiente sin sobrescribir valores existentes. Al añadir la segunda evaluación o posteriores, propondrá el día posterior al final de la evaluación inmediatamente anterior, si esta tiene fecha; todas las propuestas serán editables.
 
@@ -332,7 +332,7 @@ Las excepciones y eventos se almacenarán como datos estructurados:
 fecha_id | fecha_inicio | fecha_fin | categoria | descripcion | prioridad
 ```
 
-Cada fecha especial se mostrará dentro del acordeón principal como un elemento colapsable individual con un resumen compacto de categoría, fecha o rango, ámbito y descripción cuando exista. Los eventos ya guardados aparecerán colapsados por defecto al abrir el configurador; al añadir una nueva fecha, se mostrará abierta para editarla. Cada fecha especial permitirá escoger explícitamente entre un día concreto y un rango. Para eventos de un día:
+Cada fecha especial se mostrará dentro del acordeón principal como un elemento colapsable individual con un resumen compacto de categoría, fecha o rango, ámbito y descripción cuando exista. Los eventos ya guardados aparecerán colapsados por defecto al abrir el configurador. El botón `+ Añadir fecha` se situará al final de la lista; al añadir una nueva fecha, se colapsarán las anteriores, se abrirá solo la nueva y la interfaz desplazará el foco a su primer campo útil. Cada fecha especial permitirá escoger explícitamente entre un día concreto y un rango. Para eventos de un día:
 
 ```text
 Fecha inicio = Fecha fin
@@ -376,11 +376,12 @@ Prioridad visual:
 
 1. Hoy.
 2. `FESTIVO` o fin de semana, con el mismo estilo visual.
-3. `REUNION` o `DESTACADO`.
-4. Inicio o fin de prácticas.
-5. Repaso, solo en días laborables.
-6. Fuera del periodo de los tipos activos.
-7. Día normal.
+3. Fin de evaluación.
+4. `REUNION` o `DESTACADO`.
+5. Inicio o fin de prácticas.
+6. Repaso, solo en días laborables.
+7. Fuera del periodo de los tipos activos.
+8. Día normal.
 
 Esta prioridad es solo de presentación. No altera lectividad, datos ni validaciones.
 
@@ -392,11 +393,11 @@ Las notas automáticas de los días serán mínimas. No se crearán notas para f
 
 ## 7.7. Colores semánticos
 
-Los colores específicos del calendario se definirán de forma centralizada en la capa de presentación. Como mínimo existirán estilos para `FESTIVO`, `REUNION`, `DESTACADO`, `PRACTICAS`, `REPASO`, `HOY`, fin de semana y fuera de periodo.
+Los colores específicos del calendario se definirán de forma centralizada en la capa de presentación. Como mínimo existirán estilos para `FESTIVO`, fin de evaluación, `REUNION`, `DESTACADO`, `PRACTICAS`, `REPASO`, `HOY`, fin de semana y fuera de periodo.
 
 Los valores por defecto serán legibles y pastel salvo `HOY`, que tendrá un color sólido turquesa con contraste suficiente y quedará preparado para configuración futura. Ningún cálculo inspeccionará colores, fondos, bordes ni formatos.
 
-La hoja incluirá una leyenda compacta con los elementos útiles presentes o aplicables, incluyendo siempre `Hoy`.
+La hoja incluirá una leyenda compacta con los elementos útiles presentes o aplicables, incluyendo siempre `Hoy` y mostrando `Fin de evaluación` cuando existan evaluaciones activas.
 
 ## 7.8. Hoy, días pasados y estadísticas
 
@@ -404,9 +405,9 @@ La hoja incluirá una leyenda compacta con los elementos útiles presentes o apl
 
 Los días anteriores a hoy mostrarán el número de día tachado conservando el color que corresponda por evento, prácticas, repaso o fin de semana.
 
-Como los encabezados mensuales no representan evaluaciones, la hoja mostrará un resumen separado por tipo activo con las evaluaciones y sus rangos derivados. La fecha inicial de la primera evaluación será la fecha de inicio del tipo; las siguientes comenzarán el día posterior al final de la evaluación anterior. Estas fechas derivadas no se almacenarán.
+Como los encabezados mensuales no representan evaluaciones, la fecha inicial de la primera evaluación será la fecha de inicio del tipo; las siguientes comenzarán el día posterior al final de la evaluación anterior. Estas fechas derivadas no se almacenarán. La hoja no mostrará un bloque superior de resumen de evaluaciones; el fin de evaluación se indicará mediante color común de día, leyenda, notas y estadísticas.
 
-Por cada tipo activo y evaluación se mostrarán al menos días lectivos totales, transcurridos y restantes.
+El orden visual de `1 Calendario` será cabecera, leyenda compacta, calendario de septiembre a junio y estadísticas. Por cada tipo activo y evaluación se mostrarán al menos días lectivos totales, transcurridos y restantes debajo del calendario.
 
 Día lectivo para estas estadísticas:
 
@@ -1175,7 +1176,7 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.2.8
+Versión del cuaderno: 1.2.9
 Versión del esquema: 5
 ```
 

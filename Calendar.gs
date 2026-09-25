@@ -884,6 +884,7 @@ const CP_CALENDAR_WEEKDAY_LABELS = Object.freeze(['L', 'M', 'X', 'J', 'V', 'S', 
 
 const CP_CALENDAR_STYLE_KEYS = Object.freeze({
   FESTIVO: 'festivo',
+  EVALUATION_END: 'evaluationEnd',
   REUNION: 'reunion',
   DESTACADO: 'destacado',
   PRACTICAS: 'practicas',
@@ -892,6 +893,10 @@ const CP_CALENDAR_STYLE_KEYS = Object.freeze({
   WEEKEND: 'weekend',
   OUTSIDE_ACTIVE_TYPES: 'outsideActiveTypes',
   NORMAL: 'normal',
+});
+
+const CP_CALENDAR_SEMANTIC_COLORS = Object.freeze({
+  EVALUATION_END: '#CCFBF1',
 });
 
 function actualizarCalendario_() {
@@ -984,10 +989,9 @@ function renderCalendarSheet_(sheet, model) {
     return;
   }
 
-  renderCalendarEvaluationSummary_(sheet, model, layout);
-  renderCalendarStats_(sheet, model, layout);
   renderCalendarLegend_(sheet, model, layout);
   renderCalendarMonths_(sheet, model, layout);
+  renderCalendarStats_(sheet, model, layout);
   trimSheetToBounds_(sheet, layout.rows, layout.columns);
 }
 
@@ -1032,14 +1036,13 @@ function getCalendarSheetLayout_(model) {
   const monthGapRows = 1;
   const monthGapColumns = 1;
   const firstMonthColumn = 1;
-  const evaluationRow = 5;
-  const evaluationRows = Math.max(2, model.activeTypes.length + 1);
-  const statsRow = evaluationRow + evaluationRows + 1;
-  const statsRows = Math.max(2, model.stats.length + 1);
-  const legendRow = statsRow + statsRows + 1;
-  const firstMonthRow = legendRow + 3;
+  const legendRow = 5;
+  const firstMonthRow = legendRow + 2;
+  const monthBlockRows = (monthRows * 2) + monthGapRows;
+  const statsRow = firstMonthRow + monthBlockRows + 1;
+  const statsRows = (model.stats.length ? model.stats.length : 1) + 2;
   return {
-    rows: firstMonthRow + (monthRows * 2) + monthGapRows - 1,
+    rows: statsRow + statsRows - 1,
     columns: 39,
     firstMonthRow: firstMonthRow,
     firstMonthColumn: firstMonthColumn,
@@ -1048,7 +1051,6 @@ function getCalendarSheetLayout_(model) {
     monthGapRows: monthGapRows,
     monthGapColumns: monthGapColumns,
     legendRow: legendRow,
-    evaluationRow: evaluationRow,
     statsRow: statsRow,
   };
 }
@@ -1201,6 +1203,7 @@ function getCalendarVisualStateForDate_(date, model) {
   const isPast = serial < model.todaySerial;
   const event = getDominantCalendarEventForTypeIds_(date, model.activeTypeIds, model.events, model.timeZone);
   const weekend = isWeekendDate_(date);
+  const evaluationEnd = getEvaluationEndNotesForDate_(date, model).length > 0;
   const practiceMilestone = getPracticeMilestonesForDate_(date, model.activeTypes, model.timeZone).length > 0;
   const inReview = !weekend && isDateInAnyTeachingTypeRange_(date, model.activeTypes, 'reviewStart', 'reviewEnd', model.timeZone);
   const inActiveTypePeriod = isDateInAnyTeachingTypeRange_(date, model.activeTypes, 'startDate', 'endDate', model.timeZone);
@@ -1208,6 +1211,8 @@ function getCalendarVisualStateForDate_(date, model) {
 
   if (weekend || (event && event.category === 'FESTIVO')) {
     styleKey = CP_CALENDAR_STYLE_KEYS.WEEKEND;
+  } else if (evaluationEnd) {
+    styleKey = CP_CALENDAR_STYLE_KEYS.EVALUATION_END;
   } else if (event && (event.category === 'REUNION' || event.category === 'DESTACADO')) {
     styleKey = event.category;
   } else if (practiceMilestone) {
@@ -1236,6 +1241,11 @@ function getCalendarSemanticStyles_(theme) {
   const colors = theme.colors;
   const styles = {};
   styles.FESTIVO = { label: 'Festivo / no lectivo', background: colors.muted, fontColor: colors.mutedText };
+  styles.evaluationEnd = {
+    label: 'Fin de evaluación',
+    background: CP_CALENDAR_SEMANTIC_COLORS.EVALUATION_END,
+    fontColor: colors.text,
+  };
   styles.REUNION = { label: 'Reunión', background: '#E0E7FF', fontColor: colors.text };
   styles.DESTACADO = { label: 'Destacado', background: '#FEF3C7', fontColor: colors.text };
   styles.practicas = { label: 'Inicio/fin prácticas', background: '#DBEAFE', fontColor: colors.text };
@@ -1262,12 +1272,12 @@ function renderCalendarLegend_(sheet, model, layout) {
     .setFontColor(model.theme.colors.onPrimary)
     .setHorizontalAlignment('center');
   legendItems.forEach(function(item, index) {
-    const startColumn = 3 + index * 6;
-    if (startColumn + 4 > layout.columns) return;
+    const startColumn = 3 + index * 5;
+    if (startColumn + 3 > layout.columns) return;
     sheet.getRange(layout.legendRow, startColumn)
       .setBackground(item.background)
       .setFontColor(item.fontColor);
-    setMergedRangeValue_(sheet.getRange(layout.legendRow, startColumn + 1, 1, 4), item.label)
+    setMergedRangeValue_(sheet.getRange(layout.legendRow, startColumn + 1, 1, 3), item.label)
       .setBackground(model.theme.colors.background)
       .setFontColor(model.theme.colors.text)
       .setHorizontalAlignment('left');
@@ -1292,6 +1302,11 @@ function getCalendarLegendItems_(model) {
     };
   });
   items.unshift(model.styles.weekend);
+  if (model.activeTypes.some(function(type) {
+    return (model.evaluationsByTypeId[type.id] || []).length > 0;
+  })) {
+    items.splice(1, 0, model.styles.evaluationEnd);
+  }
   if (model.activeTypes.some(function(type) { return type.practicesStart || type.practicesEnd; })) {
     items.push(model.styles.practicas);
   }
@@ -1300,36 +1315,6 @@ function getCalendarLegendItems_(model) {
   }
   items.push(model.styles.hoy);
   return items;
-}
-
-function renderCalendarEvaluationSummary_(sheet, model, layout) {
-  const colors = model.theme.colors;
-  setMergedRangeValue_(sheet.getRange(layout.evaluationRow, 1, 1, layout.columns), 'EVALUACIONES')
-    .setBackground(colors.primary)
-    .setFontColor(colors.onPrimary)
-    .setFontWeight('bold')
-    .setHorizontalAlignment('center');
-  model.activeTypes.forEach(function(type, index) {
-    const periods = model.evaluationsByTypeId[type.id] || [];
-    const row = layout.evaluationRow + index + 1;
-    const summary = periods.length
-      ? periods.map(function(period) {
-        return period.name + ': ' +
-          formatCalendarDateForDisplay_(period.startDate, model.timeZone) + '-' +
-          formatCalendarDateForDisplay_(period.endDate, model.timeZone);
-      }).join(' | ')
-      : 'Sin evaluaciones configuradas';
-    setMergedRangeValue_(sheet.getRange(row, 1, 1, 6), type.name)
-      .setBackground(colors.muted)
-      .setFontColor(colors.text)
-      .setFontWeight('bold');
-    setMergedRangeValue_(sheet.getRange(row, 7, 1, layout.columns - 6), summary)
-      .setBackground(colors.surface)
-      .setFontColor(colors.text);
-  });
-  sheet.getRange(layout.evaluationRow, 1, Math.max(1, model.activeTypes.length + 1), layout.columns)
-    .setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
-    .setBorder(true, true, true, true, true, true, colors.border, SpreadsheetApp.BorderStyle.SOLID);
 }
 
 function renderCalendarStats_(sheet, model, layout) {
@@ -1501,6 +1486,15 @@ function buildCalendarDayNote_(date, model) {
       const description = normalizeCalendarText_(event.description);
       if (description) lines.push(description);
     });
+  getEvaluationEndNotesForDate_(date, model)
+    .forEach(function(line) { lines.push(line); });
+  getPracticeMilestonesForDate_(date, model.activeTypes, model.timeZone)
+    .forEach(function(line) { lines.push(line); });
+  return dedupeCalendarNoteLines_(lines).join('\n');
+}
+
+function getEvaluationEndNotesForDate_(date, model) {
+  const lines = [];
   model.activeTypes.forEach(function(type) {
     (model.evaluationsByTypeId[type.id] || []).forEach(function(period) {
       if (compareCalendarDates_(date, period.endDate, model.timeZone) === 0) {
@@ -1508,9 +1502,7 @@ function buildCalendarDayNote_(date, model) {
       }
     });
   });
-  getPracticeMilestonesForDate_(date, model.activeTypes, model.timeZone)
-    .forEach(function(line) { lines.push(line); });
-  return dedupeCalendarNoteLines_(lines).join('\n');
+  return lines;
 }
 
 function getPracticeMilestonesForDate_(date, types, timeZone) {

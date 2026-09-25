@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-09-25
-**Estado general:** Fase 2 en desarrollo con modelo y vista visible compacta de calendario, versión 1.2.8
+**Estado general:** Fase 2 en desarrollo con modelo y vista visible compacta de calendario, versión 1.2.9
 
 ## Completado
 
@@ -31,7 +31,7 @@
 - Web del centro normalizada y validada aunque se introduzca sin protocolo.
 - Utilidades globales para ampliar hojas y recortarlas al layout; aplicadas a la Portada `A:H` con filas dinámicas.
 - `_META` escribe las versiones como texto para evitar su conversión a fecha.
-- Versión central del cuaderno `1.2.8` y esquema `5`.
+- Versión central del cuaderno `1.2.9` y esquema `5`.
 - Infraestructura HTML común para diálogos de Apps Script implementada.
 - Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
 - La inicialización se ejecuta desde el diálogo en cinco pasos idempotentes.
@@ -67,15 +67,16 @@
 - Fechas reales, límites derivados del curso académico y tratamiento explícito de zona horaria.
 - Consultas reutilizables para tipos, evaluaciones, eventos, prioridad visual y días no lectivos.
 - Solapamientos conservados como datos independientes; fines de semana derivados sin filas técnicas.
-- Vista visible de `1 Calendario` compactada a septiembre-junio en cuadrícula 5x2, con leyenda horizontal, resumen de evaluaciones y estadísticas sin ajuste de texto.
+- Vista visible de `1 Calendario` compactada a septiembre-junio en cuadrícula 5x2, con leyenda horizontal y estadísticas sin ajuste de texto.
 - Guardar la configuración de calendario e `Inicializar / reparar` regeneran `1 Calendario` desde la fuente de verdad.
 - Categorías de fechas especiales simplificadas a `FESTIVO`, `REUNION` y `DESTACADO`, con normalización de categorías anteriores a `FESTIVO`.
+- Nueva iteración UX del calendario: configurador inicialmente colapsado, botón `+ Añadir fecha` al final, fin de evaluación con color común y layout visible en orden cabecera, leyenda, calendario y estadísticas.
 
 ## Pendiente inmediato
 
 - Probar manualmente las seis paletas, el cierre del diálogo, la URL normalizada y el recorte de la Portada en `CP_DEV`.
 - Ampliar Preparar nuevo curso cuando existan calendario, tramos, módulos y horario.
-- Validar manualmente en `CP_DEV` la vista compacta de `1 Calendario` antes de cerrar definitivamente el bloque Calendario.
+- Validar manualmente en `CP_DEV` la vista compacta y la UX de acordeones de `1 Calendario` antes de cerrar definitivamente el bloque Calendario.
 - Evaluar en una fase posterior mover `Inicializar / reparar estructura` a un área `🛠️ Mantenimiento > 🔧 Reparar estructura` y retirar “Inicializar” de la UX final. Por ahora se conserva para desarrollo, migraciones y recuperación, no como operación cotidiana del profesor.
 
 ## Fase 1 prevista
