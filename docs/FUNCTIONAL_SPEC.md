@@ -81,6 +81,7 @@ _CONFIG
 _CAL_TIPOS
 _CAL_EVALUACIONES
 _FECHAS
+_CAL_FECHA_TIPOS
 _TRAMOS
 _MODULOS
 _MATRICULAS
@@ -309,7 +310,7 @@ ONLINE  | Online                    | false  |              |           |       
 CE      | Curso de Especialización  | false  |              |           |                  |               |               |
 ```
 
-Las fechas de prácticas y repaso serán opcionales, se almacenarán como rangos completos y deberán quedar dentro del periodo del tipo. Desactivar un tipo no eliminará sus datos, aunque dejará de participar en los cálculos.
+Las fechas de prácticas y repaso serán opcionales y se activarán mediante controles independientes. Sus campos permanecerán ocultos mientras no se configuren; si se desactivan antes de guardar, la edición temporal se conservará, pero guardar con el control desactivado limpiará el rango correspondiente. Los rangos configurados deberán quedar dentro del periodo del tipo. Desactivar un tipo no eliminará sus datos, aunque dejará de participar en los cálculos.
 
 Las evaluaciones se almacenarán normalizadas en `_CAL_EVALUACIONES`:
 
@@ -319,21 +320,33 @@ evaluacion_id | tipo_id | orden | nombre | fecha_fin
 
 Cada tipo podrá tener una cantidad diferente de evaluaciones. El orden visual determinará `orden`; las fechas finales serán estrictamente ascendentes y quedarán dentro del periodo lectivo. El inicio de cada evaluación se derivará de la fecha inicial del tipo o del día posterior al final de la evaluación anterior y no se almacenará.
 
+El diálogo organizará `1º`, `2º`, `Online`, `Curso de Especialización` y `Fechas especiales` como cinco acordeones colapsables claramente separados mediante el color principal del tema. La activación del tipo se mostrará en su cabecera; los tipos inactivos conservarán sus datos y no desplegarán innecesariamente todo el formulario.
+
+Al indicar el inicio de un periodo lectivo, de prácticas o de repaso con el final vacío, la interfaz propondrá como final el día siguiente sin sobrescribir valores existentes. Al añadir la segunda evaluación o posteriores, propondrá el día posterior al final de la evaluación inmediatamente anterior, si esta tiene fecha; todas las propuestas serán editables.
+
 ## 7.3. `_FECHAS`
 
 Las excepciones y eventos se almacenarán como datos estructurados:
 
 ```text
-fecha_id | fecha_inicio | fecha_fin | categoria | tipo_id | descripcion | prioridad
+fecha_id | fecha_inicio | fecha_fin | categoria | descripcion | prioridad
 ```
 
-Para eventos de un día:
+Cada fecha especial permitirá escoger explícitamente entre un día concreto y un rango. Para eventos de un día:
 
 ```text
 Fecha inicio = Fecha fin
 ```
 
-Las categorías iniciales serán `FESTIVO`, `VACACIONES`, `NO_LECTIVO`, `REUNION` y `DESTACADO`. Un `tipo_id` vacío tendrá alcance global; con `FP1`, `FP2`, `ONLINE` o `CE` se aplicará solo a ese tipo. Los registros tendrán identificadores estables y podrán solaparse sin fusionarse ni eliminarse.
+Las categorías iniciales serán `FESTIVO`, `VACACIONES`, `NO_LECTIVO`, `REUNION` y `DESTACADO`. Los registros tendrán identificadores estables y podrán solaparse sin fusionarse ni eliminarse.
+
+La relación entre fechas especiales y tipos será N:M mediante `_CAL_FECHA_TIPOS`:
+
+```text
+fecha_id | tipo_id
+```
+
+Un evento sin filas en `_CAL_FECHA_TIPOS` será global. Un evento con una o varias filas se aplicará únicamente a esos tipos, permitiendo seleccionar simultáneamente `FP1`, `FP2`, `ONLINE` y/o `CE` sin duplicar `_FECHAS`. La interfaz exigirá `Todos` o al menos un tipo específico y nunca guardará un ámbito vacío ambiguo.
 
 ## 7.4. Conflictos visuales
 
@@ -1145,8 +1158,8 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.2.4
-Versión del esquema: 3
+Versión del cuaderno: 1.2.5
+Versión del esquema: 4
 ```
 
 La versión podrá mostrarse discretamente en Portada o panel.
@@ -1296,6 +1309,7 @@ Preparar nuevo curso
 _CAL_TIPOS
 _CAL_EVALUACIONES
 _FECHAS
+_CAL_FECHA_TIPOS
 Calendario
 Tipos de enseñanza
 Evaluaciones

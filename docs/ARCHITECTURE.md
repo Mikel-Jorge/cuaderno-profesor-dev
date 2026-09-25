@@ -1,7 +1,7 @@
 # Arquitectura técnica
 
 **Estado:** inicial  
-**Última revisión:** 2026-09-24
+**Última revisión:** 2026-09-25
 
 Este documento describe únicamente la arquitectura técnica vigente.  
 La funcionalidad esperada se define en `FUNCTIONAL_SPEC.md`.
@@ -95,6 +95,7 @@ _CONFIG
 _CAL_TIPOS
 _CAL_EVALUACIONES
 _FECHAS
+_CAL_FECHA_TIPOS
 _TRAMOS
 _MODULOS
 _MATRICULAS
@@ -104,7 +105,7 @@ _META
 
 Podrán variar si la implementación demuestra que una estructura más sencilla es suficiente.
 
-La estructura actualmente implementada crea `_CONFIG`, `_META`, `_CAL_TIPOS`, `_CAL_EVALUACIONES` y `_FECHAS`. El resto de hojas técnicas se crearán cuando se implemente la funcionalidad correspondiente.
+La estructura actualmente implementada crea `_CONFIG`, `_META`, `_CAL_TIPOS`, `_CAL_EVALUACIONES`, `_FECHAS` y `_CAL_FECHA_TIPOS`. El resto de hojas técnicas se crearán cuando se implemente la funcionalidad correspondiente.
 
 `_CONFIG` mantiene un modelo estricto de dos columnas, clave/valor, y conserva las claves desconocidas al reparar o migrar su estructura. Incluye los datos generales y la selección/personalización del tema. La web del centro se normaliza en servidor y recibe `https://` cuando no incluye protocolo. `0 Portada` es una vista generada desde esta configuración y no actúa como fuente de datos. `_META` contiene únicamente proyecto, versión del cuaderno y versión del esquema, obteniendo las versiones de `Config.gs`; sus valores de versión se formatean como texto antes de escribirse para impedir conversiones automáticas de Sheets.
 
@@ -114,11 +115,13 @@ Los presets comparten una base clara y solo varían los colores de identidad. La
 
 ## Modelo de calendario
 
-`_CAL_TIPOS` mantiene los cuatro IDs estables `FP1`, `FP2`, `ONLINE` y `CE`, su activación y sus periodos lectivo, de prácticas y de repaso. `_CAL_EVALUACIONES` usa una fila por evaluación y permite cantidades variables por tipo. `_FECHAS` almacena eventos globales o asociados a un tipo, incluidos sus IDs y prioridad visual. Todas las fechas se escriben como valores `Date` y se presentan con formato `dd/MM/yyyy`.
+`_CAL_TIPOS` mantiene los cuatro IDs estables `FP1`, `FP2`, `ONLINE` y `CE`, su activación y sus periodos lectivo, de prácticas y de repaso. `_CAL_TIPOS` se relaciona 1:N con `_CAL_EVALUACIONES`, que usa una fila por evaluación y permite cantidades variables por tipo.
+
+`_FECHAS` almacena cada evento una sola vez con su ID, intervalo, categoría, descripción y prioridad. Se relaciona N:M con `_CAL_TIPOS` mediante `_CAL_FECHA_TIPOS(fecha_id, tipo_id)`. Cero relaciones significa evento global; una o más relaciones restringen el evento exactamente a esos tipos. La reparación migra de forma idempotente el antiguo `_FECHAS.tipo_id`, crea una relación cuando contenía un tipo y no crea ninguna para los globales. Todas las fechas se escriben como valores `Date` y se presentan con formato `dd/MM/yyyy`.
 
 El transporte con la UI usa `yyyy-MM-dd`, formato nativo de los controles HTML de fecha. `Calendar.gs` convierte y compara esos valores con la zona horaria del Spreadsheet y reutiliza el parser central del curso académico para limitar el intervalo entre el 1 de agosto y el 31 de julio.
 
-El guardado normaliza y valida el modelo completo antes de escribir. Después adquiere un bloqueo de documento, conserva snapshots de las tres tablas y realiza escrituras por bloques; si una escritura falla, intenta restaurar las tres tablas. Los IDs no dependen de filas físicas y la reparación conserva registros desconocidos fuera del modelo soportado.
+El guardado normaliza y valida el modelo completo antes de escribir. Después adquiere un bloqueo de documento, conserva snapshots de las cuatro tablas de calendario y realiza escrituras por bloques; si una escritura falla, intenta restaurar las cuatro tablas. Los IDs no dependen de filas físicas y la reparación conserva registros desconocidos fuera del modelo soportado.
 
 Las consultas de dominio devuelven todos los eventos aplicables y resuelven por separado el evento visual dominante. Los solapamientos permanecen íntegros. Los fines de semana y el carácter no lectivo se derivan en código; no se materializan como eventos. El color queda exclusivamente en la futura capa de presentación de `1 Calendario`.
 

@@ -23,23 +23,124 @@ const CP_CALENDAR_HEADERS = Object.freeze({
   ]),
   DATES: Object.freeze([
     'fecha_id', 'fecha_inicio', 'fecha_fin', 'categoria',
-    'tipo_id', 'descripcion', 'prioridad',
+    'descripcion', 'prioridad',
+  ]),
+  DATE_TYPES: Object.freeze([
+    'fecha_id', 'tipo_id',
   ]),
 });
+
+const CP_CALENDAR_LEGACY_DATE_HEADERS = Object.freeze([
+  'fecha_id', 'fecha_inicio', 'fecha_fin', 'categoria',
+  'tipo_id', 'descripcion', 'prioridad',
+]);
 
 function initializeCalendarStructure_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const typesSheet = getOrCreateSheet_(spreadsheet, CP.SHEETS.CALENDAR_TYPES);
   const evaluationsSheet = getOrCreateSheet_(spreadsheet, CP.SHEETS.CALENDAR_EVALUATIONS);
   const datesSheet = getOrCreateSheet_(spreadsheet, CP.SHEETS.CALENDAR_DATES);
+  const dateTypesSheet = getOrCreateSheet_(spreadsheet, CP.SHEETS.CALENDAR_DATE_TYPES);
 
   initializeCalendarTypesSheet_(typesSheet);
   initializeCalendarTableSheet_(evaluationsSheet, CP_CALENDAR_HEADERS.EVALUATIONS, [5]);
-  initializeCalendarTableSheet_(datesSheet, CP_CALENDAR_HEADERS.DATES, [2, 3]);
+  migrateCalendarDateScopeModel_(datesSheet, dateTypesSheet);
 
   typesSheet.hideSheet();
   evaluationsSheet.hideSheet();
   datesSheet.hideSheet();
+  dateTypesSheet.hideSheet();
+}
+
+function migrateCalendarDateScopeModel_(datesSheet, dateTypesSheet) {
+  const migrationSnapshots = [
+    captureCalendarMigrationSheet_(datesSheet, CP_CALENDAR_LEGACY_DATE_HEADERS.length),
+    captureCalendarMigrationSheet_(dateTypesSheet, CP_CALENDAR_HEADERS.DATE_TYPES.length),
+  ];
+  try {
+    const legacyWidth = CP_CALENDAR_LEGACY_DATE_HEADERS.length;
+    const existingHeader = datesSheet.getLastRow() > 0
+      ? datesSheet.getRange(1, 1, 1, Math.min(legacyWidth, datesSheet.getMaxColumns())).getValues()[0]
+        .map(normalizeCalendarText_)
+      : [];
+    const isLegacy = CP_CALENDAR_LEGACY_DATE_HEADERS.every(function(header, index) {
+      return existingHeader[index] === header;
+    });
+
+    initializeCalendarTableSheet_(dateTypesSheet, CP_CALENDAR_HEADERS.DATE_TYPES, []);
+    let relationRows = deduplicateCalendarDateTypeRows_(
+      readCalendarTableRows_(dateTypesSheet, CP_CALENDAR_HEADERS.DATE_TYPES.length)
+    );
+
+    if (isLegacy) {
+      const legacyRows = readCalendarTableRows_(datesSheet, legacyWidth);
+      const migratedDateRows = legacyRows.map(function(row) {
+        const dateId = normalizeCalendarText_(row[0]);
+        const typeId = normalizeCalendarText_(row[4]);
+        if (dateId && isSupportedCalendarTypeId_(typeId)) {
+          relationRows.push([dateId, typeId]);
+        }
+        return [row[0], row[1], row[2], row[3], row[5], row[6]];
+      });
+      writeCalendarTable_(datesSheet, CP_CALENDAR_HEADERS.DATES, migratedDateRows, [2, 3]);
+      if (datesSheet.getMaxColumns() >= legacyWidth) {
+        datesSheet.getRange(1, legacyWidth, datesSheet.getMaxRows(), 1).clearContent();
+      }
+    } else {
+      initializeCalendarTableSheet_(datesSheet, CP_CALENDAR_HEADERS.DATES, [2, 3]);
+    }
+
+    const validDateIds = readCalendarTableRows_(datesSheet, CP_CALENDAR_HEADERS.DATES.length)
+      .reduce(function(map, row) {
+        const dateId = normalizeCalendarText_(row[0]);
+        if (dateId) {
+          map[dateId] = true;
+        }
+        return map;
+      }, {});
+    relationRows = deduplicateCalendarDateTypeRows_(relationRows).filter(function(row) {
+      return validDateIds[normalizeCalendarText_(row[0])] &&
+        isSupportedCalendarTypeId_(normalizeCalendarText_(row[1]));
+    });
+    writeCalendarTable_(dateTypesSheet, CP_CALENDAR_HEADERS.DATE_TYPES, relationRows, []);
+  } catch (error) {
+    migrationSnapshots.forEach(restoreCalendarMigrationSheet_);
+    throw error;
+  }
+}
+
+function captureCalendarMigrationSheet_(sheet, width) {
+  const rowCount = Math.max(1, sheet.getLastRow());
+  ensureSheetSize_(sheet, rowCount, width);
+  return {
+    sheet: sheet,
+    width: width,
+    values: sheet.getRange(1, 1, rowCount, width).getValues(),
+  };
+}
+
+function restoreCalendarMigrationSheet_(snapshot) {
+  const sheet = snapshot.sheet;
+  const rowsToClear = Math.max(1, sheet.getLastRow(), snapshot.values.length);
+  ensureSheetSize_(sheet, rowsToClear, snapshot.width);
+  sheet.getRange(1, 1, rowsToClear, snapshot.width).clearContent();
+  sheet.getRange(1, 1, snapshot.values.length, snapshot.width).setValues(snapshot.values);
+}
+
+function deduplicateCalendarDateTypeRows_(rows) {
+  const seen = {};
+  return rows.filter(function(row) {
+    const dateId = normalizeCalendarText_(row[0]);
+    const typeId = normalizeCalendarText_(row[1]);
+    const key = dateId + '\n' + typeId;
+    if (!dateId || !typeId || seen[key]) {
+      return false;
+    }
+    seen[key] = true;
+    return true;
+  }).map(function(row) {
+    return [normalizeCalendarText_(row[0]), normalizeCalendarText_(row[1])];
+  });
 }
 
 function initializeCalendarTypesSheet_(sheet) {
@@ -114,8 +215,10 @@ function abrirConfiguracionCalendario() {
           endDate: '',
           practicesStart: '',
           practicesEnd: '',
+          configurePractices: false,
           reviewStart: '',
           reviewEnd: '',
+          configureReview: false,
           evaluations: [],
         };
       }),
@@ -183,6 +286,21 @@ function getCalendarConfigForUi_(spreadsheet) {
     spreadsheet.getSheetByName(CP.SHEETS.CALENDAR_DATES),
     CP_CALENDAR_HEADERS.DATES.length
   );
+  const dateTypeRows = readCalendarTableRows_(
+    spreadsheet.getSheetByName(CP.SHEETS.CALENDAR_DATE_TYPES),
+    CP_CALENDAR_HEADERS.DATE_TYPES.length
+  );
+  const typeIdsByDateId = dateTypeRows.reduce(function(map, row) {
+    const dateId = normalizeCalendarText_(row[0]);
+    const typeId = normalizeCalendarText_(row[1]);
+    if (dateId && isSupportedCalendarTypeId_(typeId)) {
+      map[dateId] = map[dateId] || [];
+      if (map[dateId].indexOf(typeId) === -1) {
+        map[dateId].push(typeId);
+      }
+    }
+    return map;
+  }, {});
 
   return {
     academicYear: academicYear,
@@ -198,8 +316,10 @@ function getCalendarConfigForUi_(spreadsheet) {
         endDate: formatCalendarDateForUi_(row[4], timeZone),
         practicesStart: formatCalendarDateForUi_(row[5], timeZone),
         practicesEnd: formatCalendarDateForUi_(row[6], timeZone),
+        configurePractices: Boolean(row[5] || row[6]),
         reviewStart: formatCalendarDateForUi_(row[7], timeZone),
         reviewEnd: formatCalendarDateForUi_(row[8], timeZone),
+        configureReview: Boolean(row[7] || row[8]),
         evaluations: evaluationRows.filter(function(item) {
           return normalizeCalendarText_(item[1]) === definition.id;
         }).sort(function(first, second) {
@@ -214,16 +334,21 @@ function getCalendarConfigForUi_(spreadsheet) {
       };
     }),
     events: eventRows.filter(function(row) {
-      const typeId = normalizeCalendarText_(row[4]);
-      return isSupportedCalendarCategory_(row[3]) && (!typeId || isSupportedCalendarTypeId_(typeId));
+      return isSupportedCalendarCategory_(row[3]);
     }).map(function(row) {
+      const dateId = normalizeCalendarText_(row[0]);
+      const startDate = formatCalendarDateForUi_(row[1], timeZone);
+      const endDate = formatCalendarDateForUi_(row[2], timeZone);
+      const typeIds = typeIdsByDateId[dateId] || [];
       return {
-        id: normalizeCalendarText_(row[0]),
-        startDate: formatCalendarDateForUi_(row[1], timeZone),
-        endDate: formatCalendarDateForUi_(row[2], timeZone),
+        id: dateId,
+        startDate: startDate,
+        endDate: endDate,
+        isRange: Boolean(startDate && endDate && startDate !== endDate),
         category: normalizeCalendarText_(row[3]),
-        typeId: normalizeCalendarText_(row[4]),
-        description: normalizeCalendarText_(row[5]),
+        appliesToAll: typeIds.length === 0,
+        typeIds: typeIds,
+        description: normalizeCalendarText_(row[4]),
       };
     }),
     categories: getCalendarCategoriesForUi_(),
@@ -278,16 +403,28 @@ function normalizeAndValidateCalendarConfig_(input, spreadsheet) {
 function normalizeCalendarType_(input, definition, timeZone) {
   const evaluations = Array.isArray(input.evaluations) ? input.evaluations : [];
   const seenEvaluationIds = {};
+  const configurePractices = input.configurePractices === undefined
+    ? Boolean(input.practicesStart || input.practicesEnd)
+    : input.configurePractices === true;
+  const configureReview = input.configureReview === undefined
+    ? Boolean(input.reviewStart || input.reviewEnd)
+    : input.configureReview === true;
   return {
     id: definition.id,
     name: definition.name,
     active: input.active === true,
     startDate: parseCalendarDate_(input.startDate, timeZone, 'la fecha de inicio', false),
     endDate: parseCalendarDate_(input.endDate, timeZone, 'la fecha de fin', false),
-    practicesStart: parseCalendarDate_(input.practicesStart, timeZone, 'el inicio de prácticas', false),
-    practicesEnd: parseCalendarDate_(input.practicesEnd, timeZone, 'el fin de prácticas', false),
-    reviewStart: parseCalendarDate_(input.reviewStart, timeZone, 'el inicio de repaso', false),
-    reviewEnd: parseCalendarDate_(input.reviewEnd, timeZone, 'el fin de repaso', false),
+    practicesStart: configurePractices
+      ? parseCalendarDate_(input.practicesStart, timeZone, 'el inicio de prácticas', false) : null,
+    practicesEnd: configurePractices
+      ? parseCalendarDate_(input.practicesEnd, timeZone, 'el fin de prácticas', false) : null,
+    configurePractices: configurePractices,
+    reviewStart: configureReview
+      ? parseCalendarDate_(input.reviewStart, timeZone, 'el inicio de repaso', false) : null,
+    reviewEnd: configureReview
+      ? parseCalendarDate_(input.reviewEnd, timeZone, 'el fin de repaso', false) : null,
+    configureReview: configureReview,
     evaluations: evaluations.map(function(evaluation, index) {
       const evaluationId = normalizeCalendarText_(evaluation && evaluation.id) ||
         createCalendarRecordId_('EV_' + definition.id);
@@ -360,18 +497,28 @@ function normalizeCalendarEvent_(input, timeZone) {
   if (!isSupportedCalendarCategory_(category)) {
     throw new Error('La categoría de una fecha especial no es válida.');
   }
-  const typeId = normalizeCalendarText_(input.typeId);
-  if (typeId && !isSupportedCalendarTypeId_(typeId)) {
-    throw new Error('El tipo de enseñanza de una fecha especial no es válido.');
+  const appliesToAll = input.appliesToAll === true;
+  const inputTypeIds = Array.isArray(input.typeIds) ? input.typeIds : [];
+  const typeIds = inputTypeIds.map(normalizeCalendarText_).filter(function(typeId, index, values) {
+    return typeId && values.indexOf(typeId) === index;
+  });
+  if (typeIds.some(function(typeId) { return !isSupportedCalendarTypeId_(typeId); })) {
+    throw new Error('Uno de los tipos de enseñanza de una fecha especial no es válido.');
+  }
+  if (!appliesToAll && typeIds.length === 0) {
+    throw new Error('Selecciona Todos o al menos un tipo para cada fecha especial.');
   }
   const startDate = parseCalendarDate_(input.startDate, timeZone, 'la fecha especial', true);
-  const endDate = parseCalendarDate_(input.endDate || input.startDate, timeZone, 'el fin de la fecha especial', true);
+  const isRange = input.isRange === true;
+  const endDate = isRange
+    ? parseCalendarDate_(input.endDate, timeZone, 'el fin de la fecha especial', true)
+    : startDate;
   return {
     id: normalizeCalendarText_(input.id) || createCalendarRecordId_('FECHA'),
     startDate: startDate,
     endDate: endDate,
     category: category,
-    typeId: typeId,
+    typeIds: appliesToAll ? [] : typeIds,
     description: normalizeCalendarText_(input.description),
     priority: CP_CALENDAR_CATEGORIES[category].priority,
   };
@@ -382,15 +529,24 @@ function persistCalendarConfig_(spreadsheet, config) {
   const typesSheet = spreadsheet.getSheetByName(CP.SHEETS.CALENDAR_TYPES);
   const evaluationsSheet = spreadsheet.getSheetByName(CP.SHEETS.CALENDAR_EVALUATIONS);
   const datesSheet = spreadsheet.getSheetByName(CP.SHEETS.CALENDAR_DATES);
+  const dateTypesSheet = spreadsheet.getSheetByName(CP.SHEETS.CALENDAR_DATE_TYPES);
   const unknownTypeRows = readCalendarTableRows_(typesSheet, CP_CALENDAR_HEADERS.TYPES.length)
     .filter(function(row) { return supportedTypeIds.indexOf(normalizeCalendarText_(row[0])) === -1; });
   const unknownEvaluationRows = readCalendarTableRows_(evaluationsSheet, CP_CALENDAR_HEADERS.EVALUATIONS.length)
     .filter(function(row) { return supportedTypeIds.indexOf(normalizeCalendarText_(row[1])) === -1; });
   const unknownEventRows = readCalendarTableRows_(datesSheet, CP_CALENDAR_HEADERS.DATES.length)
     .filter(function(row) {
-      const typeId = normalizeCalendarText_(row[4]);
-      return !isSupportedCalendarCategory_(row[3]) || (typeId && !isSupportedCalendarTypeId_(typeId));
+      return !isSupportedCalendarCategory_(row[3]);
     });
+  const managedExistingEventIds = readCalendarTableRows_(datesSheet, CP_CALENDAR_HEADERS.DATES.length)
+    .reduce(function(map, row) {
+      if (isSupportedCalendarCategory_(row[3])) {
+        map[normalizeCalendarText_(row[0])] = true;
+      }
+      return map;
+    }, {});
+  const preservedRelationRows = readCalendarTableRows_(dateTypesSheet, CP_CALENDAR_HEADERS.DATE_TYPES.length)
+    .filter(function(row) { return !managedExistingEventIds[normalizeCalendarText_(row[0])]; });
 
   const typeRows = config.types.map(function(type) {
     return [
@@ -406,13 +562,24 @@ function persistCalendarConfig_(spreadsheet, config) {
   const eventRows = config.events.map(function(event) {
     return [
       event.id, event.startDate, event.endDate, event.category,
-      event.typeId, event.description, event.priority,
+      event.description, event.priority,
     ];
   }).concat(unknownEventRows);
+  const dateTypeRows = config.events.reduce(function(rows, event) {
+    return rows.concat(event.typeIds.map(function(typeId) {
+      return [event.id, typeId];
+    }));
+  }, []).concat(preservedRelationRows);
 
   writeCalendarTable_(typesSheet, CP_CALENDAR_HEADERS.TYPES, typeRows, [4, 5, 6, 7, 8, 9]);
   writeCalendarTable_(evaluationsSheet, CP_CALENDAR_HEADERS.EVALUATIONS, evaluationRows, [5]);
   writeCalendarTable_(datesSheet, CP_CALENDAR_HEADERS.DATES, eventRows, [2, 3]);
+  writeCalendarTable_(
+    dateTypesSheet,
+    CP_CALENDAR_HEADERS.DATE_TYPES,
+    deduplicateCalendarDateTypeRows_(dateTypeRows),
+    []
+  );
   hideTechnicalSheets_(spreadsheet);
 }
 
@@ -421,6 +588,7 @@ function captureCalendarTableSnapshots_(spreadsheet) {
     [CP.SHEETS.CALENDAR_TYPES, CP_CALENDAR_HEADERS.TYPES.length],
     [CP.SHEETS.CALENDAR_EVALUATIONS, CP_CALENDAR_HEADERS.EVALUATIONS.length],
     [CP.SHEETS.CALENDAR_DATES, CP_CALENDAR_HEADERS.DATES.length],
+    [CP.SHEETS.CALENDAR_DATE_TYPES, CP_CALENDAR_HEADERS.DATE_TYPES.length],
   ].map(function(definition) {
     const sheet = spreadsheet.getSheetByName(definition[0]);
     const rowCount = Math.max(1, sheet.getLastRow());
@@ -448,6 +616,9 @@ function restoreCalendarTableSnapshots_(spreadsheet, snapshots) {
   );
   initializeCalendarTableSheet_(
     spreadsheet.getSheetByName(CP.SHEETS.CALENDAR_DATES), CP_CALENDAR_HEADERS.DATES, [2, 3]
+  );
+  initializeCalendarTableSheet_(
+    spreadsheet.getSheetByName(CP.SHEETS.CALENDAR_DATE_TYPES), CP_CALENDAR_HEADERS.DATE_TYPES, []
   );
   hideTechnicalSheets_(spreadsheet);
 }
@@ -623,14 +794,27 @@ function getCalendarEventsBetween_(startDate, endDate, typeId) {
   if (!sheet) {
     return [];
   }
+  const dateTypesSheet = spreadsheet.getSheetByName(CP.SHEETS.CALENDAR_DATE_TYPES);
+  const typeIdsByDateId = readCalendarTableRows_(dateTypesSheet, CP_CALENDAR_HEADERS.DATE_TYPES.length)
+    .reduce(function(map, row) {
+      const dateId = normalizeCalendarText_(row[0]);
+      const relatedTypeId = normalizeCalendarText_(row[1]);
+      if (dateId && isSupportedCalendarTypeId_(relatedTypeId)) {
+        map[dateId] = map[dateId] || {};
+        map[dateId][relatedTypeId] = true;
+      }
+      return map;
+    }, {});
   return readCalendarTableRows_(sheet, CP_CALENDAR_HEADERS.DATES.length)
     .filter(function(row) {
-      const eventTypeId = normalizeCalendarText_(row[4]);
+      const dateId = normalizeCalendarText_(row[0]);
+      const relatedTypeIds = typeIdsByDateId[dateId] || {};
+      const hasRelations = Object.keys(relatedTypeIds).length > 0;
       const eventStart = row[1];
       const eventEnd = row[2];
       return isSupportedCalendarCategory_(row[3]) &&
         eventStart instanceof Date && eventEnd instanceof Date &&
-        (!eventTypeId || eventTypeId === normalizedTypeId) &&
+        (!hasRelations || Boolean(normalizedTypeId && relatedTypeIds[normalizedTypeId])) &&
         compareCalendarDates_(eventStart, normalizedEnd, timeZone) <= 0 &&
         compareCalendarDates_(eventEnd, normalizedStart, timeZone) >= 0;
     }).map(function(row) {
@@ -640,9 +824,9 @@ function getCalendarEventsBetween_(startDate, endDate, typeId) {
         startDate: row[1],
         endDate: row[2],
         category: category,
-        typeId: normalizeCalendarText_(row[4]),
-        description: normalizeCalendarText_(row[5]),
-        priority: Number(row[6]) || CP_CALENDAR_CATEGORIES[category].priority,
+        typeIds: Object.keys(typeIdsByDateId[normalizeCalendarText_(row[0])] || {}),
+        description: normalizeCalendarText_(row[4]),
+        priority: Number(row[5]) || CP_CALENDAR_CATEGORIES[category].priority,
       };
     });
 }
