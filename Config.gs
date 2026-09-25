@@ -1,6 +1,6 @@
 const CP = Object.freeze({
   PROJECT_NAME: 'Cuaderno del Profesor',
-  NOTEBOOK_VERSION: '1.2.5',
+  NOTEBOOK_VERSION: '1.2.6',
   SCHEMA_VERSION: '4',
   SHEETS: Object.freeze({
     COVER: '0 Portada',

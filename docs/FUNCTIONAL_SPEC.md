@@ -320,7 +320,7 @@ evaluacion_id | tipo_id | orden | nombre | fecha_fin
 
 Cada tipo podrá tener una cantidad diferente de evaluaciones. El orden visual determinará `orden`; las fechas finales serán estrictamente ascendentes y quedarán dentro del periodo lectivo. El inicio de cada evaluación se derivará de la fecha inicial del tipo o del día posterior al final de la evaluación anterior y no se almacenará.
 
-El diálogo organizará `1º`, `2º`, `Online`, `Curso de Especialización` y `Fechas especiales` como cinco acordeones colapsables claramente separados mediante el color principal del tema. La activación del tipo se mostrará en su cabecera; los tipos inactivos conservarán sus datos y no desplegarán innecesariamente todo el formulario.
+El diálogo organizará `1º`, `2º`, `Online`, `Curso de Especialización` y `Fechas especiales` como cinco acordeones colapsables claramente separados mediante el color principal del tema. La activación del tipo se mostrará en su cabecera; al desactivar un tipo, su acordeón se colapsará automáticamente sin borrar los datos introducidos. Los tipos inactivos conservarán sus datos y no desplegarán innecesariamente todo el formulario.
 
 Al indicar el inicio de un periodo lectivo, de prácticas o de repaso con el final vacío, la interfaz propondrá como final el día siguiente sin sobrescribir valores existentes. Al añadir la segunda evaluación o posteriores, propondrá el día posterior al final de la evaluación inmediatamente anterior, si esta tiene fecha; todas las propuestas serán editables.
 
@@ -332,7 +332,7 @@ Las excepciones y eventos se almacenarán como datos estructurados:
 fecha_id | fecha_inicio | fecha_fin | categoria | descripcion | prioridad
 ```
 
-Cada fecha especial permitirá escoger explícitamente entre un día concreto y un rango. Para eventos de un día:
+Cada fecha especial se mostrará dentro del acordeón principal como un elemento colapsable individual con un resumen compacto de categoría, fecha o rango, ámbito y descripción cuando exista. Los eventos ya guardados aparecerán colapsados por defecto al abrir el configurador; al añadir una nueva fecha, se mostrará abierta para editarla. Cada fecha especial permitirá escoger explícitamente entre un día concreto y un rango. Para eventos de un día:
 
 ```text
 Fecha inicio = Fecha fin
@@ -1158,7 +1158,7 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.2.5
+Versión del cuaderno: 1.2.6
 Versión del esquema: 4
 ```
 

@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-09-25
-**Estado general:** Fase 2 en desarrollo con modelo y configuración de calendario mejorados, versión 1.2.5
+**Estado general:** Fase 2 en desarrollo con modelo y configuración de calendario mejorados, versión 1.2.6
 
 ## Completado
 
@@ -31,7 +31,7 @@
 - Web del centro normalizada y validada aunque se introduzca sin protocolo.
 - Utilidades globales para ampliar hojas y recortarlas al layout; aplicadas a la Portada `A:H` con filas dinámicas.
 - `_META` escribe las versiones como texto para evitar su conversión a fecha.
-- Versión central del cuaderno `1.2.5` y esquema `4`.
+- Versión central del cuaderno `1.2.6` y esquema `4`.
 - Infraestructura HTML común para diálogos de Apps Script implementada.
 - Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
 - La inicialización se ejecuta desde el diálogo en cinco pasos idempotentes.
@@ -61,6 +61,7 @@
 - Migración idempotente del antiguo `_FECHAS.tipo_id` al modelo N:M, con ausencia de relaciones como semántica central de evento global.
 - Modal `📅 Configurar calendario` organizado en cinco acordeones, con separación basada en el tema, tipos activables y prácticas/repaso opcionales.
 - Fechas especiales de día único o rango, aplicables globalmente o a varios tipos sin duplicar el evento.
+- Mejora UX del configurador de calendario: al desactivar un tipo se colapsa su bloque sin perder datos, y cada fecha especial se muestra como tarjeta colapsable con resumen vivo.
 - Propuestas editables de fecha final para periodos y evaluaciones sin sobrescribir valores existentes.
 - Guardado coherente del calendario con validación completa, bloqueo, escrituras por bloques y restauración de las cuatro tablas ante errores.
 - Fechas reales, límites derivados del curso académico y tratamiento explícito de zona horaria.

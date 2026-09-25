@@ -46,6 +46,9 @@
   const firstActiveTypeIndex = calendarData.types.findIndex(function(type) { return type.active; });
   if (firstActiveTypeIndex >= 0) expandedTypes[firstActiveTypeIndex] = true;
   let eventsExpanded = true;
+  let nextEventUiKey = 1;
+  const expandedEvents = {};
+  ensureEventUiKeys();
 
   document.getElementById('calendar-course').textContent = calendarData.academicYear
     ? 'Curso acad\u00e9mico ' + calendarData.academicYear : 'Curso acad\u00e9mico sin configurar';
@@ -66,7 +69,7 @@
     setSavingState(true);
     hideResult();
     google.script.run.withSuccessHandler(handleSaveSuccess).withFailureHandler(handleSaveError)
-      .guardarConfiguracionCalendario(cloneData(calendarData));
+      .guardarConfiguracionCalendario(getCalendarPayloadData());
   });
   closeButton.addEventListener('click', function() { google.script.host.close(); });
 
@@ -126,21 +129,28 @@
 
   function renderEvents() {
     const events = calendarData.events.map(function(calendarEvent, eventIndex) {
+      const expanded = Boolean(expandedEvents[calendarEvent.__uiKey]);
+      const summary = getEventSummary(calendarEvent);
       const scopeOptions = calendarData.types.map(function(type) {
         const checked = calendarEvent.typeIds.indexOf(type.id) !== -1;
         return '<label class="scope-option"><input type="checkbox" data-kind="event-scope" data-item-index="' + eventIndex + '" data-type-id="' + escapeAttribute(type.id) + '"' +
           (checked ? ' checked' : '') + disabledAttribute(calendarEvent.appliesToAll) + '> ' + escapeHtml(type.name) + '</label>';
       }).join('');
-      return '<article class="calendar-event"><div class="calendar-event-grid">' +
-        fieldInput('Fecha', 'date', calendarEvent.startDate, 'event', '', eventIndex, 'startDate', true, true) +
-        '<label class="calendar-option-toggle range-toggle"><input type="checkbox" data-kind="event" data-item-index="' + eventIndex + '" data-field="isRange"' + (calendarEvent.isRange ? ' checked' : '') + '> Rango de fechas</label>' +
-        (calendarEvent.isRange ? fieldInput('Hasta', 'date', calendarEvent.endDate, 'event', '', eventIndex, 'endDate', true, true) : '') +
-        selectField('Categor\u00eda', calendarEvent.category, calendarData.categories, 'category', eventIndex) +
-        '<fieldset class="calendar-scope"><legend>Aplicar a</legend>' +
-          '<label class="scope-option scope-all"><input type="checkbox" data-kind="event" data-item-index="' + eventIndex + '" data-field="appliesToAll"' + (calendarEvent.appliesToAll ? ' checked' : '') + '> Todos</label>' + scopeOptions + '</fieldset>' +
-        fieldInput('Descripci\u00f3n', 'text', calendarEvent.description, 'event', '', eventIndex, 'description', false, true, 'wide') +
-        removeButton('event', '', eventIndex, 'Eliminar fecha especial', true) +
-      '</div></article>';
+      return '<article class="calendar-event">' +
+        '<button class="calendar-event-toggle" type="button" data-action="toggle-event" data-item-index="' + eventIndex + '" aria-expanded="' + expanded + '">' +
+          '<span class="calendar-accordion-indicator" aria-hidden="true">' + (expanded ? '&#9662;' : '&#9656;') + '</span>' +
+          '<span class="calendar-event-summary"><strong>' + escapeHtml(summary.title) + '</strong>' +
+            (summary.description ? '<small>' + escapeHtml(summary.description) + '</small>' : '') + '</span></button>' +
+        '<div class="calendar-event-panel' + (expanded ? '' : ' is-hidden') + '"><div class="calendar-event-grid">' +
+          fieldInput('Fecha', 'date', calendarEvent.startDate, 'event', '', eventIndex, 'startDate', true, true) +
+          '<label class="calendar-option-toggle range-toggle"><input type="checkbox" data-kind="event" data-item-index="' + eventIndex + '" data-field="isRange"' + (calendarEvent.isRange ? ' checked' : '') + '> Rango de fechas</label>' +
+          (calendarEvent.isRange ? fieldInput('Hasta', 'date', calendarEvent.endDate, 'event', '', eventIndex, 'endDate', true, true) : '') +
+          selectField('Categor\u00eda', calendarEvent.category, calendarData.categories, 'category', eventIndex) +
+          '<fieldset class="calendar-scope"><legend>Aplicar a</legend>' +
+            '<label class="scope-option scope-all"><input type="checkbox" data-kind="event" data-item-index="' + eventIndex + '" data-field="appliesToAll"' + (calendarEvent.appliesToAll ? ' checked' : '') + '> Todos</label>' + scopeOptions + '</fieldset>' +
+          fieldInput('Descripci\u00f3n', 'text', calendarEvent.description, 'event', '', eventIndex, 'description', false, true, 'wide') +
+          removeButton('event', '', eventIndex, 'Eliminar fecha especial', true) +
+        '</div></div></article>';
     }).join('');
     eventsSection.innerHTML = '<section class="calendar-accordion calendar-events-accordion"><div class="calendar-accordion-header">' +
       '<button class="calendar-accordion-toggle" type="button" data-action="toggle-events" aria-expanded="' + eventsExpanded + '">' +
@@ -185,7 +195,7 @@
       const type = calendarData.types[typeIndex];
       type[field] = value;
       if (field === 'active' && domEvent.type === 'change') {
-        if (value) expandedTypes[typeIndex] = true;
+        if (!value) expandedTypes[typeIndex] = false;
         renderTypes();
       } else if ((field === 'configurePractices' || field === 'configureReview') && domEvent.type === 'change') {
         renderTypes();
@@ -239,6 +249,11 @@
     if (action === 'toggle-events') {
       eventsExpanded = !eventsExpanded; renderEvents(); return;
     }
+    if (action === 'toggle-event') {
+      const calendarEvent = calendarData.events[itemIndex];
+      expandedEvents[calendarEvent.__uiKey] = !expandedEvents[calendarEvent.__uiKey];
+      renderEvents(); return;
+    }
     if (action === 'add-evaluation') {
       const evaluations = calendarData.types[typeIndex].evaluations;
       const previous = evaluations.length ? evaluations[evaluations.length - 1] : null;
@@ -247,8 +262,13 @@
     } else if (action === 'remove-evaluation') {
       calendarData.types[typeIndex].evaluations.splice(itemIndex, 1); renderTypes();
     } else if (action === 'add-event') {
-      calendarData.events.push({ id: '', startDate: '', endDate: '', isRange: false, category: 'FESTIVO', appliesToAll: true, typeIds: [], description: '' });
+      const newEvent = { id: '', startDate: '', endDate: '', isRange: false, category: 'FESTIVO', appliesToAll: true, typeIds: [], description: '' };
+      assignEventUiKey(newEvent);
+      calendarData.events.push(newEvent);
+      expandedEvents[newEvent.__uiKey] = true;
+      eventsExpanded = true;
       renderEvents();
+      focusEventEditor(calendarData.events.length - 1);
     } else if (action === 'remove-event') {
       calendarData.events.splice(itemIndex, 1); renderEvents();
     }
@@ -264,6 +284,68 @@
   }
   function padDatePart(value) { return String(value).padStart(2, '0'); }
 
+  function ensureEventUiKeys() {
+    calendarData.events.forEach(assignEventUiKey);
+  }
+
+  function assignEventUiKey(calendarEvent) {
+    if (!calendarEvent.__uiKey) {
+      calendarEvent.__uiKey = 'event-' + nextEventUiKey;
+      nextEventUiKey += 1;
+    }
+  }
+
+  function getEventSummary(calendarEvent) {
+    return {
+      title: [
+        getEventCategoryLabel(calendarEvent.category).toUpperCase(),
+        getEventDateSummary(calendarEvent),
+        getEventScopeSummary(calendarEvent)
+      ].filter(Boolean).join(' \u00b7 '),
+      description: compactSummaryText(calendarEvent.description)
+    };
+  }
+
+  function getEventCategoryLabel(categoryId) {
+    const category = calendarData.categories.find(function(item) { return item.id === categoryId; });
+    return category ? category.label : categoryId || 'Fecha especial';
+  }
+
+  function getEventDateSummary(calendarEvent) {
+    const start = formatDisplayDate(calendarEvent.startDate);
+    if (!calendarEvent.isRange) return start || 'Sin fecha';
+    const end = formatDisplayDate(calendarEvent.endDate);
+    return (start || 'Sin inicio') + ' \u2192 ' + (end || 'Sin fin');
+  }
+
+  function getEventScopeSummary(calendarEvent) {
+    if (calendarEvent.appliesToAll) return 'Todos';
+    return calendarEvent.typeIds.map(function(typeId) {
+      const type = calendarData.types.find(function(item) { return item.id === typeId; });
+      return type ? type.name : '';
+    }).filter(Boolean).join(' + ');
+  }
+
+  function formatDisplayDate(dateKey) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey || '')) return '';
+    const parts = dateKey.split('-');
+    return parts[2] + '/' + parts[1] + '/' + parts[0];
+  }
+
+  function focusEventEditor(eventIndex) {
+    window.setTimeout(function() {
+      const input = form.querySelector('[data-kind="event"][data-item-index="' + eventIndex + '"][data-field="startDate"]');
+      if (!input) return;
+      input.focus();
+      input.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }, 0);
+  }
+
+  function compactSummaryText(value) {
+    const text = (value || '').trim();
+    return text.length > 90 ? text.slice(0, 87).trim() + '...' : text;
+  }
+
   function validateEventScopes() {
     const invalid = calendarData.events.some(function(calendarEvent) { return !calendarEvent.appliesToAll && calendarEvent.typeIds.length === 0; });
     if (!invalid) return true;
@@ -272,7 +354,10 @@
     return false;
   }
   function handleSaveSuccess(response) {
-    if (response && response.data) calendarData = cloneData(response.data);
+    if (response && response.data) {
+      calendarData = cloneData(response.data);
+      ensureEventUiKeys();
+    }
     baseline = serializeData(); setSavingState(false); closeButton.textContent = 'Cerrar';
     showResult(response.message, 'success');
     window.setTimeout(function() { google.script.host.close(); }, 450);
@@ -281,7 +366,45 @@
     setSavingState(false);
     showResult(error && error.message ? error.message : 'No se ha podido guardar el calendario.', 'error');
   }
-  function serializeData() { return JSON.stringify({ types: calendarData.types, events: calendarData.events }); }
+  function getCalendarPayloadData() {
+    return {
+      types: calendarData.types.map(function(type) {
+        return {
+          id: type.id,
+          name: type.name,
+          active: type.active,
+          startDate: type.startDate,
+          endDate: type.endDate,
+          practicesStart: type.practicesStart,
+          practicesEnd: type.practicesEnd,
+          configurePractices: type.configurePractices,
+          reviewStart: type.reviewStart,
+          reviewEnd: type.reviewEnd,
+          configureReview: type.configureReview,
+          evaluations: type.evaluations.map(function(evaluation) {
+            return {
+              id: evaluation.id,
+              name: evaluation.name,
+              endDate: evaluation.endDate
+            };
+          })
+        };
+      }),
+      events: calendarData.events.map(function(calendarEvent) {
+        return {
+          id: calendarEvent.id,
+          startDate: calendarEvent.startDate,
+          endDate: calendarEvent.endDate,
+          isRange: calendarEvent.isRange,
+          category: calendarEvent.category,
+          appliesToAll: calendarEvent.appliesToAll,
+          typeIds: calendarEvent.typeIds.slice(),
+          description: calendarEvent.description
+        };
+      })
+    };
+  }
+  function serializeData() { return JSON.stringify(getCalendarPayloadData()); }
   function isDirty() { return serializeData() !== baseline; }
   function updateSaveButton() { saveButton.disabled = isBlocked || isSaving || !isDirty(); }
   function setSavingState(saving) {
