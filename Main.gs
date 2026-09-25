@@ -8,6 +8,7 @@ function onOpen() {
     .createMenu(CP.MENU.NAME)
     .addItem(CP.MENU.NEW_COURSE, 'abrirPrepararNuevoCurso')
     .addItem(CP.MENU.INIT, 'abrirDialogoInicializacion')
+    .addItem(CP.MENU.CALENDAR_UPDATE, 'actualizarCalendario')
     .addSubMenu(configMenu)
     .addSeparator()
     .addItem(CP.MENU.HELP, 'mostrarAyuda')

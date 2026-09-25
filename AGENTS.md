@@ -86,8 +86,10 @@ Al finalizar una tarea con cambios:
 1. Crea **un commit descriptivo** para esa tarea.
 2. Si han cambiado archivos de Apps Script (`.gs`, `.html` o `appsscript.json`), ejecuta `clasp push`.
 3. Si `clasp push` falla, no hagas `git push`; informa del problema dejando el commit local intacto.
-4. Si la sincronización con Apps Script es correcta, ejecuta `git push`.
-5. No uses `--force`, `reset --hard`, rebase destructivo ni reescritura de historial salvo petición expresa.
+4. Si `clasp push` devuelve `Skipping push.` o un resultado ambiguo, no asumas que Apps Script está actualizado: ejecuta `clasp status`, verifica que los archivos locales relevantes están sincronizados y, si es necesario, vuelve a ejecutar `clasp push`.
+5. No uses `clasp push -f` automáticamente. Solo úsalo si existe una razón clara y segura.
+6. Si la sincronización con Apps Script es correcta y verificable, ejecuta `git push`.
+7. No uses `--force`, `reset --hard`, rebase destructivo ni reescritura de historial salvo petición expresa.
 
 Las tareas puramente informativas que no cambien archivos no requieren commit.
 

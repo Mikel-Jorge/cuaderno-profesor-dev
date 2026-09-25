@@ -152,6 +152,11 @@ function getUiProcessDefinition_(processId, processInput) {
           run: initializeCalendarStructure_,
         },
         {
+          label: 'Renderizando el calendario visible...',
+          completedMessage: 'Calendario visible creado o reparado.',
+          run: createOrRepairCalendarSheet_,
+        },
+        {
           label: 'Actualizando metadatos...',
           completedMessage: 'Metadatos actualizados.',
           run: initializeMetaStructure_,

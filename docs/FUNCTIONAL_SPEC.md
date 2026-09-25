@@ -356,53 +356,67 @@ Si una fecha tiene más de un significado:
 
 La prioridad visual por defecto será: `FESTIVO` 10, `VACACIONES` 20, `NO_LECTIVO` 30, `REUNION` 40 y `DESTACADO` 50; un número menor domina visualmente. Resolver el evento dominante no elimina ni oculta los demás datos. No se añadirán iconos, subdivisiones ni indicadores secundarios en V1.
 
-## 7.5. Colores
+## 7.5. Calendario visible
 
-Serán una propiedad de presentación del futuro calendario visible, nunca la fuente de verdad. Su definición concreta queda pendiente. Preferentemente se usarán tonos pastel para contenido.
+La hoja `1 Calendario` será una representación generada desde `_CAL_TIPOS`, `_CAL_EVALUACIONES`, `_FECHAS` y `_CAL_FECHA_TIPOS`. Los colores, formatos y celdas visibles nunca serán fuente de verdad para cálculos.
 
-Tipos posibles:
+Mostrará siempre el curso académico configurado de agosto a julio, con meses en español y semanas de lunes a domingo. La distribución será compacta, preferentemente en una cuadrícula de 3 meses por fila y 4 filas, con celdas homogéneas y sin mostrar números de días fuera del mes.
 
-- Festivo.
-- Vacaciones.
-- Evaluación.
-- Prácticas.
-- Repaso.
-- Fecha destacada.
-- Reunión.
-- Día actual.
+La cabecera general mostrará `CALENDARIO ESCOLAR`, el curso académico y los tipos activos. Los tipos inactivos no se incluirán en ese resumen.
 
-Los sábados y domingos se derivarán de la fecha y serán no lectivos en V1; no se almacenarán como filas de `_FECHAS`. También serán no lectivos `FESTIVO`, `VACACIONES` y `NO_LECTIVO`. `REUNION` y `DESTACADO` no convertirán por sí solos el día en no lectivo.
+Los encabezados de los meses utilizarán siempre el color `primary` del tema global y texto con contraste adecuado. No usarán colores de evaluaciones, porque pueden coexistir tipos con evaluaciones diferentes y no habrá prioridad arbitraria entre ellos.
 
-## 7.6. Color del mes
+## 7.6. Representación visual de días
 
-El color del encabezado del mes será el correspondiente a la evaluación a la que pertenezca el **día 1 de ese mes**.
+Los sábados y domingos se diferenciarán visualmente con tonos neutros del tema y seguirán siendo no lectivos en V1 sin crear registros en `_FECHAS`.
 
-Es una referencia visual orientativa aunque otros tipos de enseñanza tengan otra evaluación en esas fechas.
+Las fechas especiales se representarán aplicando únicamente el evento dominante por prioridad visual. Si existen varios eventos en el mismo día, se mostrará el de mayor prioridad y los demás datos permanecerán intactos. Un evento específico por tipo se representará en el calendario único si aplica al menos a uno de los tipos activos; si solo aplica a tipos inactivos, no afectará visualmente.
 
-## 7.7. Hoy y días pasados
+Prioridad visual:
 
-**Hoy:**
-- Fondo sólido configurable.
-- Azul turquesa por defecto.
-- Negrita.
+1. Hoy.
+2. Evento dominante de `_FECHAS`.
+3. Prácticas.
+4. Repaso.
+5. Fin de semana.
+6. Día normal.
 
-**Días anteriores a hoy:**
-- Texto tachado.
+Esta prioridad es solo de presentación. No altera lectividad, datos ni validaciones.
 
-## 7.8. Estadísticas
+Los periodos de prácticas y repaso de tipos activos se mostrarán si al menos un tipo activo contiene esa fecha. Prácticas y repaso no convierten por sí mismos el día en no lectivo.
 
-Por cada tipo de enseñanza activo:
+Si una fecha no pertenece al periodo de ningún tipo activo, tendrá aspecto neutro/apagado. No se ocultará y podrá seguir mostrando eventos globales si existen.
 
-- Días lectivos por evaluación.
-- Días lectivos totales.
-- Días lectivos transcurridos.
-- Días lectivos restantes.
-- Días desde el inicio de clases.
-- Días hasta final de curso.
-- Días hasta el final de la evaluación actual.
+## 7.7. Colores semánticos
 
-Se excluirán fines de semana no lectivos, festivos, vacaciones y días expresamente no lectivos.
+Los colores específicos del calendario se definirán de forma centralizada en la capa de presentación. Como mínimo existirán estilos para `FESTIVO`, `VACACIONES`, `NO_LECTIVO`, `REUNION`, `DESTACADO`, `PRACTICAS`, `REPASO` y `HOY`.
 
+Los valores por defecto serán legibles y pastel salvo `HOY`, que tendrá un color sólido turquesa con contraste suficiente y quedará preparado para configuración futura. Ningún cálculo inspeccionará colores, fondos, bordes ni formatos.
+
+La hoja incluirá una leyenda compacta con los elementos útiles presentes o aplicables, incluyendo siempre `Hoy`.
+
+## 7.8. Hoy, días pasados y estadísticas
+
+`HOY` se comparará en la zona horaria del Spreadsheet, tendrá prioridad visual sobre otros fondos, se mostrará con fondo sólido y negrita, y no se tachará.
+
+Los días anteriores a hoy mostrarán el número de día tachado conservando el color que corresponda por evento, prácticas, repaso o fin de semana.
+
+Como los encabezados mensuales no representan evaluaciones, la hoja mostrará un resumen separado por tipo activo con las evaluaciones y sus rangos derivados. La fecha inicial de la primera evaluación será la fecha de inicio del tipo; las siguientes comenzarán el día posterior al final de la evaluación anterior. Estas fechas derivadas no se almacenarán.
+
+Por cada tipo activo y evaluación se mostrarán al menos días lectivos totales, transcurridos y restantes.
+
+Día lectivo para estas estadísticas:
+
+- lunes a viernes;
+- dentro del periodo del tipo;
+- dentro del periodo de la evaluación;
+- no afectado por `FESTIVO`, `VACACIONES` ni `NO_LECTIVO` aplicable a ese tipo.
+
+`REUNION` y `DESTACADO` no descuentan día lectivo. Prácticas y repaso tampoco alteran el cómputo general.
+
+Regla temporal: `transcurridos <= hoy` y `restantes > hoy`, de forma que total = transcurridos + restantes cuando hoy cae dentro del periodo.
+
+Al guardar la configuración de calendario se actualizará automáticamente `1 Calendario`. La acción de menú `Actualizar calendario` solo regenerará la vista desde la fuente de verdad, sin editar datos.
 
 # 8. Horario del docente
 
@@ -1158,7 +1172,7 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.2.6
+Versión del cuaderno: 1.2.7
 Versión del esquema: 4
 ```
 
@@ -1411,7 +1425,7 @@ Construir una aplicación excesivamente compleja
 - Un único calendario escolar visual.
 - Prioridad a colores frente a indicadores adicionales.
 - Si una fecha tiene varios significados, visualmente se muestra el primero.
-- El color del mes depende de la evaluación del día 1.
+- Los encabezados mensuales usan el color primario del tema; las evaluaciones se muestran en resumen separado.
 - Una sesión equivale a una hora docente.
 - Impartición = módulo + grupo.
 - El alumnado puede configurarse después.

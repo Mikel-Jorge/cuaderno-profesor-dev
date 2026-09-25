@@ -1,9 +1,10 @@
 const CP = Object.freeze({
   PROJECT_NAME: 'Cuaderno del Profesor',
-  NOTEBOOK_VERSION: '1.2.6',
+  NOTEBOOK_VERSION: '1.2.7',
   SCHEMA_VERSION: '4',
   SHEETS: Object.freeze({
     COVER: '0 Portada',
+    CALENDAR: '1 Calendario',
     CONFIG: '_CONFIG',
     CALENDAR_TYPES: '_CAL_TIPOS',
     CALENDAR_EVALUATIONS: '_CAL_EVALUACIONES',
@@ -32,6 +33,7 @@ const CP = Object.freeze({
     CONFIG: '⚙️ Configuración',
     GENERAL_DATA: '👤 Datos generales',
     CALENDAR_CONFIG: '📅 Configurar calendario',
+    CALENDAR_UPDATE: '📅 Actualizar calendario',
     HELP: '❓ Ayuda',
   }),
   UI: Object.freeze({

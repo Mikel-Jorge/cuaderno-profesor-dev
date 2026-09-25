@@ -39,7 +39,7 @@ La implementación inicial utiliza una separación sencilla de responsabilidades
 - `Main.gs`: construcción del menú y puntos de entrada públicos generales.
 - `Setup.gs`: inicialización idempotente de la estructura base.
 - `GeneralConfig.gs`: definición, migración, lectura, validación y persistencia diferencial de la configuración general y visual.
-- `Calendar.gs`: modelo normalizado, reparación, validación, persistencia y consultas del calendario.
+- `Calendar.gs`: modelo normalizado, reparación, validación, persistencia, consultas, cálculos reutilizables de lectividad/estadísticas y renderizado de la hoja visible `1 Calendario`.
 - `Portada.gs`: reparación de estructura, actualización diferencial de datos, aplicación del tema y generación del índice navegable.
 - `Utils.gs`: utilidades comunes de acceso, organización, expansión y recorte de hojas.
 - `Ui.gs`: apertura de diálogos, registro de procesos UI y ejecución secuencial de pasos.
@@ -123,7 +123,9 @@ El transporte con la UI usa `yyyy-MM-dd`, formato nativo de los controles HTML d
 
 El guardado normaliza y valida el modelo completo antes de escribir. Después adquiere un bloqueo de documento, conserva snapshots de las cuatro tablas de calendario y realiza escrituras por bloques; si una escritura falla, intenta restaurar las cuatro tablas. Los IDs no dependen de filas físicas y la reparación conserva registros desconocidos fuera del modelo soportado.
 
-Las consultas de dominio devuelven todos los eventos aplicables y resuelven por separado el evento visual dominante. Los solapamientos permanecen íntegros. Los fines de semana y el carácter no lectivo se derivan en código; no se materializan como eventos. El color queda exclusivamente en la futura capa de presentación de `1 Calendario`.
+Las consultas de dominio devuelven todos los eventos aplicables y resuelven por separado el evento visual dominante. Los solapamientos permanecen íntegros. Los fines de semana y el carácter no lectivo se derivan en código; no se materializan como eventos. Los cálculos reutilizables determinan pertenencia a tipos, rangos derivados de evaluaciones, lectividad por tipo, estadísticas por evaluación y periodos de prácticas/repaso exclusivamente desde el modelo estructurado.
+
+La hoja visible `1 Calendario` se renderiza como una vista idempotente de esas tablas: crea o repara la hoja, la sitúa tras `0 Portada`, dibuja el curso de agosto a julio, aplica estilos semánticos centralizados y recorta el layout al área útil. La actualización puede ejecutarse desde el guardado de configuración, desde la acción de menú de regeneración o desde Inicializar / reparar. Los colores de la hoja son presentación; ningún cálculo inspecciona formatos.
 
 ## Restricciones técnicas vigentes
 

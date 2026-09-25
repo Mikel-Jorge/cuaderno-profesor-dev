@@ -33,6 +33,7 @@ function getSidebarStateItems_(config) {
   ].every(function(key) {
     return Boolean(normalizeConfigValue_(config[key]));
   });
+  const calendarConfigured = isCalendarConfiguredForSidebar_();
 
   return [
     {
@@ -40,7 +41,11 @@ function getSidebarStateItems_(config) {
       status: generalDataComplete ? 'complete' : 'pending',
       statusLabel: generalDataComplete ? 'Completados' : 'Pendientes',
     },
-    { label: 'Calendario', status: 'unavailable', statusLabel: 'No disponible todavía' },
+    {
+      label: 'Calendario',
+      status: calendarConfigured ? 'complete' : 'pending',
+      statusLabel: calendarConfigured ? 'Configurado' : 'Pendiente',
+    },
     { label: 'Horario', status: 'unavailable', statusLabel: 'No disponible todavía' },
     { label: 'Módulos', status: 'unavailable', statusLabel: 'No disponible todavía' },
     { label: 'Alumnado', status: 'unavailable', statusLabel: 'No disponible todavía' },
@@ -50,6 +55,7 @@ function getSidebarStateItems_(config) {
 function getSidebarContextSectionId_(sheetName) {
   const sectionBySheet = {};
   sectionBySheet[CP.SHEETS.COVER] = 'cover';
+  sectionBySheet[CP.SHEETS.CALENDAR] = 'calendar';
   return sectionBySheet[sheetName] || 'first-steps';
 }
 
@@ -69,6 +75,11 @@ function getSidebarHelpSections_(contextSectionId) {
       id: 'general-data',
       title: 'Datos generales',
       text: 'Guarda el curso académico, el profesor, el centro y la apariencia. Los cambios actualizan la portada.',
+    },
+    {
+      id: 'calendar',
+      title: 'Calendario',
+      text: 'Muestra el curso académico de agosto a julio desde los datos estructurados. Los colores son solo representación visual.',
     },
     {
       id: 'new-course',
