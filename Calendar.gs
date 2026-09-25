@@ -6,11 +6,9 @@ const CP_CALENDAR_TYPE_DEFINITIONS = Object.freeze([
 ]);
 
 const CP_CALENDAR_CATEGORIES = Object.freeze({
-  FESTIVO: Object.freeze({ label: 'Festivo', priority: 10, nonTeaching: true }),
-  VACACIONES: Object.freeze({ label: 'Vacaciones', priority: 20, nonTeaching: true }),
-  NO_LECTIVO: Object.freeze({ label: 'No lectivo', priority: 30, nonTeaching: true }),
-  REUNION: Object.freeze({ label: 'Reunión', priority: 40, nonTeaching: false }),
-  DESTACADO: Object.freeze({ label: 'Destacado', priority: 50, nonTeaching: false }),
+  FESTIVO: Object.freeze({ label: 'Festivo / no lectivo', priority: 10, nonTeaching: true }),
+  REUNION: Object.freeze({ label: 'Reunión', priority: 20, nonTeaching: false }),
+  DESTACADO: Object.freeze({ label: 'Destacado', priority: 30, nonTeaching: false }),
 });
 
 const CP_CALENDAR_HEADERS = Object.freeze({
@@ -80,7 +78,7 @@ function migrateCalendarDateScopeModel_(datesSheet, dateTypesSheet) {
         if (dateId && isSupportedCalendarTypeId_(typeId)) {
           relationRows.push([dateId, typeId]);
         }
-        return [row[0], row[1], row[2], row[3], row[5], row[6]];
+        return [row[0], row[1], row[2], normalizeCalendarCategory_(row[3]), row[5], row[6]];
       });
       writeCalendarTable_(datesSheet, CP_CALENDAR_HEADERS.DATES, migratedDateRows, [2, 3]);
       if (datesSheet.getMaxColumns() >= legacyWidth) {
@@ -90,7 +88,17 @@ function migrateCalendarDateScopeModel_(datesSheet, dateTypesSheet) {
       initializeCalendarTableSheet_(datesSheet, CP_CALENDAR_HEADERS.DATES, [2, 3]);
     }
 
-    const validDateIds = readCalendarTableRows_(datesSheet, CP_CALENDAR_HEADERS.DATES.length)
+    const normalizedDateRows = readCalendarTableRows_(datesSheet, CP_CALENDAR_HEADERS.DATES.length)
+      .map(function(row) {
+        row[3] = normalizeCalendarCategory_(row[3]);
+        row[5] = CP_CALENDAR_CATEGORIES[row[3]]
+          ? CP_CALENDAR_CATEGORIES[row[3]].priority
+          : row[5];
+        return row;
+      });
+    writeCalendarTable_(datesSheet, CP_CALENDAR_HEADERS.DATES, normalizedDateRows, [2, 3]);
+
+    const validDateIds = normalizedDateRows
       .reduce(function(map, row) {
         const dateId = normalizeCalendarText_(row[0]);
         if (dateId) {
@@ -346,7 +354,7 @@ function getCalendarConfigForUi_(spreadsheet) {
         startDate: startDate,
         endDate: endDate,
         isRange: Boolean(startDate && endDate && startDate !== endDate),
-        category: normalizeCalendarText_(row[3]),
+        category: normalizeCalendarCategory_(row[3]),
         appliesToAll: typeIds.length === 0,
         typeIds: typeIds,
         description: normalizeCalendarText_(row[4]),
@@ -494,7 +502,7 @@ function normalizeCalendarEvent_(input, timeZone) {
   if (!input || typeof input !== 'object') {
     throw new Error('Hay una fecha especial incompleta.');
   }
-  const category = normalizeCalendarText_(input.category);
+  const category = normalizeCalendarCategory_(input.category);
   if (!isSupportedCalendarCategory_(category)) {
     throw new Error('La categoría de una fecha especial no es válida.');
   }
@@ -706,6 +714,14 @@ function normalizeCalendarText_(value) {
   return value === null || value === undefined ? '' : String(value).trim();
 }
 
+function normalizeCalendarCategory_(category) {
+  const normalized = normalizeCalendarText_(category);
+  if (normalized === 'VACACIONES' || normalized === 'NO_LECTIVO') {
+    return 'FESTIVO';
+  }
+  return normalized;
+}
+
 function isSupportedCalendarTypeId_(typeId) {
   return CP_CALENDAR_TYPE_DEFINITIONS.some(function(definition) {
     return definition.id === normalizeCalendarText_(typeId);
@@ -715,7 +731,7 @@ function isSupportedCalendarTypeId_(typeId) {
 function isSupportedCalendarCategory_(category) {
   return Object.prototype.hasOwnProperty.call(
     CP_CALENDAR_CATEGORIES,
-    normalizeCalendarText_(category)
+    normalizeCalendarCategory_(category)
   );
 }
 
@@ -819,7 +835,7 @@ function getCalendarEventsBetween_(startDate, endDate, typeId) {
         compareCalendarDates_(eventStart, normalizedEnd, timeZone) <= 0 &&
         compareCalendarDates_(eventEnd, normalizedStart, timeZone) >= 0;
     }).map(function(row) {
-      const category = normalizeCalendarText_(row[3]);
+      const category = normalizeCalendarCategory_(row[3]);
       return {
         id: normalizeCalendarText_(row[0]),
         startDate: row[1],
@@ -860,16 +876,14 @@ function isWeekend_(date) {
 }
 
 const CP_CALENDAR_MONTH_NAMES = Object.freeze([
-  'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre', 'Enero',
-  'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio',
+  'Septiembre', 'Octubre', 'Noviembre', 'Diciembre', 'Enero',
+  'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
 ]);
 
 const CP_CALENDAR_WEEKDAY_LABELS = Object.freeze(['L', 'M', 'X', 'J', 'V', 'S', 'D']);
 
 const CP_CALENDAR_STYLE_KEYS = Object.freeze({
   FESTIVO: 'festivo',
-  VACACIONES: 'vacaciones',
-  NO_LECTIVO: 'noLectivo',
   REUNION: 'reunion',
   DESTACADO: 'destacado',
   PRACTICAS: 'practicas',
@@ -880,7 +894,7 @@ const CP_CALENDAR_STYLE_KEYS = Object.freeze({
   NORMAL: 'normal',
 });
 
-function actualizarCalendario() {
+function actualizarCalendario_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   initializeCalendarStructure_();
   const sheet = getOrCreateSheet_(spreadsheet, CP.SHEETS.CALENDAR);
@@ -902,7 +916,7 @@ function actualizarCalendario() {
 }
 
 function createOrRepairCalendarSheet_() {
-  actualizarCalendario();
+  actualizarCalendario_();
 }
 
 function buildCalendarRenderModel_(spreadsheet) {
@@ -951,9 +965,9 @@ function renderCalendarSheet_(sheet, model) {
   canvas.clear();
   canvas
     .setFontFamily('Arial')
-    .setFontSize(9)
+    .setFontSize(8)
     .setVerticalAlignment('middle')
-    .setWrap(true)
+    .setWrap(false)
     .setBackground(model.theme.colors.background)
     .setFontColor(model.theme.colors.text);
 
@@ -970,16 +984,16 @@ function renderCalendarSheet_(sheet, model) {
     return;
   }
 
-  renderCalendarMonths_(sheet, model, layout);
-  renderCalendarLegend_(sheet, model, layout);
   renderCalendarEvaluationSummary_(sheet, model, layout);
   renderCalendarStats_(sheet, model, layout);
+  renderCalendarLegend_(sheet, model, layout);
+  renderCalendarMonths_(sheet, model, layout);
   trimSheetToBounds_(sheet, layout.rows, layout.columns);
 }
 
 function renderCalendarUnavailableSheet_(sheet, spreadsheet, message) {
   const theme = getActiveTheme_(spreadsheet);
-  const columns = 23;
+  const columns = 39;
   const rows = 8;
   ensureSheetSize_(sheet, rows, columns);
   sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).breakApart();
@@ -987,7 +1001,7 @@ function renderCalendarUnavailableSheet_(sheet, spreadsheet, message) {
     .clear()
     .setFontFamily('Arial')
     .setVerticalAlignment('middle')
-    .setWrap(true)
+    .setWrap(false)
     .setBackground(theme.colors.background)
     .setFontColor(theme.colors.text);
   sheet.setHiddenGridlines(true);
@@ -995,9 +1009,9 @@ function renderCalendarUnavailableSheet_(sheet, spreadsheet, message) {
   sheet.setFrozenColumns(0);
   sheet.setTabColor(theme.colors.primary);
   for (let column = 1; column <= columns; column += 1) {
-    sheet.setColumnWidth(column, column === 8 || column === 16 ? 18 : 44);
+    sheet.setColumnWidth(column, [8, 16, 24, 32].indexOf(column) !== -1 ? 10 : 31);
   }
-  sheet.setRowHeights(1, rows, 28);
+  sheet.setRowHeights(1, rows, 24);
   setMergedRangeValue_(sheet.getRange(1, 1, 1, columns), 'CALENDARIO ESCOLAR')
     .setBackground(theme.colors.primary)
     .setFontColor(theme.colors.onPrimary)
@@ -1017,18 +1031,16 @@ function getCalendarSheetLayout_(model) {
   const monthColumns = 7;
   const monthGapRows = 1;
   const monthGapColumns = 1;
-  const firstMonthRow = 6;
   const firstMonthColumn = 1;
-  const legendRow = firstMonthRow + (monthRows * 4) + (monthGapRows * 3) + 2;
-  const evaluationRow = legendRow + 4;
-  const evaluationRows = Math.max(3, model.activeTypes.reduce(function(total, type) {
-    return total + Math.max(1, (model.evaluationsByTypeId[type.id] || []).length) + 1;
-  }, 1));
-  const statsRow = evaluationRow + evaluationRows + 2;
+  const evaluationRow = 5;
+  const evaluationRows = Math.max(2, model.activeTypes.length + 1);
+  const statsRow = evaluationRow + evaluationRows + 1;
   const statsRows = Math.max(2, model.stats.length + 1);
+  const legendRow = statsRow + statsRows + 1;
+  const firstMonthRow = legendRow + 3;
   return {
-    rows: statsRow + statsRows + 1,
-    columns: 23,
+    rows: firstMonthRow + (monthRows * 2) + monthGapRows - 1,
+    columns: 39,
     firstMonthRow: firstMonthRow,
     firstMonthColumn: firstMonthColumn,
     monthRows: monthRows,
@@ -1043,11 +1055,17 @@ function getCalendarSheetLayout_(model) {
 
 function applyCalendarDimensions_(sheet, layout) {
   for (let column = 1; column <= layout.columns; column += 1) {
-    sheet.setColumnWidth(column, column === 8 || column === 16 ? 18 : 44);
+    sheet.setColumnWidth(column, [8, 16, 24, 32].indexOf(column) !== -1 ? 10 : 31);
   }
-  sheet.setRowHeights(1, layout.rows, 26);
-  sheet.setRowHeight(1, 38);
-  sheet.setRowHeight(2, 30);
+  sheet.setRowHeights(1, layout.rows, 22);
+  sheet.setRowHeight(1, 30);
+  sheet.setRowHeight(2, 24);
+  for (let monthBlock = 0; monthBlock < 2; monthBlock += 1) {
+    const startRow = layout.firstMonthRow + monthBlock * (layout.monthRows + layout.monthGapRows);
+    sheet.setRowHeight(startRow, 22);
+    sheet.setRowHeight(startRow + 1, 18);
+    sheet.setRowHeights(startRow + 2, 6, 31);
+  }
 }
 
 function renderCalendarHeader_(sheet, model, layout) {
@@ -1086,13 +1104,13 @@ function renderCalendarNoActiveTypes_(sheet, model, layout) {
 
 function renderCalendarMonths_(sheet, model, layout) {
   const academicStartYear = Number(model.academicYear.split('-')[0]);
-  for (let monthIndex = 0; monthIndex < 12; monthIndex += 1) {
-    const gridRow = Math.floor(monthIndex / 3);
-    const gridColumn = monthIndex % 3;
+  for (let monthIndex = 0; monthIndex < 10; monthIndex += 1) {
+    const gridRow = Math.floor(monthIndex / 5);
+    const gridColumn = monthIndex % 5;
     const startRow = layout.firstMonthRow + gridRow * (layout.monthRows + layout.monthGapRows);
     const startColumn = layout.firstMonthColumn + gridColumn * (layout.monthColumns + layout.monthGapColumns);
-    const monthNumber = (monthIndex + 7) % 12;
-    const year = monthIndex < 5 ? academicStartYear : academicStartYear + 1;
+    const monthNumber = monthIndex < 4 ? monthIndex + 8 : monthIndex - 4;
+    const year = monthIndex < 4 ? academicStartYear : academicStartYear + 1;
     renderSingleCalendarMonth_(sheet, model, startRow, startColumn, year, monthNumber, monthIndex);
   }
 }
@@ -1113,7 +1131,8 @@ function renderSingleCalendarMonth_(sheet, model, startRow, startColumn, year, m
     .setBackground(colors.muted)
     .setFontColor(colors.text)
     .setFontWeight('bold')
-    .setHorizontalAlignment('center');
+    .setHorizontalAlignment('center')
+    .setWrap(false);
 
   const values = [];
   const backgrounds = [];
@@ -1169,7 +1188,8 @@ function renderSingleCalendarMonth_(sheet, model, startRow, startColumn, year, m
     .setFontLines(fontLines)
     .setNotes(notes)
     .setHorizontalAlignment('center')
-    .setVerticalAlignment('top')
+    .setVerticalAlignment('middle')
+    .setWrap(false)
     .setBorder(true, true, true, true, true, true, colors.border, SpreadsheetApp.BorderStyle.SOLID);
   sheet.getRange(startRow, startColumn, 8, 7)
     .setBorder(true, true, true, true, false, false, colors.border, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
@@ -1180,31 +1200,26 @@ function getCalendarVisualStateForDate_(date, model) {
   const isToday = serial === model.todaySerial;
   const isPast = serial < model.todaySerial;
   const event = getDominantCalendarEventForTypeIds_(date, model.activeTypeIds, model.events, model.timeZone);
-  const inPractices = isDateInAnyTeachingTypeRange_(date, model.activeTypes, 'practicesStart', 'practicesEnd', model.timeZone);
-  const inReview = isDateInAnyTeachingTypeRange_(date, model.activeTypes, 'reviewStart', 'reviewEnd', model.timeZone);
-  const inActiveTypePeriod = isDateInAnyTeachingTypeRange_(date, model.activeTypes, 'startDate', 'endDate', model.timeZone);
   const weekend = isWeekendDate_(date);
+  const practiceMilestone = getPracticeMilestonesForDate_(date, model.activeTypes, model.timeZone).length > 0;
+  const inReview = !weekend && isDateInAnyTeachingTypeRange_(date, model.activeTypes, 'reviewStart', 'reviewEnd', model.timeZone);
+  const inActiveTypePeriod = isDateInAnyTeachingTypeRange_(date, model.activeTypes, 'startDate', 'endDate', model.timeZone);
   let styleKey = CP_CALENDAR_STYLE_KEYS.NORMAL;
-  let note = '';
 
-  if (event) {
+  if (weekend || (event && event.category === 'FESTIVO')) {
+    styleKey = CP_CALENDAR_STYLE_KEYS.WEEKEND;
+  } else if (event && (event.category === 'REUNION' || event.category === 'DESTACADO')) {
     styleKey = event.category;
-    note = formatCalendarEventNote_(event);
-  } else if (inPractices) {
+  } else if (practiceMilestone) {
     styleKey = CP_CALENDAR_STYLE_KEYS.PRACTICAS;
-    note = 'Prácticas';
   } else if (inReview) {
     styleKey = CP_CALENDAR_STYLE_KEYS.REPASO;
-    note = 'Repaso';
-  } else if (weekend) {
-    styleKey = CP_CALENDAR_STYLE_KEYS.WEEKEND;
   } else if (!inActiveTypePeriod) {
     styleKey = CP_CALENDAR_STYLE_KEYS.OUTSIDE_ACTIVE_TYPES;
   }
 
   if (isToday) {
     styleKey = CP_CALENDAR_STYLE_KEYS.HOY;
-    note = note ? 'Hoy\n' + note : 'Hoy';
   }
 
   const style = model.styles[styleKey] || model.styles.normal;
@@ -1213,22 +1228,20 @@ function getCalendarVisualStateForDate_(date, model) {
     fontColor: style.fontColor,
     isToday: isToday,
     isPast: isPast,
-    note: note,
+    note: buildCalendarDayNote_(date, model),
   };
 }
 
 function getCalendarSemanticStyles_(theme) {
   const colors = theme.colors;
   const styles = {};
-  styles.FESTIVO = { label: 'Festivo', background: '#F8D7DA', fontColor: colors.text };
-  styles.VACACIONES = { label: 'Vacaciones', background: '#D9F2E6', fontColor: colors.text };
-  styles.NO_LECTIVO = { label: 'No lectivo', background: '#E5E7EB', fontColor: colors.text };
+  styles.FESTIVO = { label: 'Festivo / no lectivo', background: colors.muted, fontColor: colors.mutedText };
   styles.REUNION = { label: 'Reunión', background: '#E0E7FF', fontColor: colors.text };
   styles.DESTACADO = { label: 'Destacado', background: '#FEF3C7', fontColor: colors.text };
-  styles.practicas = { label: 'Prácticas', background: '#DBEAFE', fontColor: colors.text };
+  styles.practicas = { label: 'Inicio/fin prácticas', background: '#DBEAFE', fontColor: colors.text };
   styles.repaso = { label: 'Repaso', background: '#FCE7F3', fontColor: colors.text };
   styles.hoy = { label: 'Hoy', background: '#00A6B2', fontColor: getAccessibleTextColor_('#00A6B2') };
-  styles.weekend = { label: 'Fin de semana', background: colors.muted, fontColor: colors.mutedText };
+  styles.weekend = { label: 'Festivo / no lectivo', background: colors.muted, fontColor: colors.mutedText };
   styles.outsideActiveTypes = { label: 'Fuera de periodo', background: colors.surface, fontColor: colors.mutedText };
   styles.normal = { label: 'Día lectivo', background: colors.surface, fontColor: colors.text };
   return styles;
@@ -1236,22 +1249,29 @@ function getCalendarSemanticStyles_(theme) {
 
 function renderCalendarLegend_(sheet, model, layout) {
   const legendItems = getCalendarLegendItems_(model);
-  setMergedRangeValue_(sheet.getRange(layout.legendRow, 1, 1, layout.columns), 'LEYENDA')
+  const rowRange = sheet.getRange(layout.legendRow, 1, 1, layout.columns);
+  rowRange
+    .setBackground(model.theme.colors.background)
+    .setFontColor(model.theme.colors.text)
+    .setFontWeight('bold')
+    .setVerticalAlignment('middle')
+    .setWrap(false)
+    .setBorder(true, true, true, true, false, false, model.theme.colors.border, SpreadsheetApp.BorderStyle.SOLID);
+  setMergedRangeValue_(sheet.getRange(layout.legendRow, 1, 1, 2), 'LEYENDA')
     .setBackground(model.theme.colors.primary)
     .setFontColor(model.theme.colors.onPrimary)
-    .setFontWeight('bold');
-  if (!legendItems.length) return;
-
-  const values = [legendItems.map(function(item) { return item.label; })];
-  const backgrounds = [legendItems.map(function(item) { return item.background; })];
-  const fontColors = [legendItems.map(function(item) { return item.fontColor; })];
-  const range = sheet.getRange(layout.legendRow + 1, 1, 1, legendItems.length);
-  range
-    .setValues(values)
-    .setBackgrounds(backgrounds)
-    .setFontColors(fontColors)
-    .setFontWeight('bold')
     .setHorizontalAlignment('center');
+  legendItems.forEach(function(item, index) {
+    const startColumn = 3 + index * 6;
+    if (startColumn + 4 > layout.columns) return;
+    sheet.getRange(layout.legendRow, startColumn)
+      .setBackground(item.background)
+      .setFontColor(item.fontColor);
+    setMergedRangeValue_(sheet.getRange(layout.legendRow, startColumn + 1, 1, 4), item.label)
+      .setBackground(model.theme.colors.background)
+      .setFontColor(model.theme.colors.text)
+      .setHorizontalAlignment('left');
+  });
 }
 
 function getCalendarLegendItems_(model) {
@@ -1261,7 +1281,7 @@ function getCalendarLegendItems_(model) {
     }
     return map;
   }, {});
-  const orderedKeys = ['FESTIVO', 'VACACIONES', 'NO_LECTIVO', 'REUNION', 'DESTACADO'];
+  const orderedKeys = ['REUNION', 'DESTACADO'];
   const items = orderedKeys.filter(function(key) {
     return categoriesInUse[key];
   }).map(function(key) {
@@ -1271,7 +1291,8 @@ function getCalendarLegendItems_(model) {
       fontColor: model.styles[key].fontColor,
     };
   });
-  if (model.activeTypes.some(function(type) { return type.practicesStart && type.practicesEnd; })) {
+  items.unshift(model.styles.weekend);
+  if (model.activeTypes.some(function(type) { return type.practicesStart || type.practicesEnd; })) {
     items.push(model.styles.practicas);
   }
   if (model.activeTypes.some(function(type) { return type.reviewStart && type.reviewEnd; })) {
@@ -1282,55 +1303,78 @@ function getCalendarLegendItems_(model) {
 }
 
 function renderCalendarEvaluationSummary_(sheet, model, layout) {
-  const rows = [['Tipo', 'Evaluación', 'Inicio', 'Fin']];
-  model.activeTypes.forEach(function(type) {
+  const colors = model.theme.colors;
+  setMergedRangeValue_(sheet.getRange(layout.evaluationRow, 1, 1, layout.columns), 'EVALUACIONES')
+    .setBackground(colors.primary)
+    .setFontColor(colors.onPrimary)
+    .setFontWeight('bold')
+    .setHorizontalAlignment('center');
+  model.activeTypes.forEach(function(type, index) {
     const periods = model.evaluationsByTypeId[type.id] || [];
-    if (!periods.length) {
-      rows.push([type.name, 'Sin evaluaciones configuradas', '', '']);
-      return;
-    }
-    periods.forEach(function(period) {
-      rows.push([
-        type.name,
-        period.name,
-        formatCalendarDateForDisplay_(period.startDate, model.timeZone),
-        formatCalendarDateForDisplay_(period.endDate, model.timeZone),
-      ]);
-    });
+    const row = layout.evaluationRow + index + 1;
+    const summary = periods.length
+      ? periods.map(function(period) {
+        return period.name + ': ' +
+          formatCalendarDateForDisplay_(period.startDate, model.timeZone) + '-' +
+          formatCalendarDateForDisplay_(period.endDate, model.timeZone);
+      }).join(' | ')
+      : 'Sin evaluaciones configuradas';
+    setMergedRangeValue_(sheet.getRange(row, 1, 1, 6), type.name)
+      .setBackground(colors.muted)
+      .setFontColor(colors.text)
+      .setFontWeight('bold');
+    setMergedRangeValue_(sheet.getRange(row, 7, 1, layout.columns - 6), summary)
+      .setBackground(colors.surface)
+      .setFontColor(colors.text);
   });
-  renderCalendarTableBlock_(sheet, model, layout.evaluationRow, 'EVALUACIONES', rows);
+  sheet.getRange(layout.evaluationRow, 1, Math.max(1, model.activeTypes.length + 1), layout.columns)
+    .setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
+    .setBorder(true, true, true, true, true, true, colors.border, SpreadsheetApp.BorderStyle.SOLID);
 }
 
 function renderCalendarStats_(sheet, model, layout) {
-  const rows = [['Tipo', 'Evaluación', 'Lectivos', 'Transcurridos', 'Restantes']];
-  model.stats.forEach(function(item) {
-    rows.push([item.typeName, item.evaluationName, item.total, item.elapsed, item.remaining]);
+  const colors = model.theme.colors;
+  setMergedRangeValue_(sheet.getRange(layout.statsRow, 1, 1, layout.columns), 'ESTADÍSTICAS DE DÍAS LECTIVOS')
+    .setBackground(colors.primary)
+    .setFontColor(colors.onPrimary)
+    .setFontWeight('bold')
+    .setHorizontalAlignment('center');
+  renderCalendarStatsRow_(sheet, model, layout.statsRow + 1, {
+    typeName: 'Tipo',
+    evaluationName: 'Evaluación',
+    total: 'Lectivos',
+    elapsed: 'Transcurridos',
+    remaining: 'Restantes',
+  }, true);
+  const stats = model.stats.length
+    ? model.stats
+    : [{ typeName: '', evaluationName: 'Sin evaluaciones configuradas', total: '', elapsed: '', remaining: '' }];
+  stats.forEach(function(item, index) {
+    renderCalendarStatsRow_(sheet, model, layout.statsRow + index + 2, item, false);
   });
-  if (rows.length === 1) {
-    rows.push(['', 'Sin evaluaciones configuradas', '', '', '']);
-  }
-  renderCalendarTableBlock_(sheet, model, layout.statsRow, 'ESTADÍSTICAS DE DÍAS LECTIVOS', rows);
+  sheet.getRange(layout.statsRow, 1, stats.length + 2, layout.columns)
+    .setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
+    .setBorder(true, true, true, true, true, true, colors.border, SpreadsheetApp.BorderStyle.SOLID);
 }
 
-function renderCalendarTableBlock_(sheet, model, startRow, title, rows) {
-  const titleRange = sheet.getRange(startRow, 1, 1, rows[0].length);
-  setMergedRangeValue_(titleRange, title)
-    .setBackground(model.theme.colors.primary)
-    .setFontColor(model.theme.colors.onPrimary)
-    .setFontWeight('bold');
-  const range = sheet.getRange(startRow + 1, 1, rows.length, rows[0].length);
-  range
-    .setValues(rows)
-    .setBorder(true, true, true, true, true, true, model.theme.colors.border, SpreadsheetApp.BorderStyle.SOLID);
-  sheet.getRange(startRow + 1, 1, 1, rows[0].length)
-    .setBackground(model.theme.colors.muted)
-    .setFontColor(model.theme.colors.text)
-    .setFontWeight('bold');
-  if (rows.length > 1) {
-    sheet.getRange(startRow + 2, 1, rows.length - 1, rows[0].length)
-      .setBackground(model.theme.colors.surface)
-      .setFontColor(model.theme.colors.text);
-  }
+function renderCalendarStatsRow_(sheet, model, row, item, isHeader) {
+  const colors = model.theme.colors;
+  const background = isHeader ? colors.muted : colors.surface;
+  const fontWeight = isHeader ? 'bold' : 'normal';
+  const segments = [
+    { column: 1, width: 7, value: item.typeName },
+    { column: 8, width: 12, value: item.evaluationName },
+    { column: 20, width: 6, value: item.total },
+    { column: 26, width: 7, value: item.elapsed },
+    { column: 33, width: 7, value: item.remaining },
+  ];
+  segments.forEach(function(segment) {
+    setMergedRangeValue_(sheet.getRange(row, segment.column, 1, segment.width), segment.value)
+      .setBackground(background)
+      .setFontColor(colors.text)
+      .setFontWeight(fontWeight)
+      .setHorizontalAlignment(segment.column >= 20 ? 'center' : 'left');
+  });
 }
 
 function moveCalendarSheetAfterCover_(spreadsheet, sheet) {
@@ -1358,7 +1402,7 @@ function getAllCalendarEvents_() {
     .filter(function(row) {
       return isSupportedCalendarCategory_(row[3]) && row[1] instanceof Date && row[2] instanceof Date;
     }).map(function(row) {
-      const category = normalizeCalendarText_(row[3]);
+      const category = normalizeCalendarCategory_(row[3]);
       const dateId = normalizeCalendarText_(row[0]);
       return {
         id: dateId,
@@ -1443,6 +1487,57 @@ function getCalendarEventsForTypeFromList_(date, typeId, events, timeZone) {
   });
 }
 
+function getCalendarEventsForTypeIdsFromList_(date, typeIds, events, timeZone) {
+  return events.filter(function(event) {
+    return eventAppliesToAnyTypeId_(event, typeIds) && isDateInsideCalendarEvent_(date, event, timeZone);
+  });
+}
+
+function buildCalendarDayNote_(date, model) {
+  const lines = [];
+  getCalendarEventsForTypeIdsFromList_(date, model.activeTypeIds, model.events, model.timeZone)
+    .forEach(function(event) {
+      if (event.category !== 'REUNION' && event.category !== 'DESTACADO') return;
+      const description = normalizeCalendarText_(event.description);
+      if (description) lines.push(description);
+    });
+  model.activeTypes.forEach(function(type) {
+    (model.evaluationsByTypeId[type.id] || []).forEach(function(period) {
+      if (compareCalendarDates_(date, period.endDate, model.timeZone) === 0) {
+        lines.push(type.name + ' - Fin ' + period.name);
+      }
+    });
+  });
+  getPracticeMilestonesForDate_(date, model.activeTypes, model.timeZone)
+    .forEach(function(line) { lines.push(line); });
+  return dedupeCalendarNoteLines_(lines).join('\n');
+}
+
+function getPracticeMilestonesForDate_(date, types, timeZone) {
+  const lines = [];
+  types.forEach(function(type) {
+    if (type.practicesStart instanceof Date &&
+        compareCalendarDates_(date, type.practicesStart, timeZone) === 0) {
+      lines.push(type.name + ' - Inicio prácticas');
+    }
+    if (type.practicesEnd instanceof Date &&
+        compareCalendarDates_(date, type.practicesEnd, timeZone) === 0) {
+      lines.push(type.name + ' - Fin prácticas');
+    }
+  });
+  return lines;
+}
+
+function dedupeCalendarNoteLines_(lines) {
+  return lines.reduce(function(result, line) {
+    const normalized = normalizeCalendarText_(line);
+    if (normalized && result.indexOf(normalized) === -1) {
+      result.push(normalized);
+    }
+    return result;
+  }, []);
+}
+
 function eventAppliesToAnyTypeId_(event, typeIds) {
   return event.typeIds.length === 0 || event.typeIds.some(function(typeId) {
     return typeIds.indexOf(typeId) !== -1;
@@ -1492,9 +1587,10 @@ function formatCalendarDateForDisplay_(date, timeZone) {
 }
 
 function formatCalendarEventNote_(event) {
-  const category = CP_CALENDAR_CATEGORIES[event.category];
-  const label = category ? category.label : event.category;
-  return event.description ? label + '\n' + event.description : label;
+  if (!event || (event.category !== 'REUNION' && event.category !== 'DESTACADO')) {
+    return '';
+  }
+  return normalizeCalendarText_(event.description);
 }
 
 function isCalendarConfiguredForSidebar_() {

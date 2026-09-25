@@ -338,7 +338,7 @@ Cada fecha especial se mostrará dentro del acordeón principal como un elemento
 Fecha inicio = Fecha fin
 ```
 
-Las categorías iniciales serán `FESTIVO`, `VACACIONES`, `NO_LECTIVO`, `REUNION` y `DESTACADO`. Los registros tendrán identificadores estables y podrán solaparse sin fusionarse ni eliminarse.
+Las categorías iniciales serán `FESTIVO`, `REUNION` y `DESTACADO`. `FESTIVO` representará cualquier día no lectivo, incluidas vacaciones y otras jornadas sin clase. Los registros tendrán identificadores estables y podrán solaparse sin fusionarse ni eliminarse.
 
 La relación entre fechas especiales y tipos será N:M mediante `_CAL_FECHA_TIPOS`:
 
@@ -354,13 +354,13 @@ Si una fecha tiene más de un significado:
 
 > Se mostrará visualmente el primero que corresponda según el orden/prioridad definido.
 
-La prioridad visual por defecto será: `FESTIVO` 10, `VACACIONES` 20, `NO_LECTIVO` 30, `REUNION` 40 y `DESTACADO` 50; un número menor domina visualmente. Resolver el evento dominante no elimina ni oculta los demás datos. No se añadirán iconos, subdivisiones ni indicadores secundarios en V1.
+La prioridad visual por defecto será: `FESTIVO` 10, `REUNION` 20 y `DESTACADO` 30; un número menor domina visualmente entre eventos. Resolver el evento dominante no elimina ni oculta los demás datos. No se añadirán iconos, subdivisiones ni indicadores secundarios en V1.
 
 ## 7.5. Calendario visible
 
 La hoja `1 Calendario` será una representación generada desde `_CAL_TIPOS`, `_CAL_EVALUACIONES`, `_FECHAS` y `_CAL_FECHA_TIPOS`. Los colores, formatos y celdas visibles nunca serán fuente de verdad para cálculos.
 
-Mostrará siempre el curso académico configurado de agosto a julio, con meses en español y semanas de lunes a domingo. La distribución será compacta, preferentemente en una cuadrícula de 3 meses por fila y 4 filas, con celdas homogéneas y sin mostrar números de días fuera del mes.
+Mostrará el curso académico configurado de septiembre a junio, con meses en español y semanas de lunes a domingo. La distribución será compacta en una cuadrícula de 5 meses por fila y 2 filas, con celdas homogéneas de aproximadamente 30-32 px y sin mostrar números de días fuera del mes.
 
 La cabecera general mostrará `CALENDARIO ESCOLAR`, el curso académico y los tipos activos. Los tipos inactivos no se incluirán en ese resumen.
 
@@ -375,21 +375,24 @@ Las fechas especiales se representarán aplicando únicamente el evento dominant
 Prioridad visual:
 
 1. Hoy.
-2. Evento dominante de `_FECHAS`.
-3. Prácticas.
-4. Repaso.
-5. Fin de semana.
-6. Día normal.
+2. `FESTIVO` o fin de semana, con el mismo estilo visual.
+3. `REUNION` o `DESTACADO`.
+4. Inicio o fin de prácticas.
+5. Repaso, solo en días laborables.
+6. Fuera del periodo de los tipos activos.
+7. Día normal.
 
 Esta prioridad es solo de presentación. No altera lectividad, datos ni validaciones.
 
-Los periodos de prácticas y repaso de tipos activos se mostrarán si al menos un tipo activo contiene esa fecha. Prácticas y repaso no convierten por sí mismos el día en no lectivo.
+Los periodos de prácticas no colorearán todo el rango: solo se marcarán sus fechas de inicio y fin, manteniendo el aspecto de fin de semana si caen en sábado o domingo. El repaso se mostrará en días laborables de tipos activos. Prácticas y repaso no convierten por sí mismos el día en no lectivo.
 
 Si una fecha no pertenece al periodo de ningún tipo activo, tendrá aspecto neutro/apagado. No se ocultará y podrá seguir mostrando eventos globales si existen.
 
+Las notas automáticas de los días serán mínimas. No se crearán notas para festivos, fines de semana, repaso, días normales ni días fuera de periodo. Solo se añadirán la descripción de `REUNION` o `DESTACADO` cuando exista, el fin de evaluación como `{tipo} - Fin {evaluacion}` y los hitos de prácticas como `{tipo} - Inicio prácticas` o `{tipo} - Fin prácticas`; las líneas duplicadas se eliminarán y las notas antiguas se sustituirán al regenerar.
+
 ## 7.7. Colores semánticos
 
-Los colores específicos del calendario se definirán de forma centralizada en la capa de presentación. Como mínimo existirán estilos para `FESTIVO`, `VACACIONES`, `NO_LECTIVO`, `REUNION`, `DESTACADO`, `PRACTICAS`, `REPASO` y `HOY`.
+Los colores específicos del calendario se definirán de forma centralizada en la capa de presentación. Como mínimo existirán estilos para `FESTIVO`, `REUNION`, `DESTACADO`, `PRACTICAS`, `REPASO`, `HOY`, fin de semana y fuera de periodo.
 
 Los valores por defecto serán legibles y pastel salvo `HOY`, que tendrá un color sólido turquesa con contraste suficiente y quedará preparado para configuración futura. Ningún cálculo inspeccionará colores, fondos, bordes ni formatos.
 
@@ -410,13 +413,13 @@ Día lectivo para estas estadísticas:
 - lunes a viernes;
 - dentro del periodo del tipo;
 - dentro del periodo de la evaluación;
-- no afectado por `FESTIVO`, `VACACIONES` ni `NO_LECTIVO` aplicable a ese tipo.
+- no afectado por `FESTIVO` aplicable a ese tipo.
 
 `REUNION` y `DESTACADO` no descuentan día lectivo. Prácticas y repaso tampoco alteran el cómputo general.
 
 Regla temporal: `transcurridos <= hoy` y `restantes > hoy`, de forma que total = transcurridos + restantes cuando hoy cae dentro del periodo.
 
-Al guardar la configuración de calendario se actualizará automáticamente `1 Calendario`. La acción de menú `Actualizar calendario` solo regenerará la vista desde la fuente de verdad, sin editar datos.
+Al guardar la configuración de calendario se actualizará automáticamente `1 Calendario`. La regeneración también se ejecutará desde Inicializar / reparar, sin acción de menú específica para actualizar el calendario.
 
 # 8. Horario del docente
 
@@ -638,7 +641,7 @@ Se generará usando:
 - Inicio y fin del curso correspondiente.
 - Evaluaciones.
 - Festivos.
-- Vacaciones.
+- Días no lectivos.
 - Prácticas.
 - Horario semanal de esa impartición.
 
@@ -907,7 +910,7 @@ La planificación futura seguirá respetando:
 - Calendario lectivo.
 - Horario.
 - Festivos.
-- Vacaciones.
+- Días no lectivos.
 - Prácticas.
 - Repasos.
 
@@ -1172,8 +1175,8 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.2.7
-Versión del esquema: 4
+Versión del cuaderno: 1.2.8
+Versión del esquema: 5
 ```
 
 La versión podrá mostrarse discretamente en Portada o panel.
@@ -1328,7 +1331,7 @@ Calendario
 Tipos de enseñanza
 Evaluaciones
 Festivos
-Vacaciones
+Días no lectivos
 Prácticas
 Repaso
 Hoy

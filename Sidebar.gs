@@ -79,7 +79,7 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'calendar',
       title: 'Calendario',
-      text: 'Muestra el curso académico de agosto a julio desde los datos estructurados. Los colores son solo representación visual.',
+      text: 'Muestra el curso académico de septiembre a junio desde los datos estructurados. Los colores son solo representación visual.',
     },
     {
       id: 'new-course',
