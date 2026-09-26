@@ -150,6 +150,11 @@ function getNewCourseProcessDefinition_(input) {
       run: updateNewCourseCover_,
     },
     {
+      label: 'Comprobando la estructura tecnica de Horario...',
+      completedMessage: 'Estructura tecnica de Horario preparada.',
+      run: ensureScheduleTechnicalStructure_,
+    },
+    {
       label: 'Finalizando...',
       completedMessage: 'Metadatos sincronizados y nuevo curso preparado.',
       run: finishNewCoursePreparation_,

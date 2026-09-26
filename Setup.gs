@@ -2,7 +2,7 @@ function inicializarCuaderno() {
   initializeCoverStructure_();
   initializeConfigStructure_();
   initializeCalendarStructure_();
-  initializeScheduleStructure_();
+  ensureScheduleTechnicalStructure_();
   createOrRepairCalendarSheet_();
   initializeMetaStructure_();
   finishStructureInitialization_();

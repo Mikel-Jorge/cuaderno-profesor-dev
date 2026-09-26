@@ -1,16 +1,18 @@
 # Estado del proyecto
 
-**Última actualización:** 2026-09-25
-**Estado general:** Calendario cerrado e inicio del bloque Horario, versión 1.3.0
+**Última actualización:** 2026-09-26
+**Estado general:** Calendario cerrado y estructura técnica de Horario garantizada, versión 1.3.1
 
-## Iteracion 1.3.0
+## Iteracion 1.3.1
 
-Version vigente del cuaderno: `1.3.0`.
+Version vigente del cuaderno: `1.3.1`.
 
 - Calendario cerrado funcionalmente: configurador, hoja visible, estadisticas, eventos, practicas/repaso, notas y estado del sidebar implementados.
 - Horario iniciado con modelo, tablas tecnicas ocultas, configurador, horario semanal, apoyo por sesion y consultas reutilizables.
+- La reparacion y Preparar nuevo curso garantizan de forma idempotente las tres tablas tecnicas de Horario, conservando sus datos; Configurar horario sigue siendo de solo lectura al abrir.
+- La regeneracion del calendario limpia unicamente las notas del area de dias de septiembre a junio antes de escribir las notas actuales.
 - La hoja visible `2 Horario` queda pendiente y no se crea en esta fase.
-- Version central del cuaderno: `1.3.0`; esquema: `6`.
+- Version central del cuaderno: `1.3.1`; esquema: `6`.
 
 - Configuradores de datos generales y calendario con apertura sin efectos laterales y reparacion explicita.
 - Guardado con formulario sustituido por estado bloqueado de carga, cierre automatico tras exito y restauracion tras error.
@@ -20,7 +22,7 @@ Version vigente del cuaderno: `1.3.0`.
 - Preparar nuevo curso recupera los tres colorpickers y persiste la personalizacion del tema.
 - Fechas especiales tienen layout estable con y sin rango; los configuradores usan loading exclusivo.
 - Se verifica el mapeo semantico de ReuniÃ³n y Destacado al renderer de celdas.
-- Version central del cuaderno: `1.3.0`; esquema: `6`.
+- Version central del cuaderno: `1.3.1`; esquema: `6`.
 
 ## Completado
 
@@ -50,10 +52,10 @@ Version vigente del cuaderno: `1.3.0`.
 - Web del centro normalizada y validada aunque se introduzca sin protocolo.
 - Utilidades globales para ampliar hojas y recortarlas al layout; aplicadas a la Portada `A:H` con filas dinámicas.
 - `_META` escribe las versiones como texto para evitar su conversión a fecha.
-- Versión central del cuaderno `1.3.0` y esquema `6`.
+- Versión central del cuaderno `1.3.1` y esquema `6`.
 - Infraestructura HTML común para diálogos de Apps Script implementada.
 - Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
-- La inicialización se ejecuta desde el diálogo en cinco pasos idempotentes.
+- La inicialización se ejecuta desde el diálogo en siete pasos idempotentes.
 - Branding local integrado en la UI sin dependencias externas, con fallback visual.
 - Impresión de las Data URI corregida para que los logos se rendericen en las plantillas HTML.
 - Diálogo reutilizable de confirmación con variantes `normal`, `warning` y `danger`.

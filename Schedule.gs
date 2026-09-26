@@ -21,7 +21,7 @@ const CP_SCHEDULE_TEACHING_TYPE_IDS = Object.freeze(CP_CALENDAR_TYPE_DEFINITIONS
 const CP_SCHEDULE_TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const CP_SCHEDULE_COLOR_PATTERN = /^#[0-9A-F]{6}$/i;
 
-function initializeScheduleStructure_() {
+function ensureScheduleTechnicalStructure_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   initializeScheduleTable_(getOrCreateSheet_(spreadsheet, CP.SHEETS.SCHEDULE_SLOTS), CP_SCHEDULE_HEADERS.SLOTS);
   initializeScheduleTable_(getOrCreateSheet_(spreadsheet, CP.SHEETS.SCHEDULE_ACTIVITIES), CP_SCHEDULE_HEADERS.ACTIVITIES);
@@ -29,6 +29,10 @@ function initializeScheduleStructure_() {
   spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_SLOTS).hideSheet();
   spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_ACTIVITIES).hideSheet();
   spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_SESSIONS).hideSheet();
+}
+
+function initializeScheduleStructure_() {
+  ensureScheduleTechnicalStructure_();
 }
 
 function initializeScheduleTable_(sheet, headers) {

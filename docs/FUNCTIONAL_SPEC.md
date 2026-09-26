@@ -20,16 +20,16 @@ especificación.
 
 # 1. Objetivo
 
-## Decisiones de la iteracion 1.3.0
+## Decisiones de la iteracion 1.3.1
 
-Version vigente del cuaderno: `1.3.0`.
+Version vigente del cuaderno: `1.3.1`.
 
 - Abrir Datos generales o Configurar calendario es una lectura sin efectos laterales: no repara, crea, oculta, reordena ni regenera hojas. Si falta estructura, se informa y se debe usar la reparacion explicita.
 - Guardar muestra un estado de carga que bloquea la edicion; el exito cierra el dialogo y el error restaura el formulario con los valores introducidos.
 - El tema se selecciona unicamente en Preparar nuevo curso. Cambiar globalmente el tema del cuaderno queda como mejora futura.
 - Las estadisticas muestran dias y porcentaje para transcurridos y restantes. La eliminacion de fechas especiales esta en la cabecera de cada tarjeta, incluso colapsada.
 - Preparar nuevo curso permite seleccionar preset y personalizar primary, secondary y accent. Durante el guardado de configuradores solo se muestra el estado de carga; las fechas especiales mantienen un layout estable con y sin rango.
-- La version 1.3.0 cierra funcionalmente Calendario e inicia Horario. Horario usa `_HOR_TRAMOS`, `_HOR_ACTIVIDADES` y `_HOR_SESIONES` como fuente estructurada; no crea aun la hoja visible `2 Horario`.
+- La version 1.3.1 mantiene cerrado funcionalmente Calendario e inicia Horario. Horario usa `_HOR_TRAMOS`, `_HOR_ACTIVIDADES` y `_HOR_SESIONES` como fuente estructurada; no crea aun la hoja visible `2 Horario`.
 
 ### Modelo implementado de Horario
 
@@ -1195,7 +1195,7 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.3.0
+Versión del cuaderno: 1.3.1
 Versión del esquema: 6
 ```
 

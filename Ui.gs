@@ -152,6 +152,11 @@ function getUiProcessDefinition_(processId, processInput) {
           run: initializeCalendarStructure_,
         },
         {
+          label: 'Preparando la estructura tecnica de Horario...',
+          completedMessage: 'Estructura tecnica de Horario preparada.',
+          run: ensureScheduleTechnicalStructure_,
+        },
+        {
           label: 'Renderizando el calendario visible...',
           completedMessage: 'Calendario visible creado o reparado.',
           run: createOrRepairCalendarSheet_,

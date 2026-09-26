@@ -1013,9 +1013,20 @@ function renderCalendarSheet_(sheet, model) {
   }
 
   renderCalendarLegend_(sheet, model, layout);
+  clearCalendarDayNotes_(sheet, layout);
   renderCalendarMonths_(sheet, model, layout);
   renderCalendarStats_(sheet, model, layout);
   trimSheetToBounds_(sheet, layout.rows, layout.columns);
+}
+
+function clearCalendarDayNotes_(sheet, layout) {
+  for (let monthIndex = 0; monthIndex < 10; monthIndex += 1) {
+    const gridRow = Math.floor(monthIndex / 5);
+    const gridColumn = monthIndex % 5;
+    const startRow = layout.firstMonthRow + gridRow * (layout.monthRows + layout.monthGapRows);
+    const startColumn = layout.firstMonthColumn + gridColumn * (layout.monthColumns + layout.monthGapColumns);
+    sheet.getRange(startRow + 2, startColumn, 6, 7).clearNote();
+  }
 }
 
 function renderCalendarUnavailableSheet_(sheet, spreadsheet, message) {
