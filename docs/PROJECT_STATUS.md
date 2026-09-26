@@ -1,11 +1,16 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-09-25
-**Estado general:** Fase 2 en desarrollo con modelo y vista visible compacta de calendario, versión 1.2.11
+**Estado general:** Calendario cerrado e inicio del bloque Horario, versión 1.3.0
 
-## Iteracion 1.2.11
+## Iteracion 1.3.0
 
-Version vigente del cuaderno: `1.2.11`.
+Version vigente del cuaderno: `1.3.0`.
+
+- Calendario cerrado funcionalmente: configurador, hoja visible, estadisticas, eventos, practicas/repaso, notas y estado del sidebar implementados.
+- Horario iniciado con modelo, tablas tecnicas ocultas, configurador, horario semanal, apoyo por sesion y consultas reutilizables.
+- La hoja visible `2 Horario` queda pendiente y no se crea en esta fase.
+- Version central del cuaderno: `1.3.0`; esquema: `6`.
 
 - Configuradores de datos generales y calendario con apertura sin efectos laterales y reparacion explicita.
 - Guardado con formulario sustituido por estado bloqueado de carga, cierre automatico tras exito y restauracion tras error.
@@ -15,7 +20,7 @@ Version vigente del cuaderno: `1.2.11`.
 - Preparar nuevo curso recupera los tres colorpickers y persiste la personalizacion del tema.
 - Fechas especiales tienen layout estable con y sin rango; los configuradores usan loading exclusivo.
 - Se verifica el mapeo semantico de ReuniÃ³n y Destacado al renderer de celdas.
-- Version central del cuaderno: `1.2.11`; esquema: `5`.
+- Version central del cuaderno: `1.3.0`; esquema: `6`.
 
 ## Completado
 
@@ -45,7 +50,7 @@ Version vigente del cuaderno: `1.2.11`.
 - Web del centro normalizada y validada aunque se introduzca sin protocolo.
 - Utilidades globales para ampliar hojas y recortarlas al layout; aplicadas a la Portada `A:H` con filas dinámicas.
 - `_META` escribe las versiones como texto para evitar su conversión a fecha.
-- Versión central del cuaderno `1.2.11` y esquema `5`.
+- Versión central del cuaderno `1.3.0` y esquema `6`.
 - Infraestructura HTML común para diálogos de Apps Script implementada.
 - Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
 - La inicialización se ejecuta desde el diálogo en cinco pasos idempotentes.
@@ -90,7 +95,7 @@ Version vigente del cuaderno: `1.2.11`.
 
 - Probar manualmente las seis paletas, el cierre del diálogo, la URL normalizada y el recorte de la Portada en `CP_DEV`.
 - Ampliar Preparar nuevo curso cuando existan calendario, tramos, módulos y horario.
-- Validar manualmente en `CP_DEV` la vista compacta y la UX de acordeones de `1 Calendario` antes de cerrar definitivamente el bloque Calendario.
+- Validación manual de Calendario completada; el bloque se considera cerrado.
 - Evaluar en una fase posterior mover `Inicializar / reparar estructura` a un área `🛠️ Mantenimiento > 🔧 Reparar estructura` y retirar “Inicializar” de la UX final. Por ahora se conserva para desarrollo, migraciones y recuperación, no como operación cotidiana del profesor.
 
 ## Fase 1 prevista
@@ -112,8 +117,8 @@ Estado actual de la fase:
 - Completado: estructura base, configuración general, `_CONFIG`, `_META`, `0 Portada`, índice dinámico, menú inicial e infraestructura UI común.
 - Completado: panel lateral básico de ayuda y estado.
 - En curso: Preparar nuevo curso dispone de una primera versión para las áreas ya implementadas.
-- En curso: Fase 2 Calendario; modelo, persistencia, configuración y primera vista visible completados, renderizado pendiente de validación manual.
-- Pendiente: ampliar el asistente con calendario, tramos, módulos y horario cuando existan.
+- Completado: Fase 2 Calendario; modelo, persistencia, configuración, vista visible, estadísticas, eventos, prácticas/repaso, notas y sidebar.
+- En curso: bloque Horario; modelo y configurador implementados, hoja visible `2 Horario` pendiente.
 
 ## Regla de actualización
 

@@ -6,7 +6,7 @@
 Este documento describe únicamente la arquitectura técnica vigente.  
 La funcionalidad esperada se define en `FUNCTIONAL_SPEC.md`.
 
-## Decisiones de la iteracion 1.2.11
+## Decisiones de la iteracion 1.3.0
 
 Los dialogos de configuracion separan lectura y reparacion: abrirlos valida y lee las tablas existentes sin escribir ni cambiar el estado de las hojas. La reparacion estructural es explicita. Los guardados persisten unicamente el modelo afectado y regeneran `1 Calendario` solo despues de cambios validos. La edicion del tema pertenece a Preparar nuevo curso; una futura funcion global `Cambiar tema del cuaderno` reaplicara el tema a todas las hojas visibles cuando el bloque principal este construido. Los estados de carga de los configuradores comparten el patron CSS de `UiStyles.html`: se oculta el contenido editable y el pie de acciones durante la peticion, y se restaura completo si falla.
 
@@ -140,6 +140,12 @@ La hoja visible `1 Calendario` se renderiza como una vista idempotente de esas t
 - Priorizar operaciones batch.
 - Un cuaderno corresponde a un curso académico.
 - Las copias de uso real no forman parte del repositorio ni del flujo `clasp`.
+
+## Modelo de Horario
+
+El bloque Horario persiste sus datos en `_HOR_TRAMOS`, `_HOR_ACTIVIDADES` y `_HOR_SESIONES`, creadas y ocultadas unicamente por Inicializar / reparar. El configurador solo lee al abrir y guarda las tres tablas tras validar el conjunto completo. `_HOR_TRAMOS` se relaciona 1:N con `_HOR_SESIONES` y `_HOR_ACTIVIDADES` se relaciona 1:N con `_HOR_SESIONES`; cada sesion semanal referencia dia + tramo + actividad. La duracion fisica de un tramo no convierte ni pondera sesiones: un tramo `SESION` cuenta una unidad.
+
+Las actividades `MODULO` son una base provisional y se integraran mas adelante con el modelo de imparticiones de `3 Modulos`; no se crea `_MODULOS` en esta fase. La futura hoja visible `2 Horario` sera una vista derivada y no una fuente de verdad.
 
 ## Entornos
 

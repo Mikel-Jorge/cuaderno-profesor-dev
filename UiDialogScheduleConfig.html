@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <style><?!= uiThemeCss ?></style>
+  <?!= includeUiFile_('UiStyles'); ?>
+</head>
+<body>
+<main class="app">
+  <header class="brand-header"><img class="brand-logo" src="<?!= branding.icon ?>" alt=""><div class="brand-copy"><p class="brand-name"><?= uiConfig.projectName ?></p><span class="version-label"><?= uiConfig.versionLabel ?></span></div></header>
+  <form class="config-form" id="schedule-form">
+    <div class="config-scroll">
+      <div class="result" id="blocking-error" role="alert"></div>
+      <section class="schedule-accordion" id="slots-section">
+        <button class="schedule-accordion-toggle" type="button" data-action="toggle-section" data-section="slots" aria-expanded="false"><span class="calendar-accordion-indicator">&#9656;</span><span>Tramos horarios</span></button>
+        <div class="schedule-accordion-panel is-hidden" id="slots-panel"><div id="slots-list"></div><div class="schedule-add-row"><button class="button button-secondary compact-button" type="button" data-action="add-slot" data-journey="MANANA">+ A&ntilde;adir tramo de ma&ntilde;ana</button><button class="button button-secondary compact-button" type="button" data-action="add-slot" data-journey="TARDE">+ A&ntilde;adir tramo de tarde</button></div></div>
+      </section>
+      <section class="schedule-accordion" id="activities-section">
+        <button class="schedule-accordion-toggle" type="button" data-action="toggle-section" data-section="activities" aria-expanded="false"><span class="calendar-accordion-indicator">&#9656;</span><span>Actividades</span></button>
+        <div class="schedule-accordion-panel is-hidden" id="activities-panel"><div id="activities-list"></div><div class="schedule-add-row"><button class="button button-secondary compact-button" type="button" data-action="add-activity">+ A&ntilde;adir actividad</button></div></div>
+      </section>
+      <section class="schedule-accordion" id="weekly-section">
+        <button class="schedule-accordion-toggle" type="button" data-action="toggle-section" data-section="weekly" aria-expanded="false"><span class="calendar-accordion-indicator">&#9656;</span><span>Horario semanal</span></button>
+        <div class="schedule-accordion-panel is-hidden" id="weekly-panel"><div id="weekly-grid"></div></div>
+      </section>
+    </div>
+    <div class="save-loading is-hidden" id="save-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Guardando horario...</span></div>
+    <div class="config-feedback"><div class="result" id="form-result" role="status"></div><div class="actions"><button class="button button-secondary" id="close-button" type="button">Cancelar</button><button class="button" id="save-button" type="submit" disabled>Guardar</button></div></div>
+  </form>
+  <footer class="author-footer">&copy; <?= uiConfig.author ?> &middot; <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a></footer>
+</main>
+<script>
+  const INITIAL_SCHEDULE_CONFIG = <?!= JSON.stringify(scheduleConfig) ?>;
+  const form = document.getElementById('schedule-form');
+  const slotsList = document.getElementById('slots-list');
+  const activitiesList = document.getElementById('activities-list');
+  const weeklyGrid = document.getElementById('weekly-grid');
+  const closeButton = document.getElementById('close-button');
+  const saveButton = document.getElementById('save-button');
+  const resultElement = document.getElementById('form-result');
+  const blockingErrorElement = document.getElementById('blocking-error');
+  const saveLoading = document.getElementById('save-loading');
+  let data = clone(INITIAL_SCHEDULE_CONFIG);
+  let baseline = '';
+  let isSaving = false;
+  const expandedSections = { slots: false, activities: false, weekly: false };
+  const expandedActivities = {};
+  const isBlocked = Boolean(data.blockingError);
+
+  if (isBlocked) { blockingErrorElement.textContent = data.blockingError; blockingErrorElement.className = 'result visible error'; }
+  renderAll();
+  baseline = serialize();
+  updateSaveButton();
+  form.addEventListener('input', handleFieldChange);
+  form.addEventListener('change', handleFieldChange);
+  form.addEventListener('click', handleAction);
+  form.addEventListener('submit', function(event) {
+    event.preventDefault();
+    if (isBlocked || isSaving || !isDirty() || !form.reportValidity()) return;
+    setSavingState(true);
+    hideResult();
+    google.script.run.withSuccessHandler(function() { google.script.host.close(); }).withFailureHandler(handleSaveError).guardarConfiguracionHorario(getPayload());
+  });
+  closeButton.addEventListener('click', function() { google.script.host.close(); });
+
+  function renderAll() { renderSections(); renderSlots(); renderActivities(); renderWeeklyGrid(); if (isBlocked) form.querySelectorAll('input, select, button').forEach(function(control) { if (control !== closeButton) control.disabled = true; }); }
+  function renderSections() {
+    Object.keys(expandedSections).forEach(function(section) {
+      const panel = document.getElementById(section + '-panel');
+      const toggle = form.querySelector('[data-section="' + section + '"]');
+      panel.classList.toggle('is-hidden', !expandedSections[section]);
+      toggle.setAttribute('aria-expanded', String(expandedSections[section]));
+      toggle.querySelector('.calendar-accordion-indicator').innerHTML = expandedSections[section] ? '&#9662;' : '&#9656;';
+    });
+  }
+  function renderSlots() {
+    const groups = ['MANANA', 'TARDE'].map(function(journey) {
+      const rows = data.slots.filter(function(slot) { return slot.journey === journey; }).map(function(slot) { return renderSlot(slot); }).join('');
+      return '<div class="schedule-subsection"><h3>' + escapeHtml(data.journeys[journey]) + '</h3>' + (rows || '<p class="calendar-empty">Sin tramos.</p>') + '</div>';
+    }).join('');
+    slotsList.innerHTML = groups;
+  }
+  function renderSlot(slot) {
+    const index = data.slots.indexOf(slot);
+    return '<div class="schedule-slot-row" data-id="' + escapeAttribute(slot.id) + '"><div class="schedule-order-controls"><button class="icon-button" type="button" title="Subir" aria-label="Subir tramo" data-action="move-slot-up" data-index="' + index + '">&#8593;</button><button class="icon-button" type="button" title="Bajar" aria-label="Bajar tramo" data-action="move-slot-down" data-index="' + index + '">&#8595;</button></div>' +
+      '<label class="form-field"><span>Nombre</span><input data-kind="slot" data-id="' + escapeAttribute(slot.id) + '" data-field="name" value="' + escapeAttribute(slot.name) + '" required></label>' +
+      '<label class="form-field"><span>Tipo</span><select data-kind="slot" data-id="' + escapeAttribute(slot.id) + '" data-field="type">' + enumOptions(data.slotTypes, slot.type) + '</select></label>' +
+      '<label class="form-field"><span>Inicio</span><input type="time" data-kind="slot" data-id="' + escapeAttribute(slot.id) + '" data-field="startTime" value="' + escapeAttribute(slot.startTime) + '" required></label>' +
+      '<label class="form-field"><span>Fin</span><input type="time" data-kind="slot" data-id="' + escapeAttribute(slot.id) + '" data-field="endTime" value="' + escapeAttribute(slot.endTime) + '" required></label>' +
+      '<button class="icon-action" type="button" title="Eliminar tramo" aria-label="Eliminar tramo" data-action="remove-slot" data-id="' + escapeAttribute(slot.id) + '">&times;</button></div>';
+  }
+  function renderActivities() {
+    activitiesList.innerHTML = data.activities.map(function(activity) {
+      const expanded = Boolean(expandedActivities[activity.id]);
+      return '<article class="schedule-activity-card"><div class="schedule-card-header"><button class="calendar-event-toggle" type="button" data-action="toggle-activity" data-id="' + escapeAttribute(activity.id) + '" aria-expanded="' + expanded + '"><span class="calendar-accordion-indicator">' + (expanded ? '&#9662;' : '&#9656;') + '</span><span class="schedule-activity-color" style="background:' + escapeAttribute(activity.color) + '"></span><span class="calendar-event-summary"><strong>' + escapeHtml([activity.acronym, activity.name, activity.group].filter(Boolean).join(' · ')) + '</strong></span></button><button class="icon-action" type="button" title="Eliminar actividad" aria-label="Eliminar actividad" data-action="remove-activity" data-id="' + escapeAttribute(activity.id) + '">&times;</button></div>' +
+        '<div class="schedule-activity-panel' + (expanded ? '' : ' is-hidden') + '"><div class="schedule-activity-grid">' +
+        activityField(activity, 'category', 'Categoría', selectOptions(data.categories, activity.category), 'select') + activityField(activity, 'name', 'Nombre') + activityField(activity, 'acronym', 'Sigla') + activityField(activity, 'teachingTypeId', 'Tipo de enseñanza', optionHtml([''].concat(data.teachingTypes), activity.teachingTypeId), 'select') + activityField(activity, 'group', 'Grupo') + activityField(activity, 'classroom', 'Aula') + activityField(activity, 'color', 'Color', '', 'color') + '</div></div></article>';
+    }).join('') || '<p class="calendar-empty">Sin actividades.</p>';
+  }
+  function activityField(activity, field, label, options, type) {
+    const value = activity[field] || '';
+    if (type === 'select') return '<label class="form-field"><span>' + label + '</span><select data-kind="activity" data-id="' + escapeAttribute(activity.id) + '" data-field="' + field + '">' + options + '</select></label>';
+    const required = ['name', 'acronym', 'color'].indexOf(field) !== -1 ? ' required' : '';
+    return '<label class="form-field"><span>' + label + '</span><input type="' + (type || 'text') + '" data-kind="activity" data-id="' + escapeAttribute(activity.id) + '" data-field="' + field + '" value="' + escapeAttribute(value) + '"' + required + '></label>';
+  }
+  function renderWeeklyGrid() {
+    const header = '<tr><th>Tramo</th>' + data.days.map(function(day) { return '<th>' + escapeHtml(day.label) + '</th>'; }).join('') + '</tr>';
+    const rows = data.slots.map(function(slot) { return '<tr><th><strong>' + escapeHtml(slot.name) + '</strong><small>' + escapeHtml(slot.startTime + '–' + slot.endTime) + '</small></th>' + data.days.map(function(day) { return renderSessionCell(day.id, slot); }).join('') + '</tr>'; }).join('');
+    weeklyGrid.innerHTML = '<div class="schedule-table-wrap"><table class="schedule-table"><thead>' + header + '</thead><tbody>' + (rows || '<tr><td colspan="6">Añade tramos para crear el horario semanal.</td></tr>') + '</tbody></table></div>';
+  }
+  function renderSessionCell(day, slot) {
+    if (slot.type === 'DESCANSO') return '<td class="schedule-break-cell">Descanso</td>';
+    const session = getSession(day, slot.id) || { activityId: '', support: '' };
+    return '<td><select data-kind="session" data-day="' + day + '" data-slot-id="' + escapeAttribute(slot.id) + '">' + '<option value="">Sin actividad</option>' + data.activities.map(function(activity) { return '<option value="' + escapeAttribute(activity.id) + '"' + (activity.id === session.activityId ? ' selected' : '') + '>' + escapeHtml([activity.acronym, activity.name].filter(Boolean).join(' · ')) + '</option>'; }).join('') + '</select><input class="schedule-support" type="text" maxlength="8" placeholder="Apoyo" data-kind="support" data-day="' + day + '" data-slot-id="' + escapeAttribute(slot.id) + '" value="' + escapeAttribute(session.support || '') + '"' + (session.activityId ? '' : ' disabled') + '></td>';
+  }
+  function handleFieldChange(event) {
+    const target = event.target;
+    if (target.dataset.kind === 'slot') { const slot = data.slots.find(function(item) { return item.id === target.dataset.id; }); if (slot) { slot[target.dataset.field] = target.value; if (event.type === 'change' && target.dataset.field === 'type') { if (slot.type === 'DESCANSO') data.sessions = data.sessions.filter(function(session) { return session.slotId !== slot.id; }); renderWeeklyGrid(); } } }
+    if (target.dataset.kind === 'activity') { const activity = data.activities.find(function(item) { return item.id === target.dataset.id; }); if (activity) { activity[target.dataset.field] = target.value; renderWeeklyGrid(); } }
+    if (target.dataset.kind === 'session' || target.dataset.kind === 'support') { updateSessionFromTarget(target); }
+    updateSaveButton();
+  }
+  function updateSessionFromTarget(target) { const session = getSession(target.dataset.day, target.dataset.slotId); const activityId = target.dataset.kind === 'session' ? target.value : (session ? session.activityId : ''); if (!activityId) { data.sessions = data.sessions.filter(function(item) { return !(item.day === target.dataset.day && item.slotId === target.dataset.slotId); }); } else if (session) { if (target.dataset.kind === 'session') session.activityId = activityId; else session.support = target.value.toUpperCase(); } else { data.sessions.push({ id: '', day: target.dataset.day, slotId: target.dataset.slotId, activityId: activityId, support: '' }); } if (target.dataset.kind === 'session') renderWeeklyGrid(); }
+  function handleAction(event) {
+    const button = event.target.closest('[data-action]'); if (!button || isBlocked || isSaving) return;
+    const action = button.dataset.action;
+    if (action === 'toggle-section') { const section = button.dataset.section; expandedSections[section] = !expandedSections[section]; renderSections(); return; }
+    if (action === 'toggle-activity') { expandedActivities[button.dataset.id] = !expandedActivities[button.dataset.id]; renderActivities(); return; }
+    if (action === 'add-slot') { const journey = button.dataset.journey; const previous = data.slots.filter(function(slot) { return slot.journey === journey; }).pop(); const slot = { id: 'local-' + Date.now(), order: data.slots.length + 1, journey: journey, type: 'SESION', name: 'Nuevo tramo', startTime: previous ? previous.endTime : '', endTime: '' }; data.slots.push(slot); expandedSections.slots = true; renderAll(); focusSelector('[data-kind="slot"][data-id="' + slot.id + '"][data-field="name"]'); }
+    if (action === 'move-slot-up' || action === 'move-slot-down') { moveSlot(Number(button.dataset.index), action === 'move-slot-up' ? -1 : 1); }
+    if (action === 'remove-slot') removeSlot(button.dataset.id);
+    if (action === 'add-activity') { const activity = { id: 'local-' + Date.now(), category: 'OTRA', name: 'Nueva actividad', acronym: 'NUE', teachingTypeId: '', group: '', classroom: '', color: '#DCEAFE' }; data.activities.push(activity); Object.keys(expandedActivities).forEach(function(id) { expandedActivities[id] = false; }); expandedActivities[activity.id] = true; expandedSections.activities = true; renderAll(); focusSelector('[data-kind="activity"][data-id="' + activity.id + '"][data-field="name"]'); }
+    if (action === 'remove-activity') removeActivity(button.dataset.id);
+    updateSaveButton();
+  }
+  function moveSlot(index, direction) { const target = index + direction; if (target < 0 || target >= data.slots.length) return; const current = data.slots[index]; const other = data.slots[target]; if (current.journey !== other.journey) return; data.slots.splice(index, 1); data.slots.splice(target, 0, current); data.slots.forEach(function(slot, position) { slot.order = position + 1; }); renderAll(); }
+  function removeSlot(id) { const used = data.sessions.filter(function(session) { return session.slotId === id; }).length; if (used && !window.confirm('Este tramo tiene ' + used + ' asignación(es). También se eliminarán. ¿Continuar?')) return; data.slots = data.slots.filter(function(slot) { return slot.id !== id; }); data.sessions = data.sessions.filter(function(session) { return session.slotId !== id; }); renderAll(); }
+  function removeActivity(id) { const used = data.sessions.filter(function(session) { return session.activityId === id; }).length; if (used && !window.confirm('Esta actividad tiene ' + used + ' asignación(es). También se eliminarán. ¿Continuar?')) return; data.activities = data.activities.filter(function(activity) { return activity.id !== id; }); data.sessions = data.sessions.filter(function(session) { return session.activityId !== id; }); renderAll(); }
+  function getSession(day, slotId) { return data.sessions.find(function(session) { return session.day === day && session.slotId === slotId; }); }
+  function getPayload() { return { slots: data.slots.map(function(slot) { return Object.assign({}, slot); }), activities: data.activities.map(function(activity) { return Object.assign({}, activity); }), sessions: data.sessions.map(function(session) { return Object.assign({}, session); }) }; }
+  function serialize() { return JSON.stringify(getPayload()); }
+  function isDirty() { return serialize() !== baseline; }
+  function updateSaveButton() { saveButton.disabled = isBlocked || isSaving || !isDirty(); }
+  function setSavingState(saving) { isSaving = saving; form.classList.toggle('is-saving', saving); closeButton.disabled = saving; saveButton.disabled = saving; form.querySelector('.config-scroll').classList.toggle('is-hidden', saving); saveLoading.classList.toggle('is-hidden', !saving); updateSaveButton(); }
+  function handleSaveError(error) { setSavingState(false); showResult(error && error.message ? error.message : 'No se ha podido guardar el horario.', 'error'); }
+  function showResult(message, state) { resultElement.textContent = message; resultElement.className = 'result visible ' + state; }
+  function hideResult() { resultElement.textContent = ''; resultElement.className = 'result'; }
+  function focusSelector(selector) { window.setTimeout(function() { const element = form.querySelector(selector); if (element) { element.focus(); element.scrollIntoView({ block: 'nearest' }); } }, 0); }
+  function optionHtml(options, selected) { return options.map(function(value) { const id = typeof value === 'string' ? value : value.id; const label = typeof value === 'string' ? (data.slotTypes[id] || id) : value.label; return '<option value="' + escapeAttribute(id) + '"' + (id === selected ? ' selected' : '') + '>' + escapeHtml(label) + '</option>'; }).join(''); }
+  function enumOptions(options, selected) { return Object.keys(options).map(function(id) { return '<option value="' + id + '"' + (id === selected ? ' selected' : '') + '>' + escapeHtml(options[id]) + '</option>'; }).join(''); }
+  function selectOptions(options, selected) { return options.map(function(value) { return '<option value="' + escapeAttribute(value) + '"' + (value === selected ? ' selected' : '') + '>' + escapeHtml(value) + '</option>'; }).join(''); }
+  function clone(value) { return JSON.parse(JSON.stringify(value)); }
+  function escapeHtml(value) { const element = document.createElement('div'); element.textContent = value === null || value === undefined ? '' : String(value); return element.innerHTML; }
+  function escapeAttribute(value) { return escapeHtml(value).replace(/"/g, '&quot;'); }
+</script>
+</body>
+</html>

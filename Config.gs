@@ -1,7 +1,7 @@
 const CP = Object.freeze({
   PROJECT_NAME: 'Cuaderno del Profesor',
-  NOTEBOOK_VERSION: '1.2.11',
-  SCHEMA_VERSION: '5',
+  NOTEBOOK_VERSION: '1.3.0',
+  SCHEMA_VERSION: '6',
   SHEETS: Object.freeze({
     COVER: '0 Portada',
     CALENDAR: '1 Calendario',
@@ -10,6 +10,9 @@ const CP = Object.freeze({
     CALENDAR_EVALUATIONS: '_CAL_EVALUACIONES',
     CALENDAR_DATES: '_FECHAS',
     CALENDAR_DATE_TYPES: '_CAL_FECHA_TIPOS',
+    SCHEDULE_SLOTS: '_HOR_TRAMOS',
+    SCHEDULE_ACTIVITIES: '_HOR_ACTIVIDADES',
+    SCHEDULE_SESSIONS: '_HOR_SESIONES',
     META: '_META',
   }),
   CONFIG_KEYS: Object.freeze({
@@ -33,6 +36,7 @@ const CP = Object.freeze({
     CONFIG: '⚙️ Configuración',
     GENERAL_DATA: '👤 Datos generales',
     CALENDAR_CONFIG: '📅 Configurar calendario',
+    SCHEDULE_CONFIG: '🕒 Configurar horario',
     HELP: '❓ Ayuda',
   }),
   UI: Object.freeze({
@@ -50,6 +54,8 @@ const CP = Object.freeze({
     GENERAL_CONFIG_DIALOG_HEIGHT: 780,
     CALENDAR_CONFIG_DIALOG_WIDTH: 780,
     CALENDAR_CONFIG_DIALOG_HEIGHT: 820,
+    SCHEDULE_CONFIG_DIALOG_WIDTH: 980,
+    SCHEDULE_CONFIG_DIALOG_HEIGHT: 860,
     NEW_COURSE_DIALOG_WIDTH: 640,
     NEW_COURSE_DIALOG_HEIGHT: 760,
     PROGRESS_DIALOG_WIDTH: 480,

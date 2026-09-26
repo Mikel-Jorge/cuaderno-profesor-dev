@@ -600,6 +600,67 @@
     display: none;
   }
 
+  .schedule-accordion {
+    margin-top: 12px;
+    overflow: hidden;
+    border: 1px solid var(--primary);
+    border-left: 5px solid var(--primary);
+    border-radius: 7px;
+    background: var(--surface);
+  }
+
+  .schedule-accordion-toggle {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 9px;
+    padding: 12px;
+    border: 0;
+    background: var(--background);
+    color: var(--text);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .schedule-accordion-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .schedule-accordion-panel { padding: 14px; border-top: 1px solid var(--primary); }
+  .schedule-accordion-panel.is-hidden { display: none; }
+  .schedule-subsection + .schedule-subsection { margin-top: 16px; }
+  .schedule-subsection h3 { margin: 0 0 8px; font-size: 13px; }
+  .schedule-slot-row {
+    display: grid;
+    grid-template-columns: 70px minmax(140px, 1.6fr) minmax(120px, 1fr) minmax(115px, 0.8fr) minmax(115px, 0.8fr) 34px;
+    gap: 8px;
+    align-items: end;
+    margin-top: 8px;
+    padding: 9px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--background);
+  }
+  .schedule-order-controls { display: flex; gap: 4px; }
+  .schedule-order-controls .icon-button { width: 30px; height: 30px; flex-basis: 30px; font-size: 16px; }
+  .schedule-add-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .schedule-activity-card { margin-top: 8px; overflow: hidden; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
+  .schedule-card-header { display: flex; min-width: 0; align-items: stretch; }
+  .schedule-card-header .calendar-event-toggle { align-items: center; }
+  .schedule-card-header .icon-action { flex: 0 0 34px; align-self: center; height: 32px; margin-right: 8px; }
+  .schedule-activity-color { width: 14px; height: 14px; flex: 0 0 14px; border: 1px solid var(--border); border-radius: 3px; }
+  .schedule-activity-panel { padding: 10px; border-top: 1px solid var(--border); background: var(--background); }
+  .schedule-activity-panel.is-hidden { display: none; }
+  .schedule-activity-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+  .schedule-table-wrap { overflow-x: auto; }
+  .schedule-table { width: 100%; min-width: 760px; border-collapse: collapse; table-layout: fixed; }
+  .schedule-table th, .schedule-table td { padding: 7px; border: 1px solid var(--border); vertical-align: top; text-align: left; }
+  .schedule-table th { background: var(--muted); font-size: 12px; }
+  .schedule-table td { background: var(--surface); }
+  .schedule-table select, .schedule-support { box-sizing: border-box; width: 100%; min-width: 0; min-height: 30px; padding: 5px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; font-size: 11px; }
+  .schedule-table th small { display: block; margin-top: 3px; color: var(--muted-text); font-weight: 400; }
+  .schedule-support { margin-top: 5px; }
+  .schedule-break-cell { background: var(--muted) !important; color: var(--muted-text); font-size: 11px; font-style: italic; text-align: center !important; }
+
   .evaluation-row {
     grid-template-columns: minmax(0, 1.4fr) minmax(145px, 0.8fr) 34px;
     align-items: end;
