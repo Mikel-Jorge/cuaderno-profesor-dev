@@ -49,6 +49,7 @@ Salvo que `docs/FUNCTIONAL_SPEC.md` se modifique explícitamente:
 - No introducir triggers instalables salvo petición expresa.
 - Google Calendar y People API quedan fuera de V1 salvo cambio explícito de alcance.
 - Priorizar soluciones simples y mantenibles sobre arquitecturas innecesariamente complejas.
+- Los diálogos de configuración deben ser side-effect free al abrirse. Leer configuración no debe reparar, crear, ocultar, reordenar ni regenerar hojas. Las reparaciones estructurales son explícitas; los guardados solo actualizan el modelo afectado y sus vistas derivadas necesarias.
 
 ## Reglas de desarrollo Apps Script
 

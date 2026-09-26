@@ -20,6 +20,15 @@ especificación.
 
 # 1. Objetivo
 
+## Decisiones de la iteracion 1.2.10
+
+Version vigente del cuaderno: `1.2.10`.
+
+- Abrir Datos generales o Configurar calendario es una lectura sin efectos laterales: no repara, crea, oculta, reordena ni regenera hojas. Si falta estructura, se informa y se debe usar la reparacion explicita.
+- Guardar muestra un estado de carga que bloquea la edicion; el exito cierra el dialogo y el error restaura el formulario con los valores introducidos.
+- El tema se selecciona unicamente en Preparar nuevo curso. Cambiar globalmente el tema del cuaderno queda como mejora futura.
+- Las estadisticas muestran dias y porcentaje para transcurridos y restantes. La eliminacion de fechas especiales esta en la cabecera de cada tarjeta, incluso colapsada.
+
 Crear un **Cuaderno del Profesor reutilizable para Formación Profesional**, inicialmente orientado al trabajo docente en Navarra, construido sobre Google Sheets y automatizado con Google Apps Script.
 
 El cuaderno debe centralizar y facilitar:
@@ -1176,7 +1185,7 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.2.9
+Versión del cuaderno: 1.2.10
 Versión del esquema: 5
 ```
 

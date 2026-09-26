@@ -1,13 +1,9 @@
 function abrirDatosGenerales() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  const configSheet = getOrCreateSheet_(spreadsheet, CP.SHEETS.CONFIG);
-  initializeConfigSheet_(configSheet);
-  configSheet.hideSheet();
-
   const values = getGeneralConfigForUi_(spreadsheet);
   const template = HtmlService.createTemplateFromFile('UiDialogGeneralConfig');
   template.generalConfig = values;
-  template.themeConfig = getThemeConfigForUi_(spreadsheet, values);
+  template.blockingError = getConfigStructureError_(spreadsheet);
   setCommonUiTemplateData_(template);
 
   const output = template.evaluate()
@@ -28,14 +24,13 @@ function saveGeneralConfig_(input, options) {
   const saveOptions = options || {};
   const values = normalizeGeneralConfigInput_(input);
   validateAcademicYear_(values[CP.CONFIG_KEYS.ACADEMIC_YEAR]);
-  validateThemeConfig_(values);
-
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  const configSheet = getOrCreateSheet_(spreadsheet, CP.SHEETS.CONFIG);
-  initializeConfigSheet_(configSheet);
+  const configSheet = spreadsheet.getSheetByName(CP.SHEETS.CONFIG);
+  const structureError = getConfigStructureError_(spreadsheet);
+  if (structureError) throw new Error(structureError);
 
   const previousValues = getStoredConfigMap_(spreadsheet);
-  const changedKeys = getConfigFields_().map(function(field) {
+  const changedKeys = getGeneralConfigFields_().map(function(field) {
     return field.key;
   }).filter(function(key) {
     return normalizeConfigValue_(previousValues[key]) !== values[key];
@@ -49,12 +44,8 @@ function saveGeneralConfig_(input, options) {
     if (changedGeneralKeys.length) {
       updateCoverData_(coverSheet, values, changedGeneralKeys);
     }
-    if (changedKeys.some(isThemeConfigKey_)) {
-      applyCoverTheme_(coverSheet, getActiveTheme_(spreadsheet, values));
-    }
   }
 
-  configSheet.hideSheet();
   if (saveOptions.showToast !== false) {
     spreadsheet.toast('Configuración guardada.', CP.PROJECT_NAME, 4);
   }
@@ -63,8 +54,22 @@ function saveGeneralConfig_(input, options) {
       ? 'La configuración se ha guardado y la portada se ha actualizado.'
       : 'No había cambios pendientes.',
     values: values,
-    theme: getThemeConfigForUi_(spreadsheet, values),
   };
+}
+
+function getConfigStructureError_(spreadsheet) {
+  const sheet = spreadsheet.getSheetByName(CP.SHEETS.CONFIG);
+  if (!sheet) {
+    return 'Falta la hoja técnica _CONFIG. Usa «Inicializar / reparar estructura» para reparar el cuaderno.';
+  }
+  if (sheet.getLastRow() < 1 || sheet.getLastColumn() < 2) {
+    return 'La hoja técnica _CONFIG no tiene la estructura esperada. Usa «Inicializar / reparar estructura» para reparar el cuaderno.';
+  }
+  const headers = sheet.getRange(1, 1, 1, 2).getValues()[0].map(normalizeConfigValue_);
+  if (headers[0] !== 'Clave' || headers[1] !== 'Valor') {
+    return 'La hoja técnica _CONFIG no tiene las cabeceras esperadas. Usa «Inicializar / reparar estructura» para reparar el cuaderno.';
+  }
+  return '';
 }
 
 function initializeConfigSheet_(sheet) {
@@ -253,6 +258,12 @@ function getConfigFields_() {
     { key: CP.CONFIG_KEYS.THEME_SECONDARY, defaultValue: CP_THEME_PRESETS[CP_DEFAULT_THEME_PRESET].colors.secondary },
     { key: CP.CONFIG_KEYS.THEME_ACCENT, defaultValue: CP_THEME_PRESETS[CP_DEFAULT_THEME_PRESET].colors.accent },
   ];
+}
+
+function getGeneralConfigFields_() {
+  return getConfigFields_().filter(function(field) {
+    return isGeneralDataConfigKey_(field.key);
+  });
 }
 
 function isGeneralDataConfigKey_(key) {

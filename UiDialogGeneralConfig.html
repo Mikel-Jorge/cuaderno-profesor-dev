@@ -69,31 +69,8 @@
             </div>
           </section>
 
-          <section class="form-section" aria-labelledby="appearance-section-title">
-            <h2 id="appearance-section-title">Apariencia</h2>
-            <div class="form-grid">
-              <div class="form-field form-field-wide">
-                <label for="tema_preset">Tema activo</label>
-                <select id="tema_preset" name="tema_preset"></select>
-              </div>
-
-              <div class="theme-colors form-field-wide">
-                <label class="color-field" for="tema_primary">
-                  <span>Principal</span>
-                  <input id="tema_primary" name="tema_primary" type="color">
-                </label>
-                <label class="color-field" for="tema_secondary">
-                  <span>Secundario</span>
-                  <input id="tema_secondary" name="tema_secondary" type="color">
-                </label>
-                <label class="color-field" for="tema_accent">
-                  <span>Acento</span>
-                  <input id="tema_accent" name="tema_accent" type="color">
-                </label>
-              </div>
-            </div>
-          </section>
         </div>
+        <div class="save-loading is-hidden" id="save-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Guardando datos...</span></div>
 
         <div class="config-feedback">
           <div class="result" id="form-result" role="status"></div>
@@ -112,7 +89,7 @@
 
     <script>
       const GENERAL_CONFIG = <?!= JSON.stringify(generalConfig) ?>;
-      const THEME_CONFIG = <?!= JSON.stringify(themeConfig) ?>;
+      const BLOCKING_ERROR = <?!= JSON.stringify(blockingError || '') ?>;
       const fieldNames = [
         'curso_academico',
         'profesor',
@@ -122,30 +99,24 @@
         'centro_telefono',
         'centro_email',
         'centro_web',
-        'tema_preset',
-        'tema_primary',
-        'tema_secondary',
-        'tema_accent',
       ];
-      const themeColorFields = ['tema_primary', 'tema_secondary', 'tema_accent'];
       const form = document.getElementById('config-form');
-      const presetSelect = document.getElementById('tema_preset');
       const closeButton = document.getElementById('close-button');
       const saveButton = document.getElementById('save-button');
       const resultElement = document.getElementById('form-result');
+      const saveLoading = document.getElementById('save-loading');
       let baseline = '';
       let isSaving = false;
-
-      THEME_CONFIG.presets.forEach(function(preset) {
-        const option = document.createElement('option');
-        option.value = preset.id;
-        option.textContent = preset.label;
-        presetSelect.appendChild(option);
-      });
 
       setFormValues(GENERAL_CONFIG);
       baseline = serializeValues(collectValues());
       updateSaveButton();
+      if (BLOCKING_ERROR) {
+        showResult(BLOCKING_ERROR, 'error');
+        form.querySelectorAll('input, select, button').forEach(function(control) {
+          if (control !== closeButton) control.disabled = true;
+        });
+      }
 
       form.addEventListener('input', handleFormChange);
       form.addEventListener('change', handleFormChange);
@@ -176,12 +147,7 @@
       });
 
       function handleFormChange(event) {
-        if (event.target === presetSelect && event.type === 'change') {
-          applySelectedPreset();
-        }
-        if (event.target === presetSelect || themeColorFields.indexOf(event.target.name) !== -1) {
-          applyThemePreview();
-        }
+        if (isSaving) return;
         if (resultElement.classList.contains('success')) {
           hideResult();
         }
@@ -192,14 +158,7 @@
         if (response && response.values) {
           setFormValues(response.values);
         }
-        baseline = serializeValues(collectValues());
-        setSavingState(false);
-        closeButton.textContent = 'Cerrar';
-        showResult(response.message, 'success');
-        updateSaveButton();
-        window.setTimeout(function() {
-          google.script.host.close();
-        }, 450);
+        google.script.host.close();
       }
 
       function handleSaveError(error) {
@@ -237,53 +196,11 @@
       function setSavingState(saving) {
         isSaving = saving;
         closeButton.disabled = saving;
+        saveButton.disabled = saving;
         saveButton.textContent = saving ? 'Guardando...' : 'Guardar';
+        form.querySelector('.config-scroll').classList.toggle('is-hidden', saving);
+        saveLoading.classList.toggle('is-hidden', !saving);
         updateSaveButton();
-      }
-
-      function applySelectedPreset() {
-        const preset = getSelectedPreset();
-        if (!preset) {
-          return;
-        }
-        document.getElementById('tema_primary').value = preset.colors.primary;
-        document.getElementById('tema_secondary').value = preset.colors.secondary;
-        document.getElementById('tema_accent').value = preset.colors.accent;
-      }
-
-      function applyThemePreview() {
-        const preset = getSelectedPreset();
-        if (preset) {
-          document.documentElement.style.colorScheme = 'light';
-          Object.keys(preset.colors).forEach(function(token) {
-            const cssToken = '--' + token.replace(/[A-Z]/g, function(letter) {
-              return '-' + letter.toLowerCase();
-            });
-            document.documentElement.style.setProperty(cssToken, preset.colors[token]);
-          });
-        }
-        document.documentElement.style.setProperty('--primary', document.getElementById('tema_primary').value);
-        document.documentElement.style.setProperty('--secondary', document.getElementById('tema_secondary').value);
-        document.documentElement.style.setProperty('--accent', document.getElementById('tema_accent').value);
-        document.documentElement.style.setProperty(
-          '--on-primary',
-          getAccessiblePreviewText(document.getElementById('tema_primary').value)
-        );
-      }
-
-      function getAccessiblePreviewText(backgroundColor) {
-        const red = parseInt(backgroundColor.slice(1, 3), 16);
-        const green = parseInt(backgroundColor.slice(3, 5), 16);
-        const blue = parseInt(backgroundColor.slice(5, 7), 16);
-        const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
-        const token = luminance > 0.55 ? '--text' : '--surface';
-        return getComputedStyle(document.documentElement).getPropertyValue(token).trim();
-      }
-
-      function getSelectedPreset() {
-        return THEME_CONFIG.presets.find(function(preset) {
-          return preset.id === presetSelect.value;
-        });
       }
 
       function showResult(message, state) {

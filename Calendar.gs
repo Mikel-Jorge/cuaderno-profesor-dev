@@ -204,9 +204,9 @@ function initializeCalendarTableSheet_(sheet, headers, dateColumns) {
 
 function abrirConfiguracionCalendario() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  initializeCalendarStructure_();
   let calendarConfig;
   try {
+    assertCalendarStructureReady_(spreadsheet);
     calendarConfig = getCalendarConfigForUi_(spreadsheet);
   } catch (error) {
     calendarConfig = {
@@ -246,6 +246,7 @@ function abrirConfiguracionCalendario() {
 
 function guardarConfiguracionCalendario(input) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  assertCalendarStructureReady_(spreadsheet);
   const normalized = normalizeAndValidateCalendarConfig_(input, spreadsheet);
   const lock = LockService.getDocumentLock();
   if (!lock.tryLock(30000)) {
@@ -253,7 +254,6 @@ function guardarConfiguracionCalendario(input) {
   }
 
   try {
-    initializeCalendarStructure_();
     const snapshots = captureCalendarTableSnapshots_(spreadsheet);
     try {
       persistCalendarConfig_(spreadsheet, normalized);
@@ -362,6 +362,28 @@ function getCalendarConfigForUi_(spreadsheet) {
     }),
     categories: getCalendarCategoriesForUi_(),
   };
+}
+
+function assertCalendarStructureReady_(spreadsheet) {
+  const requiredSheets = [
+    [CP.SHEETS.CALENDAR_TYPES, CP_CALENDAR_HEADERS.TYPES],
+    [CP.SHEETS.CALENDAR_EVALUATIONS, CP_CALENDAR_HEADERS.EVALUATIONS],
+    [CP.SHEETS.CALENDAR_DATES, CP_CALENDAR_HEADERS.DATES],
+    [CP.SHEETS.CALENDAR_DATE_TYPES, CP_CALENDAR_HEADERS.DATE_TYPES],
+  ];
+  requiredSheets.forEach(function(definition) {
+    const sheet = spreadsheet.getSheetByName(definition[0]);
+    if (!sheet) {
+      throw new Error('Falta la hoja técnica ' + definition[0] + '. Usa «Inicializar / reparar estructura» para reparar el cuaderno.');
+    }
+    if (sheet.getLastRow() < 1 || sheet.getLastColumn() < definition[1].length) {
+      throw new Error('La hoja técnica ' + definition[0] + ' no tiene la estructura esperada. Usa «Inicializar / reparar estructura» para reparar el cuaderno.');
+    }
+    const headers = sheet.getRange(1, 1, 1, definition[1].length).getValues()[0].map(normalizeCalendarText_);
+    if (headers.some(function(header, index) { return header !== definition[1][index]; })) {
+      throw new Error('La hoja técnica ' + definition[0] + ' no tiene las cabeceras esperadas. Usa «Inicializar / reparar estructura» para reparar el cuaderno.');
+    }
+  });
 }
 
 function getCalendarCategoriesForUi_() {
@@ -897,11 +919,12 @@ const CP_CALENDAR_STYLE_KEYS = Object.freeze({
 
 const CP_CALENDAR_SEMANTIC_COLORS = Object.freeze({
   EVALUATION_END: '#CCFBF1',
+  REUNION: '#DDD6FE',
 });
 
 function actualizarCalendario_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  initializeCalendarStructure_();
+  assertCalendarStructureReady_(spreadsheet);
   const sheet = getOrCreateSheet_(spreadsheet, CP.SHEETS.CALENDAR);
   moveCalendarSheetAfterCover_(spreadsheet, sheet);
   let model;
@@ -1040,7 +1063,7 @@ function getCalendarSheetLayout_(model) {
   const firstMonthRow = legendRow + 2;
   const monthBlockRows = (monthRows * 2) + monthGapRows;
   const statsRow = firstMonthRow + monthBlockRows + 1;
-  const statsRows = (model.stats.length ? model.stats.length : 1) + 2;
+  const statsRows = (model.stats.length ? model.stats.length : 1) + 3;
   return {
     rows: statsRow + statsRows - 1,
     columns: 39,
@@ -1246,8 +1269,8 @@ function getCalendarSemanticStyles_(theme) {
     background: CP_CALENDAR_SEMANTIC_COLORS.EVALUATION_END,
     fontColor: colors.text,
   };
-  styles.REUNION = { label: 'Reunión', background: '#E0E7FF', fontColor: colors.text };
-  styles.DESTACADO = { label: 'Destacado', background: '#FEF3C7', fontColor: colors.text };
+  styles.reunion = { label: 'Reunión', background: CP_CALENDAR_SEMANTIC_COLORS.REUNION, fontColor: colors.text };
+  styles.destacado = { label: 'Destacado', background: '#FEF3C7', fontColor: colors.text };
   styles.practicas = { label: 'Inicio/fin prácticas', background: '#DBEAFE', fontColor: colors.text };
   styles.repaso = { label: 'Repaso', background: '#FCE7F3', fontColor: colors.text };
   styles.hoy = { label: 'Hoy', background: '#00A6B2', fontColor: getAccessibleTextColor_('#00A6B2') };
@@ -1272,12 +1295,12 @@ function renderCalendarLegend_(sheet, model, layout) {
     .setFontColor(model.theme.colors.onPrimary)
     .setHorizontalAlignment('center');
   legendItems.forEach(function(item, index) {
-    const startColumn = 3 + index * 5;
-    if (startColumn + 3 > layout.columns) return;
+    const startColumn = 3 + index * 6;
+    if (startColumn + 4 > layout.columns) return;
     sheet.getRange(layout.legendRow, startColumn)
       .setBackground(item.background)
       .setFontColor(item.fontColor);
-    setMergedRangeValue_(sheet.getRange(layout.legendRow, startColumn + 1, 1, 3), item.label)
+    setMergedRangeValue_(sheet.getRange(layout.legendRow, startColumn + 1, 1, 5), item.label)
       .setBackground(model.theme.colors.background)
       .setFontColor(model.theme.colors.text)
       .setHorizontalAlignment('left');
@@ -1296,9 +1319,9 @@ function getCalendarLegendItems_(model) {
     return categoriesInUse[key];
   }).map(function(key) {
     return {
-      label: model.styles[key].label,
-      background: model.styles[key].background,
-      fontColor: model.styles[key].fontColor,
+      label: model.styles[key.toLowerCase()].label,
+      background: model.styles[key.toLowerCase()].background,
+      fontColor: model.styles[key.toLowerCase()].fontColor,
     };
   });
   items.unshift(model.styles.weekend);
@@ -1319,27 +1342,47 @@ function getCalendarLegendItems_(model) {
 
 function renderCalendarStats_(sheet, model, layout) {
   const colors = model.theme.colors;
-  setMergedRangeValue_(sheet.getRange(layout.statsRow, 1, 1, layout.columns), 'ESTADÍSTICAS DE DÍAS LECTIVOS')
+  const statsWidth = 33;
+  setMergedRangeValue_(sheet.getRange(layout.statsRow, 1, 1, statsWidth), 'ESTADÍSTICAS DE DÍAS LECTIVOS')
     .setBackground(colors.primary)
     .setFontColor(colors.onPrimary)
     .setFontWeight('bold')
     .setHorizontalAlignment('center');
-  renderCalendarStatsRow_(sheet, model, layout.statsRow + 1, {
-    typeName: 'Tipo',
-    evaluationName: 'Evaluación',
-    total: 'Lectivos',
-    elapsed: 'Transcurridos',
-    remaining: 'Restantes',
-  }, true);
+  renderCalendarStatsHeader_(sheet, model, layout.statsRow + 1);
+  const firstDataRow = layout.statsRow + 3;
   const stats = model.stats.length
     ? model.stats
-    : [{ typeName: '', evaluationName: 'Sin evaluaciones configuradas', total: '', elapsed: '', remaining: '' }];
+    : [{ typeName: '', evaluationName: 'Sin evaluaciones configuradas', total: '', elapsed: 0, elapsedPercent: 0, remaining: '', remainingPercent: 0 }];
   stats.forEach(function(item, index) {
-    renderCalendarStatsRow_(sheet, model, layout.statsRow + index + 2, item, false);
+    renderCalendarStatsRow_(sheet, model, firstDataRow + index, item, false);
   });
-  sheet.getRange(layout.statsRow, 1, stats.length + 2, layout.columns)
+  sheet.getRange(layout.statsRow, 1, stats.length + 3, statsWidth)
     .setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
     .setBorder(true, true, true, true, true, true, colors.border, SpreadsheetApp.BorderStyle.SOLID);
+  sheet.getRange(firstDataRow, 25, stats.length, 3).setNumberFormat('0.0%');
+  sheet.getRange(firstDataRow, 31, stats.length, 3).setNumberFormat('0.0%');
+}
+
+function renderCalendarStatsHeader_(sheet, model, row) {
+  const colors = model.theme.colors;
+  [
+    { column: 1, width: 7, value: 'Tipo', rows: 2 },
+    { column: 8, width: 11, value: 'Evaluación', rows: 2 },
+    { column: 19, width: 3, value: 'Lectivos', rows: 2 },
+  ].forEach(function(segment) {
+    setMergedRangeValue_(sheet.getRange(row, segment.column, segment.rows, segment.width), segment.value)
+      .setBackground(colors.muted).setFontColor(colors.text).setFontWeight('bold').setHorizontalAlignment('center');
+  });
+  setMergedRangeValue_(sheet.getRange(row, 22, 1, 6), 'Transcurridos')
+    .setBackground(colors.muted).setFontColor(colors.text).setFontWeight('bold').setHorizontalAlignment('center');
+  setMergedRangeValue_(sheet.getRange(row, 28, 1, 6), 'Restantes')
+    .setBackground(colors.muted).setFontColor(colors.text).setFontWeight('bold').setHorizontalAlignment('center');
+  [
+    [22, 'Días'], [25, '%'], [28, 'Días'], [31, '%'],
+  ].forEach(function(segment) {
+    setMergedRangeValue_(sheet.getRange(row + 1, segment[0], 1, 3), segment[1])
+      .setBackground(colors.muted).setFontColor(colors.text).setFontWeight('bold').setHorizontalAlignment('center');
+  });
 }
 
 function renderCalendarStatsRow_(sheet, model, row, item, isHeader) {
@@ -1347,18 +1390,17 @@ function renderCalendarStatsRow_(sheet, model, row, item, isHeader) {
   const background = isHeader ? colors.muted : colors.surface;
   const fontWeight = isHeader ? 'bold' : 'normal';
   const segments = [
-    { column: 1, width: 7, value: item.typeName },
-    { column: 8, width: 12, value: item.evaluationName },
-    { column: 20, width: 6, value: item.total },
-    { column: 26, width: 7, value: item.elapsed },
-    { column: 33, width: 7, value: item.remaining },
+    { column: 1, width: 7, value: item.typeName, align: 'left' },
+    { column: 8, width: 11, value: item.evaluationName, align: 'left' },
+    { column: 19, width: 3, value: item.total, align: 'center' },
+    { column: 22, width: 3, value: item.elapsed, align: 'center' },
+    { column: 25, width: 3, value: item.elapsedPercent, align: 'center' },
+    { column: 28, width: 3, value: item.remaining, align: 'center' },
+    { column: 31, width: 3, value: item.remainingPercent, align: 'center' },
   ];
   segments.forEach(function(segment) {
     setMergedRangeValue_(sheet.getRange(row, segment.column, 1, segment.width), segment.value)
-      .setBackground(background)
-      .setFontColor(colors.text)
-      .setFontWeight(fontWeight)
-      .setHorizontalAlignment(segment.column >= 20 ? 'center' : 'left');
+      .setBackground(background).setFontColor(colors.text).setFontWeight(fontWeight).setHorizontalAlignment(segment.align);
   });
 }
 
@@ -1431,6 +1473,8 @@ function calculateEvaluationStatsForType_(type, evaluationPeriods, events, today
       total: total,
       elapsed: elapsed,
       remaining: Math.max(0, total - elapsed),
+      elapsedPercent: total ? elapsed / total : 0,
+      remainingPercent: total ? Math.max(0, total - elapsed) / total : 0,
     };
   });
 }
@@ -1588,7 +1632,7 @@ function formatCalendarEventNote_(event) {
 function isCalendarConfiguredForSidebar_() {
   try {
     const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    initializeCalendarStructure_();
+    assertCalendarStructureReady_(spreadsheet);
     const model = buildCalendarRenderModel_(spreadsheet);
     return model.activeTypes.length > 0 && Boolean(spreadsheet.getSheetByName(CP.SHEETS.CALENDAR));
   } catch (error) {

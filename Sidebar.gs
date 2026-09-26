@@ -74,7 +74,7 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'general-data',
       title: 'Datos generales',
-      text: 'Guarda el curso académico, el profesor, el centro y la apariencia. Los cambios actualizan la portada.',
+      text: 'Guarda el curso académico, el profesor y el centro. La apariencia se elige al preparar un nuevo curso.',
     },
     {
       id: 'calendar',

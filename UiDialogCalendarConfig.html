@@ -19,6 +19,7 @@
       <div class="calendar-accordions" id="types-list"></div>
       <div id="events-section"></div>
     </div>
+    <div class="save-loading is-hidden" id="save-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Guardando configuraci&oacute;n...<small>Actualizando calendario...</small></span></div>
     <div class="config-feedback">
       <div class="result" id="form-result" role="status"></div>
       <div class="actions">
@@ -38,6 +39,7 @@
   const saveButton = document.getElementById('save-button');
   const resultElement = document.getElementById('form-result');
   const blockingErrorElement = document.getElementById('blocking-error');
+  const saveLoading = document.getElementById('save-loading');
   let calendarData = cloneData(INITIAL_CALENDAR_CONFIG);
   let baseline = '';
   let isSaving = false;
@@ -135,10 +137,11 @@
           (checked ? ' checked' : '') + disabledAttribute(calendarEvent.appliesToAll) + '> ' + escapeHtml(type.name) + '</label>';
       }).join('');
       return '<article class="calendar-event">' +
-        '<button class="calendar-event-toggle" type="button" data-action="toggle-event" data-item-index="' + eventIndex + '" aria-expanded="' + expanded + '">' +
+        '<div class="calendar-event-header"><button class="calendar-event-toggle" type="button" data-action="toggle-event" data-item-index="' + eventIndex + '" aria-expanded="' + expanded + '">' +
           '<span class="calendar-accordion-indicator" aria-hidden="true">' + (expanded ? '&#9662;' : '&#9656;') + '</span>' +
           '<span class="calendar-event-summary"><strong>' + escapeHtml(summary.title) + '</strong>' +
             (summary.description ? '<small>' + escapeHtml(summary.description) + '</small>' : '') + '</span></button>' +
+          removeButton('event', '', eventIndex, 'Eliminar fecha especial', true) + '</div>' +
         '<div class="calendar-event-panel' + (expanded ? '' : ' is-hidden') + '"><div class="calendar-event-grid">' +
           fieldInput('Fecha', 'date', calendarEvent.startDate, 'event', '', eventIndex, 'startDate', true, true) +
           '<label class="calendar-option-toggle range-toggle"><input type="checkbox" data-kind="event" data-item-index="' + eventIndex + '" data-field="isRange"' + (calendarEvent.isRange ? ' checked' : '') + '> Rango de fechas</label>' +
@@ -147,7 +150,6 @@
           '<fieldset class="calendar-scope"><legend>Aplicar a</legend>' +
             '<label class="scope-option scope-all"><input type="checkbox" data-kind="event" data-item-index="' + eventIndex + '" data-field="appliesToAll"' + (calendarEvent.appliesToAll ? ' checked' : '') + '> Todos</label>' + scopeOptions + '</fieldset>' +
           fieldInput('Descripci\u00f3n', 'text', calendarEvent.description, 'event', '', eventIndex, 'description', false, true, 'wide') +
-          removeButton('event', '', eventIndex, 'Eliminar fecha especial', true) +
         '</div></div></article>';
     }).join('');
     eventsSection.innerHTML = '<section class="calendar-accordion calendar-events-accordion"><div class="calendar-accordion-header">' +
@@ -238,6 +240,7 @@
     const button = domEvent.target.closest('[data-action]');
     if (!button || isBlocked || isSaving) return;
     const action = button.dataset.action;
+    if (action === 'remove-event') domEvent.stopPropagation();
     const typeIndex = Number(button.dataset.typeIndex);
     const itemIndex = Number(button.dataset.itemIndex);
     if (action === 'toggle-type') {
@@ -356,9 +359,7 @@
       calendarData = cloneData(response.data);
       ensureEventUiKeys();
     }
-    baseline = serializeData(); setSavingState(false); closeButton.textContent = 'Cerrar';
-    showResult(response.message, 'success');
-    window.setTimeout(function() { google.script.host.close(); }, 450);
+    google.script.host.close();
   }
   function handleSaveError(error) {
     setSavingState(false);
@@ -406,7 +407,13 @@
   function isDirty() { return serializeData() !== baseline; }
   function updateSaveButton() { saveButton.disabled = isBlocked || isSaving || !isDirty(); }
   function setSavingState(saving) {
-    isSaving = saving; closeButton.disabled = saving; saveButton.textContent = saving ? 'Guardando...' : 'Guardar'; updateSaveButton();
+    isSaving = saving;
+    closeButton.disabled = saving;
+    saveButton.disabled = saving;
+    saveButton.textContent = saving ? 'Guardando...' : 'Guardar';
+    form.querySelector('.config-scroll').classList.toggle('is-hidden', saving);
+    saveLoading.classList.toggle('is-hidden', !saving);
+    updateSaveButton();
   }
   function showResult(message, state) { resultElement.textContent = message; resultElement.className = 'result visible ' + state; }
   function hideResult() { resultElement.textContent = ''; resultElement.className = 'result'; }
