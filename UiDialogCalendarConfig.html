@@ -144,9 +144,9 @@
           removeButton('event', '', eventIndex, 'Eliminar fecha especial', true) + '</div>' +
         '<div class="calendar-event-panel' + (expanded ? '' : ' is-hidden') + '"><div class="calendar-event-grid">' +
           fieldInput('Fecha', 'date', calendarEvent.startDate, 'event', '', eventIndex, 'startDate', true, true) +
-          '<label class="calendar-option-toggle range-toggle"><input type="checkbox" data-kind="event" data-item-index="' + eventIndex + '" data-field="isRange"' + (calendarEvent.isRange ? ' checked' : '') + '> Rango de fechas</label>' +
           (calendarEvent.isRange ? fieldInput('Hasta', 'date', calendarEvent.endDate, 'event', '', eventIndex, 'endDate', true, true) : '') +
           selectField('Categor\u00eda', calendarEvent.category, calendarData.categories, 'category', eventIndex) +
+          '<label class="calendar-option-toggle range-toggle"><input type="checkbox" data-kind="event" data-item-index="' + eventIndex + '" data-field="isRange"' + (calendarEvent.isRange ? ' checked' : '') + '> Rango de fechas</label>' +
           '<fieldset class="calendar-scope"><legend>Aplicar a</legend>' +
             '<label class="scope-option scope-all"><input type="checkbox" data-kind="event" data-item-index="' + eventIndex + '" data-field="appliesToAll"' + (calendarEvent.appliesToAll ? ' checked' : '') + '> Todos</label>' + scopeOptions + '</fieldset>' +
           fieldInput('Descripci\u00f3n', 'text', calendarEvent.description, 'event', '', eventIndex, 'description', false, true, 'wide') +
@@ -408,6 +408,7 @@
   function updateSaveButton() { saveButton.disabled = isBlocked || isSaving || !isDirty(); }
   function setSavingState(saving) {
     isSaving = saving;
+    form.classList.toggle('is-saving', saving);
     closeButton.disabled = saving;
     saveButton.disabled = saving;
     saveButton.textContent = saving ? 'Guardando...' : 'Guardar';

@@ -74,10 +74,10 @@
               <label for="tema_preset">Tema del cuaderno</label>
               <select id="tema_preset" name="tema_preset"></select>
             </div>
-            <div class="palette-preview" aria-label="Vista previa de la paleta">
-              <span id="primary-swatch" title="Color principal"></span>
-              <span id="secondary-swatch" title="Color secundario"></span>
-              <span id="accent-swatch" title="Color de acento"></span>
+            <div class="theme-colors" aria-label="Personalizar colores del tema">
+              <label class="color-field" for="tema_primary"><span>Principal</span><input id="tema_primary" name="tema_primary" type="color"></label>
+              <label class="color-field" for="tema_secondary"><span>Secundario</span><input id="tema_secondary" name="tema_secondary" type="color"></label>
+              <label class="color-field" for="tema_accent"><span>Acento</span><input id="tema_accent" name="tema_accent" type="color"></label>
             </div>
           </section>
 
@@ -174,6 +174,7 @@
       const nextButton = document.getElementById('next-button');
       const resultElement = document.getElementById('wizard-result');
       const presetSelect = document.getElementById('tema_preset');
+      const themeColorFields = ['tema_primary', 'tema_secondary', 'tema_accent'];
       const folderPicker = document.getElementById('folder-picker');
       const folderList = document.getElementById('folder-list');
       const folderBackButton = document.getElementById('folder-back-button');
@@ -214,6 +215,12 @@
         workingConfig.tema_secondary = preset.colors.secondary;
         workingConfig.tema_accent = preset.colors.accent;
         renderPalette();
+      });
+      themeColorFields.forEach(function(fieldName) {
+        document.getElementById(fieldName).addEventListener('input', function(event) {
+          workingConfig[fieldName] = event.target.value.toUpperCase();
+          renderPalette();
+        });
       });
 
       document.getElementById('choose-folder-button').addEventListener('click', openFolderPicker);
@@ -429,9 +436,9 @@
       }
 
       function renderPalette() {
-        document.getElementById('primary-swatch').style.backgroundColor = workingConfig.tema_primary;
-        document.getElementById('secondary-swatch').style.backgroundColor = workingConfig.tema_secondary;
-        document.getElementById('accent-swatch').style.backgroundColor = workingConfig.tema_accent;
+        themeColorFields.forEach(function(fieldName) {
+          document.getElementById(fieldName).value = workingConfig[fieldName] || '#FFFFFF';
+        });
       }
 
       function getSelectedPreset() {

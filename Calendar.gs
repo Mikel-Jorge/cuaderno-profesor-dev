@@ -1236,8 +1236,8 @@ function getCalendarVisualStateForDate_(date, model) {
     styleKey = CP_CALENDAR_STYLE_KEYS.WEEKEND;
   } else if (evaluationEnd) {
     styleKey = CP_CALENDAR_STYLE_KEYS.EVALUATION_END;
-  } else if (event && (event.category === 'REUNION' || event.category === 'DESTACADO')) {
-    styleKey = event.category;
+  } else if (getCalendarEventStyleKey_(event)) {
+    styleKey = getCalendarEventStyleKey_(event);
   } else if (practiceMilestone) {
     styleKey = CP_CALENDAR_STYLE_KEYS.PRACTICAS;
   } else if (inReview) {
@@ -1258,6 +1258,14 @@ function getCalendarVisualStateForDate_(date, model) {
     isPast: isPast,
     note: buildCalendarDayNote_(date, model),
   };
+}
+
+function getCalendarEventStyleKey_(event) {
+  if (!event) return '';
+  return {
+    REUNION: CP_CALENDAR_STYLE_KEYS.REUNION,
+    DESTACADO: CP_CALENDAR_STYLE_KEYS.DESTACADO,
+  }[event.category] || '';
 }
 
 function getCalendarSemanticStyles_(theme) {

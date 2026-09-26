@@ -251,20 +251,20 @@ function updateNewCourseAppearance_(processInput) {
     CP.CONFIG_KEYS.THEME_PRIMARY,
     CP.CONFIG_KEYS.THEME_SECONDARY,
     CP.CONFIG_KEYS.THEME_ACCENT,
-  ]);
+  ], { includeTheme: true });
 }
 
-function applyNewCourseConfigKeys_(processInput, keys) {
+function applyNewCourseConfigKeys_(processInput, keys, options) {
   try {
     const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     const values = getGeneralConfigValues_(spreadsheet);
     keys.forEach(function(key) {
       values[key] = processInput.config[key];
     });
-    saveGeneralConfig_(values, {
+    saveGeneralConfig_(values, Object.assign({
       updateCover: false,
       showToast: false,
-    });
+    }, options || {}));
   } catch (error) {
     rollbackNewCoursePreparation_(processInput, error);
   }
@@ -300,6 +300,7 @@ function rollbackNewCoursePreparation_(processInput, originalError) {
       saveGeneralConfig_(processInput.previousConfig, {
         updateCover: false,
         showToast: false,
+        includeTheme: true,
       });
     } catch (error) {
       workbookStateRestored = false;

@@ -24,13 +24,16 @@ function saveGeneralConfig_(input, options) {
   const saveOptions = options || {};
   const values = normalizeGeneralConfigInput_(input);
   validateAcademicYear_(values[CP.CONFIG_KEYS.ACADEMIC_YEAR]);
+  if (saveOptions.includeTheme) {
+    validateThemeConfig_(values);
+  }
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const configSheet = spreadsheet.getSheetByName(CP.SHEETS.CONFIG);
   const structureError = getConfigStructureError_(spreadsheet);
   if (structureError) throw new Error(structureError);
 
   const previousValues = getStoredConfigMap_(spreadsheet);
-  const changedKeys = getGeneralConfigFields_().map(function(field) {
+  const changedKeys = getPersistedConfigFields_(saveOptions).map(function(field) {
     return field.key;
   }).filter(function(key) {
     return normalizeConfigValue_(previousValues[key]) !== values[key];
@@ -264,6 +267,13 @@ function getGeneralConfigFields_() {
   return getConfigFields_().filter(function(field) {
     return isGeneralDataConfigKey_(field.key);
   });
+}
+
+function getPersistedConfigFields_(options) {
+  const fields = getGeneralConfigFields_();
+  return options && options.includeTheme
+    ? getConfigFields_()
+    : fields;
 }
 
 function isGeneralDataConfigKey_(key) {

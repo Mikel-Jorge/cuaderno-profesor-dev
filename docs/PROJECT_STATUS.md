@@ -1,18 +1,21 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-09-25
-**Estado general:** Fase 2 en desarrollo con modelo y vista visible compacta de calendario, versión 1.2.10
+**Estado general:** Fase 2 en desarrollo con modelo y vista visible compacta de calendario, versión 1.2.11
 
-## Iteracion 1.2.10
+## Iteracion 1.2.11
 
-Version vigente del cuaderno: `1.2.10`.
+Version vigente del cuaderno: `1.2.11`.
 
 - Configuradores de datos generales y calendario con apertura sin efectos laterales y reparacion explicita.
 - Guardado con formulario sustituido por estado bloqueado de carga, cierre automatico tras exito y restauracion tras error.
 - Tema retirado de Datos generales y conservado en Preparar nuevo curso.
 - Calendario con leyenda homogenea, color lavanda para Reunion, estadisticas con dias/porcentajes y borrado desde cabecera colapsable.
 - Pendiente futura: funcion global `Cambiar tema del cuaderno`, prevista cuando las hojas principales esten construidas.
-- Version central del cuaderno: `1.2.10`; esquema: `5`.
+- Preparar nuevo curso recupera los tres colorpickers y persiste la personalizacion del tema.
+- Fechas especiales tienen layout estable con y sin rango; los configuradores usan loading exclusivo.
+- Se verifica el mapeo semantico de ReuniÃ³n y Destacado al renderer de celdas.
+- Version central del cuaderno: `1.2.11`; esquema: `5`.
 
 ## Completado
 
@@ -42,7 +45,7 @@ Version vigente del cuaderno: `1.2.10`.
 - Web del centro normalizada y validada aunque se introduzca sin protocolo.
 - Utilidades globales para ampliar hojas y recortarlas al layout; aplicadas a la Portada `A:H` con filas dinámicas.
 - `_META` escribe las versiones como texto para evitar su conversión a fecha.
-- Versión central del cuaderno `1.2.10` y esquema `5`.
+- Versión central del cuaderno `1.2.11` y esquema `5`.
 - Infraestructura HTML común para diálogos de Apps Script implementada.
 - Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
 - La inicialización se ejecuta desde el diálogo en cinco pasos idempotentes.
