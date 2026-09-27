@@ -18,6 +18,7 @@ const CP_SCHEDULE_ACTIVITY_CATEGORIES = Object.freeze([
   'MODULO', 'TUTORIA', 'GUARDIA', 'REUNION', 'DUAL', 'PPPP', 'P', 'OTRA',
 ]);
 const CP_SCHEDULE_ACTIVITY_DEFAULTS = Object.freeze({
+  TUTORIA: Object.freeze({ name: 'Tutoría', acronym: 'T' }),
   P: Object.freeze({ name: 'Labores propias del puesto de trabajo', acronym: 'P' }),
   PPPP: Object.freeze({ name: 'Participación en proyectos, programas o planes de centro', acronym: 'PPPP' }),
 });
@@ -220,6 +221,14 @@ function guardarConfiguracionHorario(input) {
     throw error;
   } finally {
     lock.releaseLock();
+  }
+  try {
+    createOrRepairScheduleSheet_();
+  } catch (error) {
+    throw new Error(
+      'La configuración se ha guardado, pero no se ha podido actualizar ' + CP.SHEETS.SCHEDULE + ': ' +
+      (error && error.message ? error.message : 'error de renderizado.')
+    );
   }
   spreadsheet.toast('Configuración del horario guardada.', CP.PROJECT_NAME, 4);
   return { message: 'La configuración del horario se ha guardado.' };

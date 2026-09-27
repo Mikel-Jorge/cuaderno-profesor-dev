@@ -4,6 +4,7 @@ function inicializarCuaderno() {
   initializeCalendarStructure_();
   ensureScheduleTechnicalStructure_();
   createOrRepairCalendarSheet_();
+  createOrRepairScheduleSheet_();
   initializeMetaStructure_();
   finishStructureInitialization_();
 }

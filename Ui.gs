@@ -162,6 +162,11 @@ function getUiProcessDefinition_(processId, processInput) {
           run: createOrRepairCalendarSheet_,
         },
         {
+          label: 'Renderizando el horario visible...',
+          completedMessage: 'Horario visible creado o reparado cuando hay tramos configurados.',
+          run: createOrRepairScheduleSheet_,
+        },
+        {
           label: 'Actualizando metadatos...',
           completedMessage: 'Metadatos actualizados.',
           run: initializeMetaStructure_,

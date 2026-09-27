@@ -34,6 +34,7 @@ function getSidebarStateItems_(config) {
     return Boolean(normalizeConfigValue_(config[key]));
   });
   const calendarConfigured = isCalendarConfiguredForSidebar_();
+  const scheduleConfigured = isScheduleConfiguredForSidebar_();
 
   return [
     {
@@ -46,7 +47,11 @@ function getSidebarStateItems_(config) {
       status: calendarConfigured ? 'complete' : 'pending',
       statusLabel: calendarConfigured ? 'Configurado' : 'Pendiente',
     },
-    { label: 'Horario', status: 'unavailable', statusLabel: 'No disponible todavía' },
+    {
+      label: 'Horario',
+      status: scheduleConfigured ? 'complete' : 'pending',
+      statusLabel: scheduleConfigured ? 'Configurado' : 'Pendiente',
+    },
     { label: 'Módulos', status: 'unavailable', statusLabel: 'No disponible todavía' },
     { label: 'Alumnado', status: 'unavailable', statusLabel: 'No disponible todavía' },
   ];
@@ -56,6 +61,7 @@ function getSidebarContextSectionId_(sheetName) {
   const sectionBySheet = {};
   sectionBySheet[CP.SHEETS.COVER] = 'cover';
   sectionBySheet[CP.SHEETS.CALENDAR] = 'calendar';
+  sectionBySheet[CP.SHEETS.SCHEDULE] = 'schedule';
   return sectionBySheet[sheetName] || 'first-steps';
 }
 
@@ -80,6 +86,11 @@ function getSidebarHelpSections_(contextSectionId) {
       id: 'calendar',
       title: 'Calendario',
       text: 'Muestra el curso académico de septiembre a junio desde los datos estructurados. Los colores son solo representación visual.',
+    },
+    {
+      id: 'schedule',
+      title: 'Horario',
+      text: 'Muestra la semana actual a partir de los tramos, actividades y sesiones configurados. El día y la sesión actuales se actualizan con fórmulas de la hoja.',
     },
     {
       id: 'new-course',

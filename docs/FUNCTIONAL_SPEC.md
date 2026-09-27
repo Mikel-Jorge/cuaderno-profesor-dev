@@ -20,16 +20,17 @@ especificación.
 
 # 1. Objetivo
 
-## Decisiones de la iteracion 1.3.3
+## Decisiones de la iteracion 1.3.4
 
-Version vigente del cuaderno: `1.3.3`.
+Version vigente del cuaderno: `1.3.4`.
 
 - Abrir Datos generales o Configurar calendario es una lectura sin efectos laterales: no repara, crea, oculta, reordena ni regenera hojas. Si falta estructura, se informa y se debe usar la reparacion explicita.
 - Guardar muestra un estado de carga que bloquea la edicion; el exito cierra el dialogo y el error restaura el formulario con los valores introducidos.
 - El tema se selecciona unicamente en Preparar nuevo curso. Cambiar globalmente el tema del cuaderno queda como mejora futura.
 - Las estadisticas muestran dias y porcentaje para transcurridos y restantes. La eliminacion de fechas especiales esta en la cabecera de cada tarjeta, incluso colapsada.
 - Preparar nuevo curso permite seleccionar preset y personalizar primary, secondary y accent. Durante el guardado de configuradores solo se muestra el estado de carga; las fechas especiales mantienen un layout estable con y sin rango.
-- La version 1.3.3 mantiene cerrado funcionalmente Calendario y continúa el desarrollo de Horario. Horario usa `_HOR_TRAMOS`, `_HOR_ACTIVIDADES` y `_HOR_SESIONES` como fuente estructurada; no crea aun la hoja visible `2 Horario`.
+- La version 1.3.4 mantiene cerrado funcionalmente Calendario y continúa el desarrollo de Horario. Horario usa `_HOR_TRAMOS`, `_HOR_ACTIVIDADES` y `_HOR_SESIONES` como única fuente estructurada y genera `2 Horario` como vista derivada.
+- Los tres bloques principales del configurador de Horario parten cerrados y son mutuamente excluyentes: abrir uno cierra los otros sin modificar los datos introducidos.
 
 ### Modelo implementado de Horario
 
@@ -461,6 +462,8 @@ Miércoles 23 sep
 ...
 ```
 
+El día, la fecha y hora y las fechas de lunes a viernes se calculan mediante fórmulas de Sheets para la semana actual, usando la zona horaria del Spreadsheet y su recálculo normal, sin triggers ni sondeo. La hoja se crea tras guardar una configuración con tramos válidos y se regenera también desde Inicializar / reparar. Se sitúa inmediatamente después de `1 Calendario`, se ajusta a su área útil y nunca actúa como fuente de datos.
+
 ## 8.2. Tramos horarios
 
 Los tramos se configuran en una sola lista cronológica, sin bloques de mañana o tarde ni controles manuales de orden. Cada tramo tiene un ID estable, tipo `SESION` o `DESCANSO`, nombre, hora de inicio y duración positiva en minutos, obligatoriamente múltiplo de 5. La hora final es informativa y se calcula como `hora_inicio + duracion_minutos`.
@@ -510,7 +513,9 @@ La cuadrícula semanal del configurador utiliza `actividad_id` como dato y muest
 
 Eliminar una actividad o un tramo con asignaciones requiere una confirmación integrada en el propio configurador; no se usan confirmaciones ni alertas nativas del navegador. Los elementos sin asignaciones se eliminan directamente.
 
-Una actividad nueva utiliza `MODULO` como categoría inicial y deja nombre y sigla vacíos. La categoría `P` propone `Labores propias del puesto de trabajo` y sigla `P`; `PPPP` propone `Participación en proyectos, programas o planes de centro` y sigla `PPPP`. Estos valores solo completan campos vacíos o todavía automáticos y nunca sustituyen textos personalizados. `COORDINACION` deja de estar disponible y los datos de desarrollo existentes se normalizan a `REUNION` conservando IDs, contenido y asignaciones.
+Una actividad nueva utiliza `MODULO` como categoría inicial y deja nombre y sigla vacíos. La categoría `TUTORIA` propone `Tutoría` y sigla `T`; `P` propone `Labores propias del puesto de trabajo` y sigla `P`; `PPPP` propone `Participación en proyectos, programas o planes de centro` y sigla `PPPP`. Estos valores solo completan campos vacíos o todavía automáticos y nunca sustituyen textos personalizados. `COORDINACION` deja de estar disponible y los datos de desarrollo existentes se normalizan a `REUNION` conservando IDs, contenido y asignaciones.
+
+La vista semanal muestra en cada sesión la sigla y, cuando existe, información útil de grupo, aula, nombre o apoyo, con el color exacto configurado y texto de contraste accesible. Las celdas sin actividad permanecen blancas y los descansos se representan como filas neutrales diferenciadas.
 
 Ejemplo:
 
@@ -532,7 +537,7 @@ AP
 
 ## 8.5. Hora actual
 
-La sesión actual se resaltará temporalmente con el color general de “ahora”, sin cambiar permanentemente el color propio del módulo.
+El día y tramo actuales se resaltarán dinámicamente. En la intersección de la sesión actual se aplicará énfasis tipográfico sin sustituir el color propio de la actividad. Durante el fin de semana no habrá sesión actual.
 
 
 # 9. Módulos
@@ -1081,6 +1086,8 @@ La primera versión incluirá únicamente apartados relacionados con funciones d
 Primeros pasos
 Portada
 Datos generales
+Calendario
+Horario
 Preparar nuevo curso
 Inicializar / reparar
 Temas y apariencia
@@ -1197,7 +1204,7 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.3.3
+Versión del cuaderno: 1.3.4
 Versión del esquema: 7
 ```
 

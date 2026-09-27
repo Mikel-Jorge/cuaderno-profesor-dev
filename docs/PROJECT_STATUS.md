@@ -1,19 +1,20 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-09-27
-**Estado general:** Calendario cerrado y nueva iteración UX del configurador de Horario implementada, versión 1.3.3
+**Estado general:** Calendario cerrado y primera hoja visible de Horario implementada, versión 1.3.4
 
-## Iteracion 1.3.3
+## Iteracion 1.3.4
 
-Version vigente del cuaderno: `1.3.3`.
+Version vigente del cuaderno: `1.3.4`.
 
 - Calendario cerrado funcionalmente: configurador, hoja visible, estadisticas, eventos, practicas/repaso, notas y estado del sidebar implementados.
 - Horario mantiene tablas tecnicas ocultas, configurador, horario semanal, apoyo por sesion y consultas reutilizables. Los tramos forman una cadena consecutiva desde el primer inicio y las duraciones, con propagacion inmediata y nombres automaticos que respetan personalizaciones.
 - La reparacion y Preparar nuevo curso migran idempotentemente `_HOR_TRAMOS` del esquema 6 al 7, conservando IDs y asignaciones; Configurar horario sigue siendo de solo lectura al abrir e informa si hace falta reparar.
-- Las actividades nuevas parten de `MODULO` sin textos ficticios; se incorporan `P` y defaults de `P`/`PPPP`, mientras `COORDINACION` se normaliza a `REUNION` durante la reparacion.
+- Las actividades nuevas parten de `MODULO` sin textos ficticios; `TUTORIA`, `P` y `PPPP` tienen defaults editables, mientras `COORDINACION` se normaliza a `REUNION` durante la reparacion.
 - La regeneracion del calendario limpia unicamente las notas del area de dias de septiembre a junio antes de escribir las notas actuales.
-- La hoja visible `2 Horario` queda pendiente y no se crea en esta fase.
-- Version central del cuaderno: `1.3.3`; esquema: `7`.
+- Los tres acordeones principales de Horario parten cerrados y son exclusivos sin perder el estado interno del formulario.
+- La hoja visible `2 Horario` se genera como vista derivada tras guardar y desde la reparación, con semana dinámica, colores de actividad, descansos y resaltado temporal mediante fórmulas y formato condicional.
+- Version central del cuaderno: `1.3.4`; esquema: `7`.
 
 - Configuradores de datos generales y calendario con apertura sin efectos laterales y reparacion explicita.
 - Guardado con formulario sustituido por estado bloqueado de carga, cierre automatico tras exito y restauracion tras error.
@@ -23,7 +24,7 @@ Version vigente del cuaderno: `1.3.3`.
 - Preparar nuevo curso recupera los tres colorpickers y persiste la personalizacion del tema.
 - Fechas especiales tienen layout estable con y sin rango; los configuradores usan loading exclusivo.
 - Se verifica el mapeo semantico de ReuniÃ³n y Destacado al renderer de celdas.
-- Version central del cuaderno: `1.3.3`; esquema: `7`.
+- Version central del cuaderno: `1.3.4`; esquema: `7`.
 
 ## Completado
 
@@ -53,10 +54,10 @@ Version vigente del cuaderno: `1.3.3`.
 - Web del centro normalizada y validada aunque se introduzca sin protocolo.
 - Utilidades globales para ampliar hojas y recortarlas al layout; aplicadas a la Portada `A:H` con filas dinámicas.
 - `_META` escribe las versiones como texto para evitar su conversión a fecha.
-- Versión central del cuaderno `1.3.3` y esquema `7`.
+- Versión central del cuaderno `1.3.4` y esquema `7`.
 - Infraestructura HTML común para diálogos de Apps Script implementada.
 - Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
-- La inicialización se ejecuta desde el diálogo en siete pasos idempotentes.
+- La inicialización se ejecuta desde el diálogo en ocho pasos idempotentes.
 - Branding local integrado en la UI sin dependencias externas, con fallback visual.
 - Impresión de las Data URI corregida para que los logos se rendericen en las plantillas HTML.
 - Diálogo reutilizable de confirmación con variantes `normal`, `warning` y `danger`.
@@ -95,13 +96,14 @@ Version vigente del cuaderno: `1.3.3`.
 - Nueva iteración UX del calendario: configurador inicialmente colapsado, botón `+ Añadir fecha` al final, fin de evaluación con color común y layout visible en orden cabecera, leyenda, calendario y estadísticas.
 - Segunda iteración del configurador de Horario: modelo de tramos simplificado, migración segura, autoproposición, orden automático, confirmaciones internas y feedback de color inmediato.
 - Nueva iteración UX de Horario: cadena sin huecos, propagación temporal, nombres ordinales automáticos y catálogo de actividades simplificado con defaults editables.
+- Primera versión de `2 Horario`: vista semanal idempotente, compacta y derivada, integrada con guardado, reparación, Portada y sidebar.
 
 ## Pendiente inmediato
 
 - Probar manualmente las seis paletas, el cierre del diálogo, la URL normalizada y el recorte de la Portada en `CP_DEV`.
 - Ampliar Preparar nuevo curso cuando existan calendario, tramos, módulos y horario.
 - Validación manual de Calendario completada; el bloque se considera cerrado.
-- Validar manualmente en `CP_DEV` la migración 6 a 7 y la UX completa del configurador de Horario; la hoja visible `2 Horario` continúa pendiente.
+- Validar manualmente en `CP_DEV` la migración 6 a 7, la UX completa del configurador y el acabado visual y temporal de `2 Horario`; el bloque Horario aún no se considera cerrado.
 - Evaluar en una fase posterior mover `Inicializar / reparar estructura` a un área `🛠️ Mantenimiento > 🔧 Reparar estructura` y retirar “Inicializar” de la UX final. Por ahora se conserva para desarrollo, migraciones y recuperación, no como operación cotidiana del profesor.
 
 ## Fase 1 prevista
@@ -124,7 +126,7 @@ Estado actual de la fase:
 - Completado: panel lateral básico de ayuda y estado.
 - En curso: Preparar nuevo curso dispone de una primera versión para las áreas ya implementadas.
 - Completado: Fase 2 Calendario; modelo, persistencia, configuración, vista visible, estadísticas, eventos, prácticas/repaso, notas y sidebar.
-- En curso: bloque Horario; modelo y configurador implementados, hoja visible `2 Horario` pendiente.
+- En curso: bloque Horario; modelo, configurador y primera hoja visible implementados, pendientes de validación visual y cierre funcional.
 
 ## Regla de actualización
 

@@ -6,9 +6,9 @@
 Este documento describe únicamente la arquitectura técnica vigente.  
 La funcionalidad esperada se define en `FUNCTIONAL_SPEC.md`.
 
-## Decisiones de la iteracion 1.3.3
+## Decisiones de la iteracion 1.3.4
 
-Los dialogos de configuracion separan lectura y reparacion: abrirlos valida y lee las tablas existentes sin escribir ni cambiar el estado de las hojas. La reparacion estructural es explicita. Los guardados persisten unicamente el modelo afectado y regeneran `1 Calendario` solo despues de cambios validos. La edicion del tema pertenece a Preparar nuevo curso; una futura funcion global `Cambiar tema del cuaderno` reaplicara el tema a todas las hojas visibles cuando el bloque principal este construido. Los estados de carga de los configuradores comparten el patron CSS de `UiStyles.html`: se oculta el contenido editable y el pie de acciones durante la peticion, y se restaura completo si falla.
+Los dialogos de configuracion separan lectura y reparacion: abrirlos valida y lee las tablas existentes sin escribir ni cambiar el estado de las hojas. La reparacion estructural es explicita. Los guardados persisten unicamente el modelo afectado y regeneran su vista visible solo despues de cambios validos. La edicion del tema pertenece a Preparar nuevo curso; una futura funcion global `Cambiar tema del cuaderno` reaplicara el tema a todas las hojas visibles cuando el bloque principal este construido. Los estados de carga de los configuradores comparten el patron CSS de `UiStyles.html`: se oculta el contenido editable y el pie de acciones durante la peticion, y se restaura completo si falla.
 
 ## Plataforma
 
@@ -151,7 +151,9 @@ El configurador deriva todos los inicios salvo el primero y propaga en tiempo re
 
 Las categorias de actividad son `MODULO`, `TUTORIA`, `GUARDIA`, `REUNION`, `DUAL`, `PPPP`, `P` y `OTRA`. La reparacion sustituye `COORDINACION` por `REUNION` en la columna de categoria sin alterar el resto de la fila ni `_HOR_SESIONES`. Los valores sugeridos de `P` y `PPPP` se transportan desde el modelo del servidor a la UI y solo actuan como defaults editables.
 
-Las actividades `MODULO` son una base provisional y se integraran mas adelante con el modelo de imparticiones de `3 Modulos`; no se crea `_MODULOS` en esta fase. La futura hoja visible `2 Horario` sera una vista derivada y no una fuente de verdad.
+Las actividades `MODULO` son una base provisional y se integraran mas adelante con el modelo de imparticiones de `3 Modulos`; no se crea `_MODULOS` en esta fase. `TUTORIA`, `P` y `PPPP` transportan sugerencias editables desde el servidor, sin convertirlas en datos implícitos.
+
+`ScheduleView.gs` genera `2 Horario` de forma idempotente y exclusivamente desde las tres tablas técnicas. La vista se sitúa tras `1 Calendario`, amplía el lienzo antes de escribir, limpia combinaciones y reglas previas, aplica el tema y recorta filas y columnas al terminar. Las columnas auxiliares ocultas contienen únicamente horas derivadas y tipo de tramo para reglas de formato condicional; no son fuente de verdad. Las fórmulas de Sheets mantienen el día, la fecha, la semana y el resaltado temporal sin triggers. El guardado persiste primero el modelo con su rollback existente y renderiza después; si falla la vista, informa de que los datos sí se guardaron. Inicializar / reparar puede regenerarla cuando existen tramos válidos, mientras que abrir el configurador sigue sin efectos laterales.
 
 ## Entornos
 
