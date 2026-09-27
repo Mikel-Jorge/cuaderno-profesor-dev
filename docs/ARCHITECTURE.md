@@ -1,12 +1,12 @@
 # Arquitectura técnica
 
 **Estado:** inicial  
-**Última revisión:** 2026-09-25
+**Última revisión:** 2026-09-27
 
 Este documento describe únicamente la arquitectura técnica vigente.  
 La funcionalidad esperada se define en `FUNCTIONAL_SPEC.md`.
 
-## Decisiones de la iteracion 1.3.1
+## Decisiones de la iteracion 1.3.2
 
 Los dialogos de configuracion separan lectura y reparacion: abrirlos valida y lee las tablas existentes sin escribir ni cambiar el estado de las hojas. La reparacion estructural es explicita. Los guardados persisten unicamente el modelo afectado y regeneran `1 Calendario` solo despues de cambios validos. La edicion del tema pertenece a Preparar nuevo curso; una futura funcion global `Cambiar tema del cuaderno` reaplicara el tema a todas las hojas visibles cuando el bloque principal este construido. Los estados de carga de los configuradores comparten el patron CSS de `UiStyles.html`: se oculta el contenido editable y el pie de acciones durante la peticion, y se restaura completo si falla.
 
@@ -143,7 +143,11 @@ La hoja visible `1 Calendario` se renderiza como una vista idempotente de esas t
 
 ## Modelo de Horario
 
-El bloque Horario persiste sus datos en `_HOR_TRAMOS`, `_HOR_ACTIVIDADES` y `_HOR_SESIONES`. La funcion central `ensureScheduleTechnicalStructure_()` crea o repara cabeceras, conserva datos, oculta las hojas y se reutiliza desde Inicializar / reparar y Preparar nuevo curso. El configurador solo lee al abrir y guarda las tres tablas tras validar el conjunto completo. `_HOR_TRAMOS` se relaciona 1:N con `_HOR_SESIONES` y `_HOR_ACTIVIDADES` se relaciona 1:N con `_HOR_SESIONES`; cada sesion semanal referencia dia + tramo + actividad. La duracion fisica de un tramo no convierte ni pondera sesiones: un tramo `SESION` cuenta una unidad.
+El bloque Horario persiste sus datos en `_HOR_TRAMOS`, `_HOR_ACTIVIDADES` y `_HOR_SESIONES`. `_HOR_TRAMOS` usa `tramo_id`, `tipo`, `nombre`, `hora_inicio` y `duracion_minutos`; la hora final se deriva de inicio + duracion y el orden se deriva por `hora_inicio ASC`. No se persisten jornada, orden manual ni hora final. `_HOR_TRAMOS` se relaciona 1:N con `_HOR_SESIONES` y `_HOR_ACTIVIDADES` se relaciona 1:N con `_HOR_SESIONES`; cada sesion semanal referencia dia + tramo + actividad. La duracion fisica no convierte ni pondera sesiones: un tramo `SESION` cuenta una unidad y un `DESCANSO` cuenta cero.
+
+La funcion central `ensureScheduleTechnicalStructure_()` crea o repara las tablas y migra idempotentemente `_HOR_TRAMOS` del esquema 6 al 7. La migracion valida primero todas las filas, deriva `duracion_minutos` desde `hora_fin - hora_inicio`, conserva los IDs y solo entonces reescribe la tabla ordenada; ante un dato no derivable no modifica el origen. Se reutiliza desde Inicializar / reparar y Preparar nuevo curso. El configurador solo valida y lee al abrir, por lo que un esquema antiguo exige reparacion explicita.
+
+El configurador propone el inicio y la duracion del siguiente tramo unicamente como ayuda frontend de creacion; esa propuesta no forma parte del modelo persistido ni propaga cambios posteriores. La cuadrícula conserva `actividad_id` como fuente de verdad y deriva de la actividad el color de presentacion y el contraste. Las eliminaciones con asignaciones usan una capa de confirmacion interna al mismo HTML.
 
 Las actividades `MODULO` son una base provisional y se integraran mas adelante con el modelo de imparticiones de `3 Modulos`; no se crea `_MODULOS` en esta fase. La futura hoja visible `2 Horario` sera una vista derivada y no una fuente de verdad.
 

@@ -1,5 +1,6 @@
 const CP_SCHEDULE_HEADERS = Object.freeze({
-  SLOTS: Object.freeze(['tramo_id', 'orden', 'jornada', 'tipo', 'nombre', 'hora_inicio', 'hora_fin']),
+  SLOTS: Object.freeze(['tramo_id', 'tipo', 'nombre', 'hora_inicio', 'duracion_minutos']),
+  LEGACY_SLOTS: Object.freeze(['tramo_id', 'orden', 'jornada', 'tipo', 'nombre', 'hora_inicio', 'hora_fin']),
   ACTIVITIES: Object.freeze(['actividad_id', 'categoria', 'nombre', 'sigla', 'tipo_ensenanza_id', 'grupo', 'aula', 'color']),
   SESSIONS: Object.freeze(['sesion_id', 'dia_semana', 'tramo_id', 'actividad_id', 'apoyo_sigla']),
 });
@@ -12,7 +13,6 @@ const CP_SCHEDULE_DAYS = Object.freeze([
   Object.freeze({ id: 'VIE', label: 'Viernes' }),
 ]);
 
-const CP_SCHEDULE_JOURNEYS = Object.freeze({ MANANA: 'Mañana', TARDE: 'Tarde' });
 const CP_SCHEDULE_SLOT_TYPES = Object.freeze({ SESION: 'Sesión', DESCANSO: 'Descanso' });
 const CP_SCHEDULE_ACTIVITY_CATEGORIES = Object.freeze([
   'MODULO', 'TUTORIA', 'COORDINACION', 'GUARDIA', 'REUNION', 'DUAL', 'PPPP', 'OTRA',
@@ -23,12 +23,76 @@ const CP_SCHEDULE_COLOR_PATTERN = /^#[0-9A-F]{6}$/i;
 
 function ensureScheduleTechnicalStructure_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  initializeScheduleTable_(getOrCreateSheet_(spreadsheet, CP.SHEETS.SCHEDULE_SLOTS), CP_SCHEDULE_HEADERS.SLOTS);
+  ensureScheduleSlotsTable_(getOrCreateSheet_(spreadsheet, CP.SHEETS.SCHEDULE_SLOTS));
   initializeScheduleTable_(getOrCreateSheet_(spreadsheet, CP.SHEETS.SCHEDULE_ACTIVITIES), CP_SCHEDULE_HEADERS.ACTIVITIES);
   initializeScheduleTable_(getOrCreateSheet_(spreadsheet, CP.SHEETS.SCHEDULE_SESSIONS), CP_SCHEDULE_HEADERS.SESSIONS);
   spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_SLOTS).hideSheet();
   spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_ACTIVITIES).hideSheet();
   spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_SESSIONS).hideSheet();
+}
+
+function ensureScheduleSlotsTable_(sheet) {
+  const headerWidth = Math.max(CP_SCHEDULE_HEADERS.SLOTS.length, CP_SCHEDULE_HEADERS.LEGACY_SLOTS.length);
+  const headers = sheet.getRange(1, 1, 1, headerWidth).getValues()[0].map(normalizeScheduleText_);
+  if (scheduleHeadersMatch_(headers, CP_SCHEDULE_HEADERS.SLOTS)) {
+    initializeScheduleTable_(sheet, CP_SCHEDULE_HEADERS.SLOTS);
+    return;
+  }
+  if (scheduleHeadersMatch_(headers, CP_SCHEDULE_HEADERS.LEGACY_SLOTS)) {
+    migrateScheduleSlotsToSchema7_(sheet);
+    return;
+  }
+  if (sheet.getLastRow() <= 1 || !headers.some(Boolean)) {
+    sheet.clearContents();
+    initializeScheduleTable_(sheet, CP_SCHEDULE_HEADERS.SLOTS);
+    return;
+  }
+  throw new Error('La hoja técnica ' + CP.SHEETS.SCHEDULE_SLOTS + ' tiene un esquema incompatible. No se han modificado sus datos.');
+}
+
+function scheduleHeadersMatch_(actual, expected) {
+  return expected.every(function(header, index) { return actual[index] === header; });
+}
+
+function migrateScheduleSlotsToSchema7_(sheet) {
+  const oldWidth = CP_SCHEDULE_HEADERS.LEGACY_SLOTS.length;
+  const oldRows = sheet.getLastRow() < 2
+    ? []
+    : sheet.getRange(2, 1, sheet.getLastRow() - 1, oldWidth).getValues().filter(function(row) {
+      return row.some(function(value) { return normalizeScheduleText_(value); });
+    });
+  const migrated = oldRows.map(function(row, index) {
+    try {
+      const startTime = normalizeScheduleTime_(row[5]);
+      const endTime = normalizeScheduleTime_(row[6]);
+      const durationMinutes = timeToMinutes_(endTime) - timeToMinutes_(startTime);
+      const slot = {
+        id: normalizeScheduleText_(row[0]),
+        type: normalizeScheduleText_(row[3]).toUpperCase(),
+        name: normalizeScheduleText_(row[4]),
+        startTime: startTime,
+        durationMinutes: durationMinutes,
+      };
+      validateScheduleSlot_(slot);
+      return slot;
+    } catch (error) {
+      throw new Error('No se puede migrar el tramo de la fila ' + (index + 2) + ': ' + error.message + ' No se han modificado los datos.');
+    }
+  });
+  validateScheduleSlotSet_(migrated);
+  const ordered = sortScheduleSlots_(migrated);
+  const snapshot = sheet.getRange(1, 1, Math.max(1, sheet.getLastRow()), oldWidth).getValues();
+  try {
+    sheet.getRange(1, 1, Math.max(1, sheet.getLastRow()), oldWidth).clearContent();
+    writeScheduleTable_(sheet, CP_SCHEDULE_HEADERS.SLOTS, ordered.map(function(slot) {
+      return [slot.id, slot.type, slot.name, slot.startTime, slot.durationMinutes];
+    }));
+  } catch (error) {
+    ensureSheetSize_(sheet, snapshot.length, oldWidth);
+    sheet.getRange(1, 1, Math.max(1, sheet.getLastRow()), oldWidth).clearContent();
+    sheet.getRange(1, 1, snapshot.length, oldWidth).setValues(snapshot);
+    throw new Error('No se ha podido migrar ' + CP.SHEETS.SCHEDULE_SLOTS + '; se han restaurado los datos anteriores.');
+  }
 }
 
 function initializeScheduleStructure_() {
@@ -71,7 +135,6 @@ function abrirConfiguracionHorario() {
       activities: [],
       sessions: [],
       days: CP_SCHEDULE_DAYS,
-      journeys: CP_SCHEDULE_JOURNEYS,
       slotTypes: CP_SCHEDULE_SLOT_TYPES,
       categories: CP_SCHEDULE_ACTIVITY_CATEGORIES,
       teachingTypes: CP_SCHEDULE_TEACHING_TYPE_IDS,
@@ -93,7 +156,6 @@ function getScheduleConfigForUi_(spreadsheet) {
     activities: getScheduleActivities_().map(function(activity) { return Object.assign({}, activity); }),
     sessions: getWeeklySchedule_().map(function(session) { return Object.assign({}, session); }),
     days: CP_SCHEDULE_DAYS,
-    journeys: CP_SCHEDULE_JOURNEYS,
     slotTypes: CP_SCHEDULE_SLOT_TYPES,
     categories: CP_SCHEDULE_ACTIVITY_CATEGORIES,
     teachingTypes: CP_SCHEDULE_TEACHING_TYPE_IDS,
@@ -133,37 +195,51 @@ function normalizeAndValidateScheduleConfig_(input) {
 
 function normalizeScheduleSlots_(rows) {
   const usedIds = {};
-  const usedOrders = {};
-  const slots = rows.map(function(raw, index) {
+  const slots = rows.map(function(raw) {
     const slot = {
       id: normalizeScheduleText_(raw.id || raw.tramo_id) || createCalendarRecordId_('TR'),
-      order: Number(raw.order || raw.orden || index + 1),
-      journey: normalizeScheduleText_(raw.journey || raw.jornada).toUpperCase(),
       type: normalizeScheduleText_(raw.type || raw.tipo).toUpperCase(),
       name: normalizeScheduleText_(raw.name || raw.nombre),
       startTime: normalizeScheduleTime_(raw.startTime || raw.hora_inicio),
-      endTime: normalizeScheduleTime_(raw.endTime || raw.hora_fin),
+      durationMinutes: Number(raw.durationMinutes || raw.duracion_minutos),
     };
     if (usedIds[slot.id]) throw new Error('Hay tramos horarios con el mismo ID.');
-    if (!Number.isInteger(slot.order) || slot.order < 1 || usedOrders[slot.order]) throw new Error('El orden de los tramos debe ser único.');
-    if (!CP_SCHEDULE_JOURNEYS[slot.journey]) throw new Error('La jornada del tramo no es válida.');
-    if (!CP_SCHEDULE_SLOT_TYPES[slot.type]) throw new Error('El tipo del tramo no es válido.');
-    if (!slot.name) throw new Error('Todos los tramos deben tener nombre.');
-    const start = parseScheduleTimeToMinutes_(slot.startTime);
-    const end = parseScheduleTimeToMinutes_(slot.endTime);
-    if (start >= end) throw new Error('La hora de inicio debe ser anterior a la hora de fin.');
-    usedIds[slot.id] = true; usedOrders[slot.order] = true;
+    validateScheduleSlot_(slot);
+    usedIds[slot.id] = true;
     return slot;
-  }).sort(function(first, second) { return first.order - second.order; });
-  slots.forEach(function(slot, index) { slot.order = index + 1; });
-  const orderedByTime = slots.slice().sort(function(first, second) { return parseScheduleTimeToMinutes_(first.startTime) - parseScheduleTimeToMinutes_(second.startTime); });
-  orderedByTime.forEach(function(slot, index) {
-    const previous = orderedByTime[index - 1];
-    if (previous && parseScheduleTimeToMinutes_(slot.startTime) < parseScheduleTimeToMinutes_(previous.endTime)) {
-      throw new Error('Hay tramos horarios solapados.');
+  });
+  validateScheduleSlotSet_(slots);
+  return sortScheduleSlots_(slots);
+}
+
+function validateScheduleSlot_(slot) {
+  if (!slot.id) throw new Error('Todo tramo debe conservar un identificador.');
+  if (!CP_SCHEDULE_SLOT_TYPES[slot.type]) throw new Error('El tipo del tramo no es válido.');
+  if (!slot.name) throw new Error('Todos los tramos deben tener nombre.');
+  const duration = Number(slot.durationMinutes);
+  if (!Number.isInteger(duration) || duration <= 0 || duration % 5 !== 0) {
+    throw new Error('La duración de cada tramo debe ser un múltiplo de 5 minutos.');
+  }
+  if (getTimeSlotEndMinutes_(slot) > 24 * 60) throw new Error('Un tramo no puede finalizar después de las 24:00.');
+}
+
+function validateScheduleSlotSet_(slots) {
+  const usedIds = {};
+  const ordered = sortScheduleSlots_(slots);
+  ordered.forEach(function(slot, index) {
+    if (usedIds[slot.id]) throw new Error('Hay tramos horarios con el mismo ID.');
+    usedIds[slot.id] = true;
+    const previous = ordered[index - 1];
+    if (previous && timeToMinutes_(slot.startTime) < getTimeSlotEndMinutes_(previous)) {
+      throw new Error('Los tramos «' + previous.name + '» y «' + slot.name + '» se solapan.');
     }
   });
-  return slots;
+}
+
+function sortScheduleSlots_(slots) {
+  return slots.slice().sort(function(first, second) {
+    return timeToMinutes_(first.startTime) - timeToMinutes_(second.startTime) || first.id.localeCompare(second.id);
+  });
 }
 
 function normalizeScheduleActivities_(rows) {
@@ -216,7 +292,7 @@ function normalizeScheduleSessions_(rows, slotById, activityById) {
 }
 
 function persistScheduleConfig_(spreadsheet, config) {
-  writeScheduleTable_(spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_SLOTS), CP_SCHEDULE_HEADERS.SLOTS, config.slots.map(function(slot) { return [slot.id, slot.order, slot.journey, slot.type, slot.name, slot.startTime, slot.endTime]; }));
+  writeScheduleTable_(spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_SLOTS), CP_SCHEDULE_HEADERS.SLOTS, config.slots.map(function(slot) { return [slot.id, slot.type, slot.name, slot.startTime, slot.durationMinutes]; }));
   writeScheduleTable_(spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_ACTIVITIES), CP_SCHEDULE_HEADERS.ACTIVITIES, config.activities.map(function(activity) { return [activity.id, activity.category, activity.name, activity.acronym, activity.teachingTypeId, activity.group, activity.classroom, activity.color]; }));
   writeScheduleTable_(spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_SESSIONS), CP_SCHEDULE_HEADERS.SESSIONS, config.sessions.map(function(session) { return [session.id, session.day, session.slotId, session.activityId, session.support]; }));
 }
@@ -254,8 +330,8 @@ function restoreScheduleSnapshots_(spreadsheet, snapshots) {
 
 function getScheduleTimeSlots_() {
   return readScheduleRows_(CP.SHEETS.SCHEDULE_SLOTS, CP_SCHEDULE_HEADERS.SLOTS.length).map(function(row) {
-    return { id: normalizeScheduleText_(row[0]), order: Number(row[1]) || 0, journey: normalizeScheduleText_(row[2]), type: normalizeScheduleText_(row[3]), name: normalizeScheduleText_(row[4]), startTime: normalizeScheduleTime_(row[5]), endTime: normalizeScheduleTime_(row[6]) };
-  }).sort(function(first, second) { return first.order - second.order; });
+    return { id: normalizeScheduleText_(row[0]), type: normalizeScheduleText_(row[1]), name: normalizeScheduleText_(row[2]), startTime: normalizeScheduleTime_(row[3]), durationMinutes: Number(row[4]) };
+  }).sort(function(first, second) { return timeToMinutes_(first.startTime) - timeToMinutes_(second.startTime); });
 }
 
 function getTeachingTimeSlots_() { return getScheduleTimeSlots_().filter(function(slot) { return slot.type === 'SESION'; }); }
@@ -285,7 +361,7 @@ function getCurrentScheduleSlot_(date) {
   const day = CP_SCHEDULE_DAYS[dayNumber - 1];
   if (!day) return null;
   const minutes = Number(Utilities.formatDate(now, timeZone, 'H')) * 60 + Number(Utilities.formatDate(now, timeZone, 'm'));
-  return getScheduleTimeSlots_().find(function(slot) { return parseScheduleTimeToMinutes_(slot.startTime) <= minutes && minutes < parseScheduleTimeToMinutes_(slot.endTime); }) || null;
+  return getScheduleTimeSlots_().find(function(slot) { return timeToMinutes_(slot.startTime) <= minutes && minutes < getTimeSlotEndMinutes_(slot); }) || null;
 }
 
 function readScheduleRows_(sheetName, width) {
@@ -300,5 +376,13 @@ function normalizeScheduleTime_(value) {
   if (!CP_SCHEDULE_TIME_PATTERN.test(text)) throw new Error('Las horas deben utilizar el formato HH:mm.');
   return text;
 }
-function parseScheduleTimeToMinutes_(value) { const match = CP_SCHEDULE_TIME_PATTERN.exec(normalizeScheduleText_(value)); if (!match) throw new Error('Las horas deben utilizar el formato HH:mm.'); return Number(match[1]) * 60 + Number(match[2]); }
+function timeToMinutes_(value) { const match = CP_SCHEDULE_TIME_PATTERN.exec(normalizeScheduleText_(value)); if (!match) throw new Error('Las horas deben utilizar el formato HH:mm.'); return Number(match[1]) * 60 + Number(match[2]); }
+function minutesToTime_(minutes) {
+  const total = Number(minutes);
+  if (!Number.isInteger(total) || total < 0 || total > 24 * 60) throw new Error('No se puede representar la hora calculada.');
+  if (total === 24 * 60) return '24:00';
+  return String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0');
+}
+function getTimeSlotEndMinutes_(slot) { return timeToMinutes_(slot.startTime) + Number(slot.durationMinutes); }
+function getTimeSlotEndTime_(slot) { return minutesToTime_(getTimeSlotEndMinutes_(slot)); }
 function normalizeScheduleColor_(value) { const color = normalizeScheduleText_(value).toUpperCase(); if (!CP_SCHEDULE_COLOR_PATTERN.test(color)) throw new Error('El color de una actividad debe tener el formato #RRGGBB.'); return color; }

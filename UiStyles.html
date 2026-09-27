@@ -631,7 +631,7 @@
   .schedule-subsection h3 { margin: 0 0 8px; font-size: 13px; }
   .schedule-slot-row {
     display: grid;
-    grid-template-columns: 70px minmax(140px, 1.6fr) minmax(120px, 1fr) minmax(115px, 0.8fr) minmax(115px, 0.8fr) 34px;
+    grid-template-columns: minmax(145px, 1.5fr) minmax(110px, 0.9fr) minmax(105px, 0.8fr) minmax(105px, 0.8fr) minmax(80px, 0.6fr) 34px;
     gap: 8px;
     align-items: end;
     margin-top: 8px;
@@ -640,8 +640,17 @@
     border-radius: 6px;
     background: var(--background);
   }
-  .schedule-order-controls { display: flex; gap: 4px; }
-  .schedule-order-controls .icon-button { width: 30px; height: 30px; flex-basis: 30px; font-size: 16px; }
+  .schedule-slot-row > .form-field > span:first-child {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .schedule-duration-input { display: flex; align-items: center; gap: 6px; }
+  .schedule-duration-input input { min-width: 0; }
+  .schedule-duration-input span { color: var(--muted-text); font-size: 12px; }
+  .schedule-derived-time { display: flex; min-height: 59px; flex-direction: column; justify-content: flex-end; }
+  .schedule-derived-time strong { min-height: 36px; padding: 8px 0; font-size: 13px; }
   .schedule-add-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .schedule-activity-card { margin-top: 8px; overflow: hidden; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
   .schedule-card-header { display: flex; min-width: 0; align-items: stretch; }
@@ -656,10 +665,35 @@
   .schedule-table th, .schedule-table td { padding: 7px; border: 1px solid var(--border); vertical-align: top; text-align: left; }
   .schedule-table th { background: var(--muted); font-size: 12px; }
   .schedule-table td { background: var(--surface); }
+  .schedule-session-cell { transition: background-color 120ms ease; }
   .schedule-table select, .schedule-support { box-sizing: border-box; width: 100%; min-width: 0; min-height: 30px; padding: 5px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; font-size: 11px; }
+  .schedule-session-cell select, .schedule-session-cell .schedule-support { background: rgba(255, 255, 255, 0.9); color: #1f2937; }
   .schedule-table th small { display: block; margin-top: 3px; color: var(--muted-text); font-weight: 400; }
   .schedule-support { margin-top: 5px; }
   .schedule-break-cell { background: var(--muted) !important; color: var(--muted-text); font-size: 11px; font-style: italic; text-align: center !important; }
+
+  .internal-confirmation-backdrop {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.48);
+  }
+  .internal-confirmation-backdrop.is-hidden { display: none; }
+  .internal-confirmation {
+    width: min(440px, 100%);
+    padding: 20px;
+    border-top: 4px solid var(--danger);
+    border-radius: 7px;
+    background: var(--surface);
+    box-shadow: 0 18px 48px rgba(15, 23, 42, 0.24);
+  }
+  .internal-confirmation h2 { margin: 0 0 10px; font-size: 18px; }
+  .internal-confirmation p { margin: 0; color: var(--text); }
+  .internal-confirmation .actions { gap: 10px; }
 
   .evaluation-row {
     grid-template-columns: minmax(0, 1.4fr) minmax(145px, 0.8fr) 34px;

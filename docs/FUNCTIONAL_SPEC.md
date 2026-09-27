@@ -20,20 +20,20 @@ especificación.
 
 # 1. Objetivo
 
-## Decisiones de la iteracion 1.3.1
+## Decisiones de la iteracion 1.3.2
 
-Version vigente del cuaderno: `1.3.1`.
+Version vigente del cuaderno: `1.3.2`.
 
 - Abrir Datos generales o Configurar calendario es una lectura sin efectos laterales: no repara, crea, oculta, reordena ni regenera hojas. Si falta estructura, se informa y se debe usar la reparacion explicita.
 - Guardar muestra un estado de carga que bloquea la edicion; el exito cierra el dialogo y el error restaura el formulario con los valores introducidos.
 - El tema se selecciona unicamente en Preparar nuevo curso. Cambiar globalmente el tema del cuaderno queda como mejora futura.
 - Las estadisticas muestran dias y porcentaje para transcurridos y restantes. La eliminacion de fechas especiales esta en la cabecera de cada tarjeta, incluso colapsada.
 - Preparar nuevo curso permite seleccionar preset y personalizar primary, secondary y accent. Durante el guardado de configuradores solo se muestra el estado de carga; las fechas especiales mantienen un layout estable con y sin rango.
-- La version 1.3.1 mantiene cerrado funcionalmente Calendario e inicia Horario. Horario usa `_HOR_TRAMOS`, `_HOR_ACTIVIDADES` y `_HOR_SESIONES` como fuente estructurada; no crea aun la hoja visible `2 Horario`.
+- La version 1.3.2 mantiene cerrado funcionalmente Calendario y continúa el desarrollo de Horario. Horario usa `_HOR_TRAMOS`, `_HOR_ACTIVIDADES` y `_HOR_SESIONES` como fuente estructurada; no crea aun la hoja visible `2 Horario`.
 
 ### Modelo implementado de Horario
 
-`_HOR_TRAMOS` contiene `tramo_id`, `orden`, `jornada`, `tipo`, `nombre`, `hora_inicio` y `hora_fin`. Las jornadas son `MANANA` y `TARDE`; los tipos son `SESION` y `DESCANSO`. Las horas se almacenan como `HH:mm`, una sesion cuenta siempre como una unidad docente y los descansos no cuentan.
+`_HOR_TRAMOS` contiene `tramo_id`, `tipo`, `nombre`, `hora_inicio` y `duracion_minutos`. Los tipos son `SESION` y `DESCANSO`; no existe distinción técnica entre mañana y tarde. La hora final se deriva siempre sumando la duración al inicio y nunca se persiste. Una sesión cuenta siempre como una unidad docente con independencia de su duración, y los descansos no cuentan.
 
 `_HOR_ACTIVIDADES` contiene `actividad_id`, `categoria`, `nombre`, `sigla`, `tipo_ensenanza_id`, `grupo`, `aula` y `color`. Las categorias son `MODULO`, `TUTORIA`, `COORDINACION`, `GUARDIA`, `REUNION`, `DUAL`, `PPPP` y `OTRA`; el color solo es presentacion.
 
@@ -463,27 +463,22 @@ Miércoles 23 sep
 
 ## 8.2. Tramos horarios
 
-Serán configurables y podrán incluir:
+Los tramos se configuran en una sola lista cronológica, sin bloques de mañana o tarde ni controles manuales de orden. Cada tramo tiene un ID estable, tipo `SESION` o `DESCANSO`, nombre, hora de inicio y duración positiva en minutos, obligatoriamente múltiplo de 5. La hora final es informativa y se calcula como `hora_inicio + duracion_minutos`.
 
-- Mañana.
-- Tarde.
-- Recreos.
-- Pausas.
-- Reuniones.
-
-Ejemplo actual:
+Ejemplo:
 
 ```text
-08:10
-09:05
-10:00
-10:55-11:25 recreo
-11:25
-12:20
-13:15
-14:10
-...
+08:10 · 55 min · 1ª hora
+09:05 · 55 min · 2ª hora
+10:00 · 30 min · Recreo
+10:30 · 55 min · 3ª hora
 ```
+
+Los tramos se muestran y persisten ordenados por hora de inicio. Cambiar el inicio reordena la lista y la cuadrícula sin modificar el `tramo_id` ni sus asignaciones. Dos tramos no pueden solaparse, aunque pueden ser consecutivos o dejar huecos. La validación se realiza en el configurador y de nuevo en servidor antes de guardar.
+
+El primer tramo se crea sin inicio ni duración predeterminados. Al crear los siguientes, si el tramo cronológicamente anterior tiene inicio y duración válidos, se propone como nuevo inicio su final calculado y se hereda su duración, también cuando es un descanso. Si no puede calcularse el final anterior, ambos campos quedan vacíos. Esta propuesta se aplica solo al crear: modificar después un tramo no reajusta silenciosamente los ya existentes.
+
+Los descansos participan en el orden y los solapamientos, pero no admiten actividad en la cuadrícula ni cuentan como sesión docente.
 
 Al preparar un nuevo curso se preguntará si se desean conservar.
 
@@ -509,6 +504,10 @@ Cada actividad podrá tener:
 - Grupo.
 - Aula.
 - Color.
+
+La cuadrícula semanal del configurador utiliza `actividad_id` como dato y muestra inmediatamente el color de la actividad asignada. Cambiar una asignación, quitarla o editar el color actualiza todas las celdas afectadas sin esperar al guardado, con controles legibles y contraste de texto adecuado. El color es exclusivamente presentación y nunca se utiliza para deducir la actividad.
+
+Eliminar una actividad o un tramo con asignaciones requiere una confirmación integrada en el propio configurador; no se usan confirmaciones ni alertas nativas del navegador. Los elementos sin asignaciones se eliminan directamente.
 
 Ejemplo:
 
@@ -1195,8 +1194,8 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.3.1
-Versión del esquema: 6
+Versión del cuaderno: 1.3.2
+Versión del esquema: 7
 ```
 
 La versión podrá mostrarse discretamente en Portada o panel.

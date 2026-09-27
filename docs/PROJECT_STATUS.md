@@ -1,18 +1,19 @@
 # Estado del proyecto
 
-**Última actualización:** 2026-09-26
-**Estado general:** Calendario cerrado y estructura técnica de Horario garantizada, versión 1.3.1
+**Última actualización:** 2026-09-27
+**Estado general:** Calendario cerrado y segunda iteración del configurador de Horario implementada, versión 1.3.2
 
-## Iteracion 1.3.1
+## Iteracion 1.3.2
 
-Version vigente del cuaderno: `1.3.1`.
+Version vigente del cuaderno: `1.3.2`.
 
 - Calendario cerrado funcionalmente: configurador, hoja visible, estadisticas, eventos, practicas/repaso, notas y estado del sidebar implementados.
-- Horario iniciado con modelo, tablas tecnicas ocultas, configurador, horario semanal, apoyo por sesion y consultas reutilizables.
-- La reparacion y Preparar nuevo curso garantizan de forma idempotente las tres tablas tecnicas de Horario, conservando sus datos; Configurar horario sigue siendo de solo lectura al abrir.
+- Horario mantiene tablas tecnicas ocultas, configurador, horario semanal, apoyo por sesion y consultas reutilizables. Los tramos usan inicio + duracion, orden cronologico automatico y final derivado, sin jornada ni orden manual.
+- La reparacion y Preparar nuevo curso migran idempotentemente `_HOR_TRAMOS` del esquema 6 al 7, conservando IDs y asignaciones; Configurar horario sigue siendo de solo lectura al abrir e informa si hace falta reparar.
+- El configurador propone el inicio y la duracion desde el tramo anterior, valida solapamientos, integra las confirmaciones destructivas y colorea en tiempo real la cuadricula segun la actividad.
 - La regeneracion del calendario limpia unicamente las notas del area de dias de septiembre a junio antes de escribir las notas actuales.
 - La hoja visible `2 Horario` queda pendiente y no se crea en esta fase.
-- Version central del cuaderno: `1.3.1`; esquema: `6`.
+- Version central del cuaderno: `1.3.2`; esquema: `7`.
 
 - Configuradores de datos generales y calendario con apertura sin efectos laterales y reparacion explicita.
 - Guardado con formulario sustituido por estado bloqueado de carga, cierre automatico tras exito y restauracion tras error.
@@ -22,7 +23,7 @@ Version vigente del cuaderno: `1.3.1`.
 - Preparar nuevo curso recupera los tres colorpickers y persiste la personalizacion del tema.
 - Fechas especiales tienen layout estable con y sin rango; los configuradores usan loading exclusivo.
 - Se verifica el mapeo semantico de ReuniÃ³n y Destacado al renderer de celdas.
-- Version central del cuaderno: `1.3.1`; esquema: `6`.
+- Version central del cuaderno: `1.3.2`; esquema: `7`.
 
 ## Completado
 
@@ -52,7 +53,7 @@ Version vigente del cuaderno: `1.3.1`.
 - Web del centro normalizada y validada aunque se introduzca sin protocolo.
 - Utilidades globales para ampliar hojas y recortarlas al layout; aplicadas a la Portada `A:H` con filas dinámicas.
 - `_META` escribe las versiones como texto para evitar su conversión a fecha.
-- Versión central del cuaderno `1.3.1` y esquema `6`.
+- Versión central del cuaderno `1.3.2` y esquema `7`.
 - Infraestructura HTML común para diálogos de Apps Script implementada.
 - Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
 - La inicialización se ejecuta desde el diálogo en siete pasos idempotentes.
@@ -92,12 +93,14 @@ Version vigente del cuaderno: `1.3.1`.
 - Guardar la configuración de calendario e `Inicializar / reparar` regeneran `1 Calendario` desde la fuente de verdad.
 - Categorías de fechas especiales simplificadas a `FESTIVO`, `REUNION` y `DESTACADO`, con normalización de categorías anteriores a `FESTIVO`.
 - Nueva iteración UX del calendario: configurador inicialmente colapsado, botón `+ Añadir fecha` al final, fin de evaluación con color común y layout visible en orden cabecera, leyenda, calendario y estadísticas.
+- Segunda iteración del configurador de Horario: modelo de tramos simplificado, migración segura, autoproposición, orden automático, confirmaciones internas y feedback de color inmediato.
 
 ## Pendiente inmediato
 
 - Probar manualmente las seis paletas, el cierre del diálogo, la URL normalizada y el recorte de la Portada en `CP_DEV`.
 - Ampliar Preparar nuevo curso cuando existan calendario, tramos, módulos y horario.
 - Validación manual de Calendario completada; el bloque se considera cerrado.
+- Validar manualmente en `CP_DEV` la migración 6 a 7 y la UX completa del configurador de Horario; la hoja visible `2 Horario` continúa pendiente.
 - Evaluar en una fase posterior mover `Inicializar / reparar estructura` a un área `🛠️ Mantenimiento > 🔧 Reparar estructura` y retirar “Inicializar” de la UX final. Por ahora se conserva para desarrollo, migraciones y recuperación, no como operación cotidiana del profesor.
 
 ## Fase 1 prevista

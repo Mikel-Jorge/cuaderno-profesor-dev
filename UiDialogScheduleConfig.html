@@ -14,7 +14,7 @@
       <div class="result" id="blocking-error" role="alert"></div>
       <section class="schedule-accordion" id="slots-section">
         <button class="schedule-accordion-toggle" type="button" data-action="toggle-section" data-section="slots" aria-expanded="false"><span class="calendar-accordion-indicator">&#9656;</span><span>Tramos horarios</span></button>
-        <div class="schedule-accordion-panel is-hidden" id="slots-panel"><div id="slots-list"></div><div class="schedule-add-row"><button class="button button-secondary compact-button" type="button" data-action="add-slot" data-journey="MANANA">+ A&ntilde;adir tramo de ma&ntilde;ana</button><button class="button button-secondary compact-button" type="button" data-action="add-slot" data-journey="TARDE">+ A&ntilde;adir tramo de tarde</button></div></div>
+        <div class="schedule-accordion-panel is-hidden" id="slots-panel"><div id="slots-list"></div><div class="schedule-add-row"><button class="button button-secondary compact-button" type="button" data-action="add-slot">+ A&ntilde;adir tramo</button></div></div>
       </section>
       <section class="schedule-accordion" id="activities-section">
         <button class="schedule-accordion-toggle" type="button" data-action="toggle-section" data-section="activities" aria-expanded="false"><span class="calendar-accordion-indicator">&#9656;</span><span>Actividades</span></button>
@@ -28,6 +28,13 @@
     <div class="save-loading is-hidden" id="save-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Guardando horario...</span></div>
     <div class="config-feedback"><div class="result" id="form-result" role="status"></div><div class="actions"><button class="button button-secondary" id="close-button" type="button">Cancelar</button><button class="button" id="save-button" type="submit" disabled>Guardar</button></div></div>
   </form>
+  <div class="internal-confirmation-backdrop is-hidden" id="confirmation-overlay" aria-hidden="true">
+    <section class="internal-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="confirmation-title" aria-describedby="confirmation-message">
+      <h2 id="confirmation-title"></h2>
+      <p id="confirmation-message"></p>
+      <div class="actions"><button class="button button-secondary" id="confirmation-cancel" type="button">Cancelar</button><button class="button button-danger" id="confirmation-accept" type="button">Eliminar</button></div>
+    </section>
+  </div>
   <footer class="author-footer">&copy; <?= uiConfig.author ?> &middot; <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a></footer>
 </main>
 <script>
@@ -41,9 +48,15 @@
   const resultElement = document.getElementById('form-result');
   const blockingErrorElement = document.getElementById('blocking-error');
   const saveLoading = document.getElementById('save-loading');
+  const confirmationOverlay = document.getElementById('confirmation-overlay');
+  const confirmationTitle = document.getElementById('confirmation-title');
+  const confirmationMessage = document.getElementById('confirmation-message');
+  const confirmationCancel = document.getElementById('confirmation-cancel');
+  const confirmationAccept = document.getElementById('confirmation-accept');
   let data = clone(INITIAL_SCHEDULE_CONFIG);
   let baseline = '';
   let isSaving = false;
+  let pendingConfirmation = null;
   const expandedSections = { slots: false, activities: false, weekly: false };
   const expandedActivities = {};
   const isBlocked = Boolean(data.blockingError);
@@ -58,11 +71,17 @@
   form.addEventListener('submit', function(event) {
     event.preventDefault();
     if (isBlocked || isSaving || !isDirty() || !form.reportValidity()) return;
+    const validationError = validateSlots();
+    if (validationError) { showResult(validationError, 'error'); return; }
     setSavingState(true);
     hideResult();
     google.script.run.withSuccessHandler(function() { google.script.host.close(); }).withFailureHandler(handleSaveError).guardarConfiguracionHorario(getPayload());
   });
   closeButton.addEventListener('click', function() { google.script.host.close(); });
+  confirmationCancel.addEventListener('click', closeConfirmation);
+  confirmationAccept.addEventListener('click', acceptConfirmation);
+  confirmationOverlay.addEventListener('click', function(event) { if (event.target === confirmationOverlay) closeConfirmation(); });
+  document.addEventListener('keydown', function(event) { if (event.key === 'Escape' && pendingConfirmation) closeConfirmation(); });
 
   function renderAll() { renderSections(); renderSlots(); renderActivities(); renderWeeklyGrid(); if (isBlocked) form.querySelectorAll('input, select, button').forEach(function(control) { if (control !== closeButton) control.disabled = true; }); }
   function renderSections() {
@@ -75,19 +94,16 @@
     });
   }
   function renderSlots() {
-    const groups = ['MANANA', 'TARDE'].map(function(journey) {
-      const rows = data.slots.filter(function(slot) { return slot.journey === journey; }).map(function(slot) { return renderSlot(slot); }).join('');
-      return '<div class="schedule-subsection"><h3>' + escapeHtml(data.journeys[journey]) + '</h3>' + (rows || '<p class="calendar-empty">Sin tramos.</p>') + '</div>';
-    }).join('');
-    slotsList.innerHTML = groups;
+    sortSlotsChronologically();
+    slotsList.innerHTML = data.slots.map(renderSlot).join('') || '<p class="calendar-empty">Sin tramos.</p>';
   }
   function renderSlot(slot) {
-    const index = data.slots.indexOf(slot);
-    return '<div class="schedule-slot-row" data-id="' + escapeAttribute(slot.id) + '"><div class="schedule-order-controls"><button class="icon-button" type="button" title="Subir" aria-label="Subir tramo" data-action="move-slot-up" data-index="' + index + '">&#8593;</button><button class="icon-button" type="button" title="Bajar" aria-label="Bajar tramo" data-action="move-slot-down" data-index="' + index + '">&#8595;</button></div>' +
+    return '<div class="schedule-slot-row" data-id="' + escapeAttribute(slot.id) + '">' +
       '<label class="form-field"><span>Nombre</span><input data-kind="slot" data-id="' + escapeAttribute(slot.id) + '" data-field="name" value="' + escapeAttribute(slot.name) + '" required></label>' +
       '<label class="form-field"><span>Tipo</span><select data-kind="slot" data-id="' + escapeAttribute(slot.id) + '" data-field="type">' + enumOptions(data.slotTypes, slot.type) + '</select></label>' +
       '<label class="form-field"><span>Inicio</span><input type="time" data-kind="slot" data-id="' + escapeAttribute(slot.id) + '" data-field="startTime" value="' + escapeAttribute(slot.startTime) + '" required></label>' +
-      '<label class="form-field"><span>Fin</span><input type="time" data-kind="slot" data-id="' + escapeAttribute(slot.id) + '" data-field="endTime" value="' + escapeAttribute(slot.endTime) + '" required></label>' +
+      '<label class="form-field"><span>Duraci&oacute;n</span><span class="schedule-duration-input"><input type="number" min="5" step="5" data-kind="slot" data-id="' + escapeAttribute(slot.id) + '" data-field="durationMinutes" value="' + escapeAttribute(slot.durationMinutes) + '" required><span>min</span></span></label>' +
+      '<div class="form-field schedule-derived-time"><span>Finaliza</span><strong data-slot-end="' + escapeAttribute(slot.id) + '">' + escapeHtml(getSlotEndTime(slot) || '—') + '</strong></div>' +
       '<button class="icon-action" type="button" title="Eliminar tramo" aria-label="Eliminar tramo" data-action="remove-slot" data-id="' + escapeAttribute(slot.id) + '">&times;</button></div>';
   }
   function renderActivities() {
@@ -106,17 +122,19 @@
   }
   function renderWeeklyGrid() {
     const header = '<tr><th>Tramo</th>' + data.days.map(function(day) { return '<th>' + escapeHtml(day.label) + '</th>'; }).join('') + '</tr>';
-    const rows = data.slots.map(function(slot) { return '<tr><th><strong>' + escapeHtml(slot.name) + '</strong><small>' + escapeHtml(slot.startTime + '–' + slot.endTime) + '</small></th>' + data.days.map(function(day) { return renderSessionCell(day.id, slot); }).join('') + '</tr>'; }).join('');
+    const rows = data.slots.map(function(slot) { const endTime = getSlotEndTime(slot); return '<tr><th><strong>' + escapeHtml(slot.name) + '</strong><small>' + escapeHtml(slot.startTime && endTime ? slot.startTime + '–' + endTime : 'Horario incompleto') + '</small></th>' + data.days.map(function(day) { return renderSessionCell(day.id, slot); }).join('') + '</tr>'; }).join('');
     weeklyGrid.innerHTML = '<div class="schedule-table-wrap"><table class="schedule-table"><thead>' + header + '</thead><tbody>' + (rows || '<tr><td colspan="6">Añade tramos para crear el horario semanal.</td></tr>') + '</tbody></table></div>';
   }
   function renderSessionCell(day, slot) {
     if (slot.type === 'DESCANSO') return '<td class="schedule-break-cell">Descanso</td>';
     const session = getSession(day, slot.id) || { activityId: '', support: '' };
-    return '<td><select data-kind="session" data-day="' + day + '" data-slot-id="' + escapeAttribute(slot.id) + '">' + '<option value="">Sin actividad</option>' + data.activities.map(function(activity) { return '<option value="' + escapeAttribute(activity.id) + '"' + (activity.id === session.activityId ? ' selected' : '') + '>' + escapeHtml([activity.acronym, activity.name].filter(Boolean).join(' · ')) + '</option>'; }).join('') + '</select><input class="schedule-support" type="text" maxlength="8" placeholder="Apoyo" data-kind="support" data-day="' + day + '" data-slot-id="' + escapeAttribute(slot.id) + '" value="' + escapeAttribute(session.support || '') + '"' + (session.activityId ? '' : ' disabled') + '></td>';
+    const activity = data.activities.find(function(item) { return item.id === session.activityId; });
+    const cellStyle = activity ? ' style="background-color:' + escapeAttribute(activity.color) + ';color:' + getContrastColor(activity.color) + '"' : '';
+    return '<td class="schedule-session-cell" data-activity-id="' + escapeAttribute(session.activityId) + '"' + cellStyle + '><select data-kind="session" data-day="' + day + '" data-slot-id="' + escapeAttribute(slot.id) + '">' + '<option value="">Sin actividad</option>' + data.activities.map(function(item) { return '<option value="' + escapeAttribute(item.id) + '"' + (item.id === session.activityId ? ' selected' : '') + '>' + escapeHtml([item.acronym, item.name].filter(Boolean).join(' · ')) + '</option>'; }).join('') + '</select><input class="schedule-support" type="text" maxlength="8" placeholder="Apoyo" data-kind="support" data-day="' + day + '" data-slot-id="' + escapeAttribute(slot.id) + '" value="' + escapeAttribute(session.support || '') + '"' + (session.activityId ? '' : ' disabled') + '></td>';
   }
   function handleFieldChange(event) {
     const target = event.target;
-    if (target.dataset.kind === 'slot') { const slot = data.slots.find(function(item) { return item.id === target.dataset.id; }); if (slot) { slot[target.dataset.field] = target.value; if (event.type === 'change' && target.dataset.field === 'type') { if (slot.type === 'DESCANSO') data.sessions = data.sessions.filter(function(session) { return session.slotId !== slot.id; }); renderWeeklyGrid(); } } }
+    if (target.dataset.kind === 'slot') { const slot = data.slots.find(function(item) { return item.id === target.dataset.id; }); if (slot) { slot[target.dataset.field] = target.value; updateSlotEnd(slot); if (event.type === 'change' && target.dataset.field === 'startTime') { sortSlotsChronologically(); renderSlots(); } if (event.type === 'change' && target.dataset.field === 'type' && slot.type === 'DESCANSO') data.sessions = data.sessions.filter(function(session) { return session.slotId !== slot.id; }); renderWeeklyGrid(); } }
     if (target.dataset.kind === 'activity') { const activity = data.activities.find(function(item) { return item.id === target.dataset.id; }); if (activity) { activity[target.dataset.field] = target.value; renderWeeklyGrid(); } }
     if (target.dataset.kind === 'session' || target.dataset.kind === 'support') { updateSessionFromTarget(target); }
     updateSaveButton();
@@ -127,17 +145,29 @@
     const action = button.dataset.action;
     if (action === 'toggle-section') { const section = button.dataset.section; expandedSections[section] = !expandedSections[section]; renderSections(); return; }
     if (action === 'toggle-activity') { expandedActivities[button.dataset.id] = !expandedActivities[button.dataset.id]; renderActivities(); return; }
-    if (action === 'add-slot') { const journey = button.dataset.journey; const previous = data.slots.filter(function(slot) { return slot.journey === journey; }).pop(); const slot = { id: 'local-' + Date.now(), order: data.slots.length + 1, journey: journey, type: 'SESION', name: 'Nuevo tramo', startTime: previous ? previous.endTime : '', endTime: '' }; data.slots.push(slot); expandedSections.slots = true; renderAll(); focusSelector('[data-kind="slot"][data-id="' + slot.id + '"][data-field="name"]'); }
-    if (action === 'move-slot-up' || action === 'move-slot-down') { moveSlot(Number(button.dataset.index), action === 'move-slot-up' ? -1 : 1); }
+    if (action === 'add-slot') { const previous = getLastChronologicalSlot(); const previousEnd = previous ? getSlotEndMinutes(previous) : null; const canContinue = previousEnd !== null && previousEnd < 1440; const slot = { id: 'local-' + Date.now(), type: 'SESION', name: 'Nuevo tramo', startTime: canContinue ? minutesToTime(previousEnd) : '', durationMinutes: canContinue ? Number(previous.durationMinutes) : '' }; data.slots.push(slot); sortSlotsChronologically(); expandedSections.slots = true; renderAll(); focusSelector('[data-kind="slot"][data-id="' + slot.id + '"][data-field="name"]'); }
     if (action === 'remove-slot') removeSlot(button.dataset.id);
     if (action === 'add-activity') { const activity = { id: 'local-' + Date.now(), category: 'OTRA', name: 'Nueva actividad', acronym: 'NUE', teachingTypeId: '', group: '', classroom: '', color: '#DCEAFE' }; data.activities.push(activity); Object.keys(expandedActivities).forEach(function(id) { expandedActivities[id] = false; }); expandedActivities[activity.id] = true; expandedSections.activities = true; renderAll(); focusSelector('[data-kind="activity"][data-id="' + activity.id + '"][data-field="name"]'); }
     if (action === 'remove-activity') removeActivity(button.dataset.id);
     updateSaveButton();
   }
-  function moveSlot(index, direction) { const target = index + direction; if (target < 0 || target >= data.slots.length) return; const current = data.slots[index]; const other = data.slots[target]; if (current.journey !== other.journey) return; data.slots.splice(index, 1); data.slots.splice(target, 0, current); data.slots.forEach(function(slot, position) { slot.order = position + 1; }); renderAll(); }
-  function removeSlot(id) { const used = data.sessions.filter(function(session) { return session.slotId === id; }).length; if (used && !window.confirm('Este tramo tiene ' + used + ' asignación(es). También se eliminarán. ¿Continuar?')) return; data.slots = data.slots.filter(function(slot) { return slot.id !== id; }); data.sessions = data.sessions.filter(function(session) { return session.slotId !== id; }); renderAll(); }
-  function removeActivity(id) { const used = data.sessions.filter(function(session) { return session.activityId === id; }).length; if (used && !window.confirm('Esta actividad tiene ' + used + ' asignación(es). También se eliminarán. ¿Continuar?')) return; data.activities = data.activities.filter(function(activity) { return activity.id !== id; }); data.sessions = data.sessions.filter(function(session) { return session.activityId !== id; }); renderAll(); }
+  function removeSlot(id) { const used = data.sessions.filter(function(session) { return session.slotId === id; }).length; const remove = function() { data.slots = data.slots.filter(function(slot) { return slot.id !== id; }); data.sessions = data.sessions.filter(function(session) { return session.slotId !== id; }); renderAll(); updateSaveButton(); }; if (!used) { remove(); return; } openConfirmation('Eliminar tramo', 'Este tramo tiene ' + used + ' ' + assignmentLabel(used) + ' en el horario semanal. Si continúas también se ' + (used === 1 ? 'eliminará' : 'eliminarán') + '.', remove); }
+  function removeActivity(id) { const activity = data.activities.find(function(item) { return item.id === id; }); const used = data.sessions.filter(function(session) { return session.activityId === id; }).length; const remove = function() { data.activities = data.activities.filter(function(item) { return item.id !== id; }); data.sessions = data.sessions.filter(function(session) { return session.activityId !== id; }); renderAll(); updateSaveButton(); }; if (!used) { remove(); return; } const label = activity ? (activity.acronym || activity.name) : 'seleccionada'; const affected = used === 1 ? 'esa asignación' : 'esas asignaciones'; openConfirmation('Eliminar actividad', 'La actividad «' + label + '» tiene ' + used + ' ' + assignmentLabel(used) + ' en el horario semanal. Si continúas también se ' + (used === 1 ? 'eliminará ' : 'eliminarán ') + affected + '.', remove); }
+  function assignmentLabel(count) { return count === 1 ? 'asignación' : 'asignaciones'; }
+  function openConfirmation(title, message, onAccept) { if (pendingConfirmation) return; pendingConfirmation = onAccept; confirmationTitle.textContent = title; confirmationMessage.textContent = message; confirmationOverlay.classList.remove('is-hidden'); confirmationOverlay.setAttribute('aria-hidden', 'false'); form.inert = true; window.setTimeout(function() { confirmationCancel.focus(); }, 0); }
+  function closeConfirmation() { if (!pendingConfirmation) return; pendingConfirmation = null; confirmationOverlay.classList.add('is-hidden'); confirmationOverlay.setAttribute('aria-hidden', 'true'); form.inert = false; }
+  function acceptConfirmation() { const action = pendingConfirmation; closeConfirmation(); if (action) action(); }
   function getSession(day, slotId) { return data.sessions.find(function(session) { return session.day === day && session.slotId === slotId; }); }
+  function timeToMinutes(value) { const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(value || ''); return match ? Number(match[1]) * 60 + Number(match[2]) : null; }
+  function minutesToTime(value) { if (!Number.isInteger(value) || value < 0 || value > 1440) return ''; if (value === 1440) return '24:00'; return String(Math.floor(value / 60)).padStart(2, '0') + ':' + String(value % 60).padStart(2, '0'); }
+  function isValidDuration(value) { const duration = Number(value); return Number.isInteger(duration) && duration > 0 && duration % 5 === 0; }
+  function getSlotEndMinutes(slot) { const start = timeToMinutes(slot.startTime); return start === null || !isValidDuration(slot.durationMinutes) ? null : start + Number(slot.durationMinutes); }
+  function getSlotEndTime(slot) { const end = getSlotEndMinutes(slot); return end === null ? '' : minutesToTime(end); }
+  function updateSlotEnd(slot) { const element = slotsList.querySelector('[data-slot-end="' + CSS.escape(slot.id) + '"]'); if (element) element.textContent = getSlotEndTime(slot) || '—'; }
+  function sortSlotsChronologically() { data.slots = data.slots.map(function(slot, index) { return { slot: slot, index: index }; }).sort(function(first, second) { const firstTime = timeToMinutes(first.slot.startTime); const secondTime = timeToMinutes(second.slot.startTime); if (firstTime === null && secondTime === null) return first.index - second.index; if (firstTime === null) return 1; if (secondTime === null) return -1; return firstTime - secondTime || first.index - second.index; }).map(function(item) { return item.slot; }); }
+  function getLastChronologicalSlot() { const timed = data.slots.filter(function(slot) { return timeToMinutes(slot.startTime) !== null; }).sort(function(first, second) { return timeToMinutes(first.startTime) - timeToMinutes(second.startTime); }); return timed.length ? timed[timed.length - 1] : null; }
+  function validateSlots() { const ordered = data.slots.slice().sort(function(first, second) { return timeToMinutes(first.startTime) - timeToMinutes(second.startTime); }); for (let index = 0; index < ordered.length; index += 1) { const slot = ordered[index]; const end = getSlotEndMinutes(slot); if (end === null) return 'Completa el inicio y una duración múltiplo de 5 en todos los tramos.'; if (end > 1440) return 'El tramo «' + slot.name + '» no puede finalizar después de las 24:00.'; const previous = ordered[index - 1]; if (previous && timeToMinutes(slot.startTime) < getSlotEndMinutes(previous)) return 'Los tramos «' + previous.name + '» y «' + slot.name + '» se solapan.'; } return ''; }
+  function getContrastColor(color) { const hex = String(color || '').replace('#', ''); if (!/^[0-9A-F]{6}$/i.test(hex)) return '#1F2937'; const red = parseInt(hex.slice(0, 2), 16); const green = parseInt(hex.slice(2, 4), 16); const blue = parseInt(hex.slice(4, 6), 16); return (red * 299 + green * 587 + blue * 114) / 1000 >= 150 ? '#1F2937' : '#FFFFFF'; }
   function getPayload() { return { slots: data.slots.map(function(slot) { return Object.assign({}, slot); }), activities: data.activities.map(function(activity) { return Object.assign({}, activity); }), sessions: data.sessions.map(function(session) { return Object.assign({}, session); }) }; }
   function serialize() { return JSON.stringify(getPayload()); }
   function isDirty() { return serialize() !== baseline; }
