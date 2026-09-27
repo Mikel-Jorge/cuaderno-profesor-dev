@@ -64,7 +64,6 @@
   if (isBlocked) { blockingErrorElement.textContent = data.blockingError; blockingErrorElement.className = 'result visible error'; }
   sortSlotsChronologically();
   normalizeSlotChain();
-  normalizeAutomaticSlotNames();
   renderAll();
   baseline = serialize();
   updateSaveButton();
@@ -104,7 +103,6 @@
       ? '<label class="form-field"><span>Inicio</span><input type="time" data-kind="slot" data-id="' + escapeAttribute(slot.id) + '" data-field="startTime" value="' + escapeAttribute(slot.startTime) + '" required></label>'
       : '<div class="form-field schedule-derived-time"><span>Inicio</span><strong data-slot-start="' + escapeAttribute(slot.id) + '">' + escapeHtml(slot.startTime || '—') + '</strong></div>';
     return '<div class="schedule-slot-row" data-id="' + escapeAttribute(slot.id) + '">' +
-      '<label class="form-field"><span>Nombre</span><input data-kind="slot" data-id="' + escapeAttribute(slot.id) + '" data-field="name" value="' + escapeAttribute(slot.name) + '" required></label>' +
       '<label class="form-field"><span>Tipo</span><select data-kind="slot" data-id="' + escapeAttribute(slot.id) + '" data-field="type">' + enumOptions(data.slotTypes, slot.type) + '</select></label>' +
       startField +
       '<label class="form-field"><span>Duraci&oacute;n</span><span class="schedule-duration-input"><input type="number" min="5" step="5" data-kind="slot" data-id="' + escapeAttribute(slot.id) + '" data-field="durationMinutes" value="' + escapeAttribute(slot.durationMinutes) + '" required><span>min</span></span></label>' +
@@ -127,7 +125,7 @@
   }
   function renderWeeklyGrid() {
     const header = '<tr><th>Tramo</th>' + data.days.map(function(day) { return '<th>' + escapeHtml(day.label) + '</th>'; }).join('') + '</tr>';
-    const rows = data.slots.map(function(slot) { const endTime = getSlotEndTime(slot); return '<tr><th><strong>' + escapeHtml(slot.name) + '</strong><small>' + escapeHtml(slot.startTime && endTime ? slot.startTime + '–' + endTime : 'Horario incompleto') + '</small></th>' + data.days.map(function(day) { return renderSessionCell(day.id, slot); }).join('') + '</tr>'; }).join('');
+    const rows = data.slots.map(function(slot) { const endTime = getSlotEndTime(slot); const range = slot.startTime && endTime ? slot.startTime + '–' + endTime : 'Horario incompleto'; const label = slot.type === 'DESCANSO' ? '<strong>Recreo</strong><small>' + escapeHtml(range) + '</small>' : '<strong>' + escapeHtml(range) + '</strong>'; return '<tr><th>' + label + '</th>' + data.days.map(function(day) { return renderSessionCell(day.id, slot); }).join('') + '</tr>'; }).join('');
     weeklyGrid.innerHTML = '<div class="schedule-table-wrap"><table class="schedule-table"><thead>' + header + '</thead><tbody>' + (rows || '<tr><td colspan="6">Añade tramos para crear el horario semanal.</td></tr>') + '</tbody></table></div>';
   }
   function renderSessionCell(day, slot) {
@@ -146,10 +144,7 @@
         if (target.dataset.field === 'startTime' || target.dataset.field === 'durationMinutes') refreshSlotTimes();
         if (event.type === 'change' && target.dataset.field === 'type') {
           if (slot.type === 'DESCANSO') data.sessions = data.sessions.filter(function(session) { return session.slotId !== slot.id; });
-          normalizeAutomaticSlotNames();
           renderSlots();
-          renderWeeklyGrid();
-        } else if (target.dataset.field === 'name') {
           renderWeeklyGrid();
         }
       }
@@ -171,13 +166,13 @@
     const action = button.dataset.action;
     if (action === 'toggle-section') { const section = button.dataset.section; const shouldOpen = !expandedSections[section]; Object.keys(expandedSections).forEach(function(id) { expandedSections[id] = shouldOpen && id === section; }); renderSections(); return; }
     if (action === 'toggle-activity') { expandedActivities[button.dataset.id] = !expandedActivities[button.dataset.id]; renderActivities(); return; }
-    if (action === 'add-slot') { const previous = data.slots[data.slots.length - 1]; const previousEnd = previous ? getSlotEndMinutes(previous) : null; const canContinue = previousEnd !== null && previousEnd < 1440; const slot = { id: 'local-' + Date.now(), type: 'SESION', name: '', startTime: canContinue ? minutesToTime(previousEnd) : '', durationMinutes: canContinue ? Number(previous.durationMinutes) : '' }; data.slots.push(slot); normalizeAutomaticSlotNames(); openOnlySection('slots'); renderAll(); focusSelector('[data-kind="slot"][data-id="' + slot.id + '"][data-field="name"]'); }
+    if (action === 'add-slot') { const previous = data.slots[data.slots.length - 1]; const previousEnd = previous ? getSlotEndMinutes(previous) : null; const canContinue = previousEnd !== null && previousEnd < 1440; const slot = { id: 'local-' + Date.now(), type: 'SESION', name: '', startTime: canContinue ? minutesToTime(previousEnd) : '', durationMinutes: canContinue ? Number(previous.durationMinutes) : '' }; data.slots.push(slot); openOnlySection('slots'); renderAll(); focusSelector('[data-kind="slot"][data-id="' + slot.id + '"][data-field="durationMinutes"]'); }
     if (action === 'remove-slot') removeSlot(button.dataset.id);
     if (action === 'add-activity') { const activity = { id: 'local-' + Date.now(), category: 'MODULO', name: '', acronym: '', teachingTypeId: '', group: '', classroom: '', color: '#DCEAFE' }; data.activities.push(activity); Object.keys(expandedActivities).forEach(function(id) { expandedActivities[id] = false; }); expandedActivities[activity.id] = true; openOnlySection('activities'); renderAll(); focusSelector('[data-kind="activity"][data-id="' + activity.id + '"][data-field="name"]'); }
     if (action === 'remove-activity') removeActivity(button.dataset.id);
     updateSaveButton();
   }
-  function removeSlot(id) { const used = data.sessions.filter(function(session) { return session.slotId === id; }).length; const remove = function() { data.slots = data.slots.filter(function(slot) { return slot.id !== id; }); data.sessions = data.sessions.filter(function(session) { return session.slotId !== id; }); normalizeSlotChain(); normalizeAutomaticSlotNames(); renderAll(); updateSaveButton(); }; if (!used) { remove(); return; } openConfirmation('Eliminar tramo', 'Este tramo tiene ' + used + ' ' + assignmentLabel(used) + ' en el horario semanal. Si continúas también se ' + (used === 1 ? 'eliminará' : 'eliminarán') + '.', remove); }
+  function removeSlot(id) { const used = data.sessions.filter(function(session) { return session.slotId === id; }).length; const remove = function() { data.slots = data.slots.filter(function(slot) { return slot.id !== id; }); data.sessions = data.sessions.filter(function(session) { return session.slotId !== id; }); normalizeSlotChain(); renderAll(); updateSaveButton(); }; if (!used) { remove(); return; } openConfirmation('Eliminar tramo', 'Este tramo tiene ' + used + ' ' + assignmentLabel(used) + ' en el horario semanal. Si continúas también se ' + (used === 1 ? 'eliminará' : 'eliminarán') + '.', remove); }
   function removeActivity(id) { const activity = data.activities.find(function(item) { return item.id === id; }); const used = data.sessions.filter(function(session) { return session.activityId === id; }).length; const remove = function() { data.activities = data.activities.filter(function(item) { return item.id !== id; }); data.sessions = data.sessions.filter(function(session) { return session.activityId !== id; }); renderAll(); updateSaveButton(); }; if (!used) { remove(); return; } const label = activity ? (activity.acronym || activity.name) : 'seleccionada'; const affected = used === 1 ? 'esa asignación' : 'esas asignaciones'; openConfirmation('Eliminar actividad', 'La actividad «' + label + '» tiene ' + used + ' ' + assignmentLabel(used) + ' en el horario semanal. Si continúas también se ' + (used === 1 ? 'eliminará ' : 'eliminarán ') + affected + '.', remove); }
   function assignmentLabel(count) { return count === 1 ? 'asignación' : 'asignaciones'; }
   function openOnlySection(section) { Object.keys(expandedSections).forEach(function(id) { expandedSections[id] = id === section; }); }
@@ -193,13 +188,11 @@
   function refreshSlotTimes() { normalizeSlotChain(); data.slots.forEach(function(slot) { const startElement = slotsList.querySelector('[data-slot-start="' + CSS.escape(slot.id) + '"]'); const endElement = slotsList.querySelector('[data-slot-end="' + CSS.escape(slot.id) + '"]'); if (startElement) startElement.textContent = slot.startTime || '—'; if (endElement) endElement.textContent = getSlotEndTime(slot) || '—'; }); renderWeeklyGrid(); }
   function sortSlotsChronologically() { data.slots = data.slots.map(function(slot, index) { return { slot: slot, index: index }; }).sort(function(first, second) { const firstTime = timeToMinutes(first.slot.startTime); const secondTime = timeToMinutes(second.slot.startTime); if (firstTime === null && secondTime === null) return first.index - second.index; if (firstTime === null) return 1; if (secondTime === null) return -1; return firstTime - secondTime || first.index - second.index; }).map(function(item) { return item.slot; }); }
   function normalizeSlotChain() { for (let index = 1; index < data.slots.length; index += 1) { const previousEnd = getSlotEndMinutes(data.slots[index - 1]); data.slots[index].startTime = previousEnd !== null && previousEnd < 1440 ? minutesToTime(previousEnd) : ''; } }
-  function normalizeAutomaticSlotNames() { let sessionNumber = 0; data.slots.forEach(function(slot) { const automatic = isAutomaticSlotName(slot.name); if (slot.type === 'SESION') { sessionNumber += 1; if (automatic) slot.name = sessionNumber + 'º'; } else if (automatic) slot.name = 'Recreo'; }); }
-  function isAutomaticSlotName(value) { return !value || value === 'Nuevo tramo' || value === 'Recreo' || /^\d+[ªº](?:\s+hora)?$/i.test(value); }
   function getAutomaticActivityValues() { const values = { name: ['Nueva actividad'], acronym: ['NUE'] }; Object.keys(data.activityDefaults || {}).forEach(function(category) { const defaults = data.activityDefaults[category]; values.name.push(defaults.name); values.acronym.push(defaults.acronym); }); return values; }
   function applyActivityDefaults(activity) { const defaults = (data.activityDefaults || {})[activity.category] || { name: '', acronym: '' }; const automatic = getAutomaticActivityValues(); if (!activity.name || automatic.name.indexOf(activity.name) !== -1) activity.name = defaults.name; if (!activity.acronym || automatic.acronym.indexOf(activity.acronym) !== -1) activity.acronym = defaults.acronym; }
-  function validateSlots() { normalizeSlotChain(); normalizeAutomaticSlotNames(); for (let index = 0; index < data.slots.length; index += 1) { const slot = data.slots[index]; const end = getSlotEndMinutes(slot); if (end === null) return 'Completa el inicio del primer tramo y una duración múltiplo de 5 en todos los tramos.'; if (end > 1440) return 'El tramo «' + slot.name + '» no puede finalizar después de las 24:00.'; const previous = data.slots[index - 1]; if (previous && timeToMinutes(slot.startTime) !== getSlotEndMinutes(previous)) return 'Todos los tramos deben ser consecutivos.'; } return ''; }
+  function validateSlots() { normalizeSlotChain(); for (let index = 0; index < data.slots.length; index += 1) { const slot = data.slots[index]; const end = getSlotEndMinutes(slot); if (end === null) return 'Completa el inicio del primer tramo y una duración múltiplo de 5 en todos los tramos.'; if (end > 1440) return 'El tramo ' + (index + 1) + ' no puede finalizar después de las 24:00.'; const previous = data.slots[index - 1]; if (previous && timeToMinutes(slot.startTime) !== getSlotEndMinutes(previous)) return 'Todos los tramos deben ser consecutivos.'; } return ''; }
   function getContrastColor(color) { const hex = String(color || '').replace('#', ''); if (!/^[0-9A-F]{6}$/i.test(hex)) return '#1F2937'; const red = parseInt(hex.slice(0, 2), 16); const green = parseInt(hex.slice(2, 4), 16); const blue = parseInt(hex.slice(4, 6), 16); return (red * 299 + green * 587 + blue * 114) / 1000 >= 150 ? '#1F2937' : '#FFFFFF'; }
-  function getPayload() { normalizeSlotChain(); normalizeAutomaticSlotNames(); return { slots: data.slots.map(function(slot) { return Object.assign({}, slot); }), activities: data.activities.map(function(activity) { return Object.assign({}, activity); }), sessions: data.sessions.map(function(session) { return Object.assign({}, session); }) }; }
+  function getPayload() { normalizeSlotChain(); return { slots: data.slots.map(function(slot) { return Object.assign({}, slot); }), activities: data.activities.map(function(activity) { return Object.assign({}, activity); }), sessions: data.sessions.map(function(session) { return Object.assign({}, session); }) }; }
   function serialize() { return JSON.stringify({ slots: data.slots, activities: data.activities, sessions: data.sessions }); }
   function isDirty() { return serialize() !== baseline; }
   function updateSaveButton() { saveButton.disabled = isBlocked || isSaving || !isDirty(); }

@@ -90,7 +90,8 @@ function prepareScheduleSheet_(sheet, theme, rows) {
 function renderScheduleHeader_(sheet, model) {
   const colors = model.theme.colors;
   sheet.getRange('A1')
-    .setFormula('=CHOOSE(WEEKDAY(TODAY(),2),"LUNES","MARTES","MIÉRCOLES","JUEVES","VIERNES","SÁBADO","DOMINGO")')
+    .setFormula('=TODAY()')
+    .setNumberFormat('dddd')
     .setBackground(colors.secondary)
     .setFontColor(colors.onSecondary)
     .setFontWeight('bold')
@@ -107,8 +108,7 @@ function renderScheduleHeader_(sheet, model) {
     .setFontSize(17)
     .setFontWeight('bold')
     .setHorizontalAlignment('center');
-  const weekRange = setMergedRangeValue_(sheet.getRange('B2:F2'), '');
-  sheet.getRange('B2').setFormula('="SEMANA DEL "&TEXT(TODAY()-WEEKDAY(TODAY(),2)+1,"dd/mm")&" AL "&TEXT(TODAY()-WEEKDAY(TODAY(),2)+5,"dd/mm")');
+  const weekRange = setMergedRangeValue_(sheet.getRange('B2:F2'), 'SEMANA ACTUAL');
   weekRange
     .setBackground(colors.surface)
     .setFontColor(colors.mutedText)
@@ -120,7 +120,7 @@ function renderScheduleHeader_(sheet, model) {
     .setFontWeight('bold')
     .setHorizontalAlignment('center');
   const formulas = CP_SCHEDULE_DAYS.map(function(day, index) {
-    return '=TODAY()-WEEKDAY(TODAY(),2)+' + index;
+    return '=TODAY()-WEEKDAY(TODAY()-1)+1+' + index;
   });
   sheet.getRange(3, 2, 1, 5)
     .setFormulas([formulas])
@@ -138,30 +138,38 @@ function renderScheduleRows_(sheet, model) {
   const values = [];
   const backgrounds = [];
   const fontColors = [];
+  const richTextValues = [];
   const helpers = [];
 
   model.slots.forEach(function(slot) {
-    const rowValues = [slot.name + '\n' + slot.startTime + '–' + getTimeSlotEndTime_(slot)];
+    const timeRange = slot.startTime + '–' + getTimeSlotEndTime_(slot);
+    const rowValues = [slot.type === 'DESCANSO' ? 'Recreo\n' + timeRange : timeRange];
     const rowBackgrounds = [slot.type === 'DESCANSO' ? colors.muted : colors.surface];
     const rowFontColors = [colors.text];
+    const rowRichText = [];
 
     CP_SCHEDULE_DAYS.forEach(function(day) {
       if (slot.type === 'DESCANSO') {
         rowValues.push('');
         rowBackgrounds.push(colors.muted);
         rowFontColors.push(colors.mutedText);
+        rowRichText.push(createScheduleCellRichText_('', colors.mutedText));
         return;
       }
       const session = model.sessionByKey[day.id + '|' + slot.id];
       const activity = session && model.activityById[session.activityId];
-      rowValues.push(activity ? formatScheduleCell_(activity, session.support) : '');
+      const text = activity ? formatScheduleCell_(activity, session.support) : '';
+      const fontColor = activity ? getAccessibleTextColor_(activity.color) : colors.text;
+      rowValues.push(text);
       rowBackgrounds.push(activity ? activity.color : colors.surface);
-      rowFontColors.push(activity ? getAccessibleTextColor_(activity.color) : colors.text);
+      rowFontColors.push(fontColor);
+      rowRichText.push(createScheduleCellRichText_(text, fontColor));
     });
 
     values.push(rowValues);
     backgrounds.push(rowBackgrounds);
     fontColors.push(rowFontColors);
+    richTextValues.push(rowRichText);
     helpers.push([
       timeToMinutes_(slot.startTime) / (24 * 60),
       getTimeSlotEndMinutes_(slot) / (24 * 60),
@@ -177,6 +185,7 @@ function renderScheduleRows_(sheet, model) {
     .setWrap(true)
     .setHorizontalAlignment('center')
     .setBorder(true, true, true, true, true, true, colors.border, SpreadsheetApp.BorderStyle.SOLID);
+  sheet.getRange(firstRow, 2, model.slots.length, 5).setRichTextValues(richTextValues);
   sheet.getRange(firstRow, 1, model.slots.length, 1).setFontWeight('bold');
   sheet.getRange(firstRow, 7, model.slots.length, 3)
     .setValues(helpers);
@@ -216,26 +225,48 @@ function compactScheduleCellText_(value, maxLength) {
   return text.length > maxLength ? text.slice(0, maxLength - 1).trim() + '…' : text;
 }
 
+function createScheduleCellRichText_(text, fontColor) {
+  const value = normalizeScheduleText_(text).replace(/\s*\n\s*/, '\n');
+  const secondaryStart = value.indexOf('\n');
+  const primaryEnd = secondaryStart === -1 ? value.length : secondaryStart;
+  const secondaryStyle = SpreadsheetApp.newTextStyle()
+    .setFontFamily('Arial')
+    .setFontSize(8)
+    .setBold(false)
+    .setForegroundColor(fontColor)
+    .build();
+  const primaryStyle = SpreadsheetApp.newTextStyle()
+    .setFontFamily('Arial')
+    .setFontSize(10)
+    .setBold(true)
+    .setForegroundColor(fontColor)
+    .build();
+  const builder = SpreadsheetApp.newRichTextValue()
+    .setText(value)
+    .setTextStyle(secondaryStyle);
+  if (primaryEnd) builder.setTextStyle(0, primaryEnd, primaryStyle);
+  return builder.build();
+}
+
 function applyScheduleCurrentTimeRules_(sheet, model) {
   const colors = model.theme.colors;
   const firstRow = CP_SCHEDULE_VIEW.FIRST_SLOT_ROW;
   const rules = [
     SpreadsheetApp.newConditionalFormatRule()
-      .whenFormulaSatisfied('=AND(WEEKDAY(TODAY(),2)<=5,B$3=TODAY())')
+      .whenFormulaSatisfied('=(WEEKDAY(TODAY()-1)<6)*(B$3=TODAY())')
       .setBackground(colors.accent)
       .setFontColor(colors.onAccent)
       .setBold(true)
       .setRanges([sheet.getRange('B3:F3')])
       .build(),
     SpreadsheetApp.newConditionalFormatRule()
-      .whenFormulaSatisfied('=AND(WEEKDAY(TODAY(),2)<=5,MOD(NOW(),1)>=$G' + firstRow + ',MOD(NOW(),1)<$H' + firstRow + ')')
+      .whenFormulaSatisfied('=(WEEKDAY(TODAY()-1)<6)*(NOW()-TODAY()>=$G' + firstRow + ')*(NOW()-TODAY()<$H' + firstRow + ')')
       .setBold(true)
       .setUnderline(true)
       .setRanges([sheet.getRange(firstRow, 1, model.slots.length, 1)])
       .build(),
     SpreadsheetApp.newConditionalFormatRule()
-      .whenFormulaSatisfied('=AND($I' + firstRow + '="SESION",WEEKDAY(TODAY(),2)=COLUMN()-1,MOD(NOW(),1)>=$G' + firstRow + ',MOD(NOW(),1)<$H' + firstRow + ')')
-      .setBold(true)
+      .whenFormulaSatisfied('=($I' + firstRow + '="SESION")*(WEEKDAY(TODAY()-1)=COLUMN()-1)*(NOW()-TODAY()>=$G' + firstRow + ')*(NOW()-TODAY()<$H' + firstRow + ')')
       .setUnderline(true)
       .setRanges([sheet.getRange(firstRow, 2, model.slots.length, 5)])
       .build(),

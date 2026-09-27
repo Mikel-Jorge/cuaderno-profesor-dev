@@ -274,7 +274,6 @@ function validateScheduleSlotDefinition_(slot) {
 
 function validateScheduleSlot_(slot) {
   validateScheduleSlotDefinition_(slot);
-  if (!slot.name) throw new Error('Todos los tramos deben tener nombre.');
   normalizeScheduleTime_(slot.startTime);
   if (getTimeSlotEndMinutes_(slot) > 24 * 60) throw new Error('Un tramo no puede finalizar después de las 24:00.');
 }
@@ -287,7 +286,7 @@ function validateScheduleSlotSet_(slots) {
     validateScheduleSlot_(slot);
     const previous = slots[index - 1];
     if (previous && timeToMinutes_(slot.startTime) !== getTimeSlotEndMinutes_(previous)) {
-      throw new Error('El tramo «' + slot.name + '» debe comenzar cuando termina «' + previous.name + '».');
+      throw new Error('El tramo ' + (index + 1) + ' debe comenzar cuando termina el tramo anterior.');
     }
   });
 }
@@ -314,27 +313,8 @@ function normalizeScheduleSlotChain_(slots) {
     if (expectedStart >= 24 * 60) throw new Error('No puede haber tramos después de las 24:00.');
     slots[index].startTime = minutesToTime_(expectedStart);
   }
-  normalizeAutomaticScheduleSlotNames_(slots);
   validateScheduleSlotSet_(slots);
   return slots;
-}
-
-function normalizeAutomaticScheduleSlotNames_(slots) {
-  let sessionNumber = 0;
-  slots.forEach(function(slot) {
-    const automatic = isAutomaticScheduleSlotName_(slot.name);
-    if (slot.type === 'SESION') {
-      sessionNumber += 1;
-      if (automatic) slot.name = sessionNumber + 'º';
-    } else if (automatic) {
-      slot.name = 'Recreo';
-    }
-  });
-}
-
-function isAutomaticScheduleSlotName_(value) {
-  const name = normalizeScheduleText_(value);
-  return !name || name === 'Nuevo tramo' || name === 'Recreo' || /^\d+[ªº](?:\s+hora)?$/i.test(name);
 }
 
 function normalizeScheduleActivities_(rows) {

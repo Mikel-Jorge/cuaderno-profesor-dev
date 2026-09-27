@@ -20,21 +20,22 @@ especificación.
 
 # 1. Objetivo
 
-## Decisiones de la iteracion 1.3.4
+## Decisiones de la iteracion 1.3.5
 
-Version vigente del cuaderno: `1.3.4`.
+Version vigente del cuaderno: `1.3.5`.
 
 - Abrir Datos generales o Configurar calendario es una lectura sin efectos laterales: no repara, crea, oculta, reordena ni regenera hojas. Si falta estructura, se informa y se debe usar la reparacion explicita.
 - Guardar muestra un estado de carga que bloquea la edicion; el exito cierra el dialogo y el error restaura el formulario con los valores introducidos.
 - El tema se selecciona unicamente en Preparar nuevo curso. Cambiar globalmente el tema del cuaderno queda como mejora futura.
 - Las estadisticas muestran dias y porcentaje para transcurridos y restantes. La eliminacion de fechas especiales esta en la cabecera de cada tarjeta, incluso colapsada.
 - Preparar nuevo curso permite seleccionar preset y personalizar primary, secondary y accent. Durante el guardado de configuradores solo se muestra el estado de carga; las fechas especiales mantienen un layout estable con y sin rango.
-- La version 1.3.4 mantiene cerrado funcionalmente Calendario y continúa el desarrollo de Horario. Horario usa `_HOR_TRAMOS`, `_HOR_ACTIVIDADES` y `_HOR_SESIONES` como única fuente estructurada y genera `2 Horario` como vista derivada.
+- La version 1.3.5 mantiene cerrado funcionalmente Calendario y continúa el desarrollo de Horario. Horario usa `_HOR_TRAMOS`, `_HOR_ACTIVIDADES` y `_HOR_SESIONES` como única fuente estructurada y genera `2 Horario` como vista derivada.
 - Los tres bloques principales del configurador de Horario parten cerrados y son mutuamente excluyentes: abrir uno cierra los otros sin modificar los datos introducidos.
+- Los tramos dejan de tener nombre funcional: se configuran únicamente mediante tipo, inicio y duración, y se identifican visualmente por su rango horario.
 
 ### Modelo implementado de Horario
 
-`_HOR_TRAMOS` contiene `tramo_id`, `tipo`, `nombre`, `hora_inicio` y `duracion_minutos`. Los tipos son `SESION` y `DESCANSO`; no existe distinción técnica entre mañana y tarde. La hora final se deriva siempre sumando la duración al inicio y nunca se persiste. Una sesión cuenta siempre como una unidad docente con independencia de su duración, y los descansos no cuentan.
+`_HOR_TRAMOS` contiene `tramo_id`, `tipo`, `nombre`, `hora_inicio` y `duracion_minutos`. `nombre` se conserva únicamente por compatibilidad con datos ya persistidos y no se usa, valida ni muestra. Los tipos son `SESION` y `DESCANSO`; no existe distinción técnica entre mañana y tarde. La hora final se deriva siempre sumando la duración al inicio y nunca se persiste. Una sesión cuenta siempre como una unidad docente con independencia de su duración, y los descansos no cuentan.
 
 `_HOR_ACTIVIDADES` contiene `actividad_id`, `categoria`, `nombre`, `sigla`, `tipo_ensenanza_id`, `grupo`, `aula` y `color`. Las categorias son `MODULO`, `TUTORIA`, `GUARDIA`, `REUNION`, `DUAL`, `PPPP`, `P` y `OTRA`; `REUNION` engloba también las coordinaciones y el color solo es presentacion.
 
@@ -462,26 +463,26 @@ Miércoles 23 sep
 ...
 ```
 
-El día, la fecha y hora y las fechas de lunes a viernes se calculan mediante fórmulas de Sheets para la semana actual, usando la zona horaria del Spreadsheet y su recálculo normal, sin triggers ni sondeo. La hoja se crea tras guardar una configuración con tramos válidos y se regenera también desde Inicializar / reparar. Se sitúa inmediatamente después de `1 Calendario`, se ajusta a su área útil y nunca actúa como fuente de datos.
+El día, la fecha y hora y las fechas de lunes a viernes se calculan mediante fórmulas de Sheets para la semana actual, usando la zona horaria del Spreadsheet y su recálculo normal, sin triggers ni sondeo. Las fórmulas generadas evitan separadores de argumentos dependientes del locale. La hoja se crea tras guardar una configuración con tramos válidos y se regenera también desde Inicializar / reparar. Se sitúa inmediatamente después de `1 Calendario`, se ajusta a su área útil y nunca actúa como fuente de datos.
 
 ## 8.2. Tramos horarios
 
-Los tramos se configuran en una sola lista cronológica, sin bloques de mañana o tarde ni controles manuales de orden. Cada tramo tiene un ID estable, tipo `SESION` o `DESCANSO`, nombre, hora de inicio y duración positiva en minutos, obligatoriamente múltiplo de 5. La hora final es informativa y se calcula como `hora_inicio + duracion_minutos`.
+Los tramos se configuran en una sola lista cronológica, sin bloques de mañana o tarde ni controles manuales de orden. Cada tramo tiene un ID estable, tipo `SESION` o `DESCANSO`, hora de inicio y duración positiva en minutos, obligatoriamente múltiplo de 5. La hora final es informativa y se calcula como `hora_inicio + duracion_minutos`. El usuario no introduce ni visualiza un nombre de tramo.
 
 Ejemplo:
 
 ```text
-08:10 · 55 min · 1ª hora
-09:05 · 55 min · 2ª hora
-10:00 · 30 min · Recreo
-10:30 · 55 min · 3ª hora
+08:10 · 55 min · Sesión
+09:05 · 55 min · Sesión
+10:00 · 30 min · Descanso
+10:30 · 55 min · Sesión
 ```
 
-Los tramos se muestran y persisten ordenados por hora de inicio y forman una cadena completamente consecutiva, sin solapamientos ni huecos. Solo la hora inicial del primer tramo es editable; cada inicio posterior se calcula como el final del tramo anterior. Cambiar la hora inicial o la duración de cualquier tramo desplaza inmediatamente todos los posteriores, conservando sus duraciones, tipos, nombres, IDs y asignaciones semanales.
+Los tramos se muestran y persisten ordenados por hora de inicio y forman una cadena completamente consecutiva, sin solapamientos ni huecos. Solo la hora inicial del primer tramo es editable; cada inicio posterior se calcula como el final del tramo anterior. Cambiar la hora inicial o la duración de cualquier tramo desplaza inmediatamente todos los posteriores, conservando sus duraciones, tipos, IDs y asignaciones semanales.
 
 El primer tramo se crea sin inicio ni duración predeterminados. Al crear los siguientes, si el tramo anterior tiene inicio y duración válidos, su inicio es el final calculado del anterior y su duración hereda la anterior, también cuando es un descanso. Si no puede calcularse el final anterior, ambos campos quedan vacíos. Las modificaciones posteriores propagan las horas derivadas, pero nunca alteran las duraciones ya definidas.
 
-Los nombres automáticos de `SESION` son `1º`, `2º`, `3º` y sucesivos, contando solo sesiones. Un `DESCANSO` nuevo recibe `Recreo`. Añadir, eliminar o cambiar el tipo renumera únicamente los nombres reconocidos como automáticos; nombres personalizados como `Clase inicial` o `Descanso comida` se conservan.
+La cuadrícula y `2 Horario` identifican las sesiones mediante el rango `hora_inicio–hora_fin`. Los descansos se presentan como `Recreo` junto a ese rango. No se generan ni muestran ordinales `1º`, `2º`, `3º` ni nombres personalizados de tramo.
 
 Los descansos participan en el orden y los solapamientos, pero no admiten actividad en la cuadrícula ni cuentan como sesión docente.
 
@@ -515,7 +516,7 @@ Eliminar una actividad o un tramo con asignaciones requiere una confirmación in
 
 Una actividad nueva utiliza `MODULO` como categoría inicial y deja nombre y sigla vacíos. La categoría `TUTORIA` propone `Tutoría` y sigla `T`; `P` propone `Labores propias del puesto de trabajo` y sigla `P`; `PPPP` propone `Participación en proyectos, programas o planes de centro` y sigla `PPPP`. Estos valores solo completan campos vacíos o todavía automáticos y nunca sustituyen textos personalizados. `COORDINACION` deja de estar disponible y los datos de desarrollo existentes se normalizan a `REUNION` conservando IDs, contenido y asignaciones.
 
-La vista semanal muestra en cada sesión la sigla y, cuando existe, información útil de grupo, aula, nombre o apoyo, con el color exacto configurado y texto de contraste accesible. Las celdas sin actividad permanecen blancas y los descansos se representan como filas neutrales diferenciadas.
+La vista semanal muestra en cada sesión la sigla en negrita y, cuando existe, información útil de grupo, aula, nombre o apoyo en una segunda línea de menor tamaño y peso normal, con el color exacto configurado y texto de contraste accesible. Las celdas sin actividad permanecen blancas y los descansos se representan como filas neutrales diferenciadas.
 
 Ejemplo:
 
@@ -1204,7 +1205,7 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.3.4
+Versión del cuaderno: 1.3.5
 Versión del esquema: 7
 ```
 
