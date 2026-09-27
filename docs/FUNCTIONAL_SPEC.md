@@ -20,16 +20,16 @@ especificación.
 
 # 1. Objetivo
 
-## Decisiones de la iteracion 1.3.5
+## Decisiones de la iteracion 1.3.6
 
-Version vigente del cuaderno: `1.3.5`.
+Version vigente del cuaderno: `1.3.6`.
 
 - Abrir Datos generales o Configurar calendario es una lectura sin efectos laterales: no repara, crea, oculta, reordena ni regenera hojas. Si falta estructura, se informa y se debe usar la reparacion explicita.
 - Guardar muestra un estado de carga que bloquea la edicion; el exito cierra el dialogo y el error restaura el formulario con los valores introducidos.
 - El tema se selecciona unicamente en Preparar nuevo curso. Cambiar globalmente el tema del cuaderno queda como mejora futura.
 - Las estadisticas muestran dias y porcentaje para transcurridos y restantes. La eliminacion de fechas especiales esta en la cabecera de cada tarjeta, incluso colapsada.
 - Preparar nuevo curso permite seleccionar preset y personalizar primary, secondary y accent. Durante el guardado de configuradores solo se muestra el estado de carga; las fechas especiales mantienen un layout estable con y sin rango.
-- La version 1.3.5 mantiene cerrado funcionalmente Calendario y continúa el desarrollo de Horario. Horario usa `_HOR_TRAMOS`, `_HOR_ACTIVIDADES` y `_HOR_SESIONES` como única fuente estructurada y genera `2 Horario` como vista derivada.
+- La version 1.3.6 mantiene cerrado funcionalmente Calendario y deja Horario pendiente únicamente de validación manual final. Horario usa `_HOR_TRAMOS`, `_HOR_ACTIVIDADES` y `_HOR_SESIONES` como única fuente estructurada y genera `2 Horario` como vista derivada.
 - Los tres bloques principales del configurador de Horario parten cerrados y son mutuamente excluyentes: abrir uno cierra los otros sin modificar los datos introducidos.
 - Los tramos dejan de tener nombre funcional: se configuran únicamente mediante tipo, inicio y duración, y se identifican visualmente por su rango horario.
 
@@ -39,7 +39,7 @@ Version vigente del cuaderno: `1.3.5`.
 
 `_HOR_ACTIVIDADES` contiene `actividad_id`, `categoria`, `nombre`, `sigla`, `tipo_ensenanza_id`, `grupo`, `aula` y `color`. Las categorias son `MODULO`, `TUTORIA`, `GUARDIA`, `REUNION`, `DUAL`, `PPPP`, `P` y `OTRA`; `REUNION` engloba también las coordinaciones y el color solo es presentacion.
 
-`_HOR_SESIONES` contiene `sesion_id`, `dia_semana`, `tramo_id`, `actividad_id` y `apoyo_sigla`. Los dias soportados son lunes a viernes. Solo puede existir una asignacion por dia y tramo, y el apoyo pertenece a esa sesion concreta. La futura integracion con `3 Modulos` sustituira las actividades MODULO provisionales por imparticiones reales.
+`_HOR_SESIONES` contiene `sesion_id`, `dia_semana`, `tramo_id`, `actividad_id` y `apoyo_sigla`. Los dias soportados son lunes a viernes. Solo puede existir una asignacion por dia y tramo, y el apoyo pertenece a esa sesion concreta. `apoyo_sigla` conserva su nombre técnico por compatibilidad, pero funcionalmente almacena un texto breve de hasta 40 caracteres que puede identificar al docente de apoyo. La futura integracion con `3 Modulos` sustituira las actividades MODULO provisionales por imparticiones reales.
 
 Crear un **Cuaderno del Profesor reutilizable para Formación Profesional**, inicialmente orientado al trabajo docente en Navarra, construido sobre Google Sheets y automatizado con Google Apps Script.
 
@@ -516,7 +516,7 @@ Eliminar una actividad o un tramo con asignaciones requiere una confirmación in
 
 Una actividad nueva utiliza `MODULO` como categoría inicial y deja nombre y sigla vacíos. La categoría `TUTORIA` propone `Tutoría` y sigla `T`; `P` propone `Labores propias del puesto de trabajo` y sigla `P`; `PPPP` propone `Participación en proyectos, programas o planes de centro` y sigla `PPPP`. Estos valores solo completan campos vacíos o todavía automáticos y nunca sustituyen textos personalizados. `COORDINACION` deja de estar disponible y los datos de desarrollo existentes se normalizan a `REUNION` conservando IDs, contenido y asignaciones.
 
-La vista semanal muestra en cada sesión la sigla en negrita y, cuando existe, información útil de grupo, aula, nombre o apoyo en una segunda línea de menor tamaño y peso normal, con el color exacto configurado y texto de contraste accesible. Las celdas sin actividad permanecen blancas y los descansos se representan como filas neutrales diferenciadas.
+La vista semanal muestra en cada sesión la sigla en negrita y, cuando existe, información útil de grupo, aula o nombre en una segunda línea de menor tamaño y peso normal, con el color exacto configurado y texto de contraste accesible. El apoyo ocupa su propia línea `↳ texto`, también pequeña y de peso normal, sin mostrar literalmente la palabra `Apoyo`. Las celdas sin actividad permanecen blancas y los descansos se representan como filas neutrales diferenciadas.
 
 Ejemplo:
 
@@ -528,12 +528,12 @@ A17
 
 ## 8.4. Apoyo docente
 
-El apoyo se configurará por sesión concreta.
+El apoyo se configurará por sesión concreta y puede contener un nombre o identificación breve de hasta 40 caracteres. Solo se eliminan los espacios iniciales y finales al guardar; se conservan exactamente mayúsculas, minúsculas, acentos y espacios internos introducidos por el usuario.
 
-Visualmente podrá mostrarse una marca pequeña como:
+Visualmente se muestra en una línea propia con un indicador exclusivamente presentacional:
 
 ```text
-AP
+↳ Aitor
 ```
 
 ## 8.5. Hora actual
@@ -1205,7 +1205,7 @@ Por tanto:
 En `_META`:
 
 ```text
-Versión del cuaderno: 1.3.5
+Versión del cuaderno: 1.3.6
 Versión del esquema: 7
 ```
 

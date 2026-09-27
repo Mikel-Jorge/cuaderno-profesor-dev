@@ -6,7 +6,7 @@
 Este documento describe únicamente la arquitectura técnica vigente.  
 La funcionalidad esperada se define en `FUNCTIONAL_SPEC.md`.
 
-## Decisiones de la iteracion 1.3.5
+## Decisiones de la iteracion 1.3.6
 
 Los dialogos de configuracion separan lectura y reparacion: abrirlos valida y lee las tablas existentes sin escribir ni cambiar el estado de las hojas. La reparacion estructural es explicita. Los guardados persisten unicamente el modelo afectado y regeneran su vista visible solo despues de cambios validos. La edicion del tema pertenece a Preparar nuevo curso; una futura funcion global `Cambiar tema del cuaderno` reaplicara el tema a todas las hojas visibles cuando el bloque principal este construido. Los estados de carga de los configuradores comparten el patron CSS de `UiStyles.html`: se oculta el contenido editable y el pie de acciones durante la peticion, y se restaura completo si falla.
 
@@ -149,11 +149,13 @@ La funcion central `ensureScheduleTechnicalStructure_()` crea o repara las tabla
 
 El configurador deriva todos los inicios salvo el primero y propaga en tiempo real cualquier cambio de inicio general o duracion sin modificar las duraciones posteriores. El tramo se edita solo mediante tipo, inicio y duración; su rango horario derivado sustituye cualquier ordinal o nombre visible. La cuadrícula conserva `actividad_id` como fuente de verdad y deriva de la actividad el color de presentacion y el contraste. Las eliminaciones con asignaciones usan una capa de confirmacion interna al mismo HTML.
 
+La columna `apoyo_sigla` de `_HOR_SESIONES` mantiene su nombre físico por compatibilidad con el esquema 7, pero representa funcionalmente un texto breve de identificación de hasta 40 caracteres. Frontend y backend conservan su capitalización; el servidor solo convierte a texto, recorta espacios exteriores y valida la longitud. Los valores históricos ya almacenados en mayúsculas no se reconstruyen.
+
 Las categorias de actividad son `MODULO`, `TUTORIA`, `GUARDIA`, `REUNION`, `DUAL`, `PPPP`, `P` y `OTRA`. La reparacion sustituye `COORDINACION` por `REUNION` en la columna de categoria sin alterar el resto de la fila ni `_HOR_SESIONES`. Los valores sugeridos de `P` y `PPPP` se transportan desde el modelo del servidor a la UI y solo actuan como defaults editables.
 
 Las actividades `MODULO` son una base provisional y se integraran mas adelante con el modelo de imparticiones de `3 Modulos`; no se crea `_MODULOS` en esta fase. `TUTORIA`, `P` y `PPPP` transportan sugerencias editables desde el servidor, sin convertirlas en datos implícitos.
 
-`ScheduleView.gs` genera `2 Horario` de forma idempotente y exclusivamente desde las tres tablas técnicas. La vista se sitúa tras `1 Calendario`, amplía el lienzo antes de escribir, limpia combinaciones y reglas previas, aplica el tema y recorta filas y columnas al terminar. Las columnas auxiliares ocultas contienen únicamente horas derivadas y tipo de tramo para reglas de formato condicional; no son fuente de verdad. Las fórmulas de Sheets mantienen el día, la fecha, la semana y el resaltado temporal sin triggers y evitan separadores de argumentos dependientes del locale. Las actividades se escriben por bloques como `RichTextValue`: sigla en negrita y texto secundario menor y de peso normal, ambos con contraste calculado. El guardado persiste primero el modelo con su rollback existente y renderiza después; si falla la vista, informa de que los datos sí se guardaron. Inicializar / reparar puede regenerarla cuando existen tramos válidos, mientras que abrir el configurador sigue sin efectos laterales.
+`ScheduleView.gs` genera `2 Horario` de forma idempotente y exclusivamente desde las tres tablas técnicas. La vista se sitúa tras `1 Calendario`, amplía el lienzo antes de escribir, limpia combinaciones y reglas previas, aplica el tema y recorta filas y columnas al terminar. Las columnas auxiliares ocultas contienen únicamente horas derivadas y tipo de tramo para reglas de formato condicional; no son fuente de verdad. Las fórmulas de Sheets mantienen el día, la fecha, la semana y el resaltado temporal sin triggers y evitan separadores de argumentos dependientes del locale. Las actividades se escriben por bloques como `RichTextValue`: sigla en negrita, detalle secundario menor y apoyo en una tercera línea cursiva `↳ texto`, todos con contraste calculado. El guardado persiste primero el modelo con su rollback existente y renderiza después; si falla la vista, informa de que los datos sí se guardaron. Inicializar / reparar puede regenerarla cuando existen tramos válidos, mientras que abrir el configurador sigue sin efectos laterales.
 
 ## Entornos
 

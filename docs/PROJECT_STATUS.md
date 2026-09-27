@@ -1,11 +1,11 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-09-27
-**Estado general:** Calendario cerrado y primera hoja visible de Horario corregida, versión 1.3.5
+**Estado general:** Calendario cerrado y Horario pendiente solo de validación manual final, versión 1.3.6
 
-## Iteracion 1.3.5
+## Iteracion 1.3.6
 
-Version vigente del cuaderno: `1.3.5`.
+Version vigente del cuaderno: `1.3.6`.
 
 - Calendario cerrado funcionalmente: configurador, hoja visible, estadisticas, eventos, practicas/repaso, notas y estado del sidebar implementados.
 - Horario mantiene tablas tecnicas ocultas, configurador, horario semanal, apoyo por sesion y consultas reutilizables. Los tramos forman una cadena consecutiva definida solo por tipo, inicio y duración, sin nombres ni ordinales visibles.
@@ -15,7 +15,8 @@ Version vigente del cuaderno: `1.3.5`.
 - Los tres acordeones principales de Horario parten cerrados y son exclusivos sin perder el estado interno del formulario.
 - La hoja visible `2 Horario` se genera como vista derivada tras guardar y desde la reparación, con fórmulas compatibles con el locale, contenido enriquecido, colores de actividad, descansos y resaltado temporal.
 - La columna técnica `nombre` de `_HOR_TRAMOS` se conserva sin uso para mantener compatibilidad; no hay cambio de esquema ni migración de datos en esta iteración.
-- Version central del cuaderno: `1.3.5`; esquema: `7`.
+- El apoyo conserva la capitalización del usuario, admite hasta 40 caracteres y se representa en una línea propia `↳ texto` sin etiquetas redundantes.
+- Version central del cuaderno: `1.3.6`; esquema: `7`.
 
 - Configuradores de datos generales y calendario con apertura sin efectos laterales y reparacion explicita.
 - Guardado con formulario sustituido por estado bloqueado de carga, cierre automatico tras exito y restauracion tras error.
@@ -25,7 +26,7 @@ Version vigente del cuaderno: `1.3.5`.
 - Preparar nuevo curso recupera los tres colorpickers y persiste la personalizacion del tema.
 - Fechas especiales tienen layout estable con y sin rango; los configuradores usan loading exclusivo.
 - Se verifica el mapeo semantico de ReuniÃ³n y Destacado al renderer de celdas.
-- Version central del cuaderno: `1.3.5`; esquema: `7`.
+- Version central del cuaderno: `1.3.6`; esquema: `7`.
 
 ## Completado
 
@@ -55,7 +56,7 @@ Version vigente del cuaderno: `1.3.5`.
 - Web del centro normalizada y validada aunque se introduzca sin protocolo.
 - Utilidades globales para ampliar hojas y recortarlas al layout; aplicadas a la Portada `A:H` con filas dinámicas.
 - `_META` escribe las versiones como texto para evitar su conversión a fecha.
-- Versión central del cuaderno `1.3.5` y esquema `7`.
+- Versión central del cuaderno `1.3.6` y esquema `7`.
 - Infraestructura HTML común para diálogos de Apps Script implementada.
 - Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
 - La inicialización se ejecuta desde el diálogo en ocho pasos idempotentes.
@@ -99,13 +100,14 @@ Version vigente del cuaderno: `1.3.5`.
 - Nueva iteración UX de Horario: cadena sin huecos, propagación temporal y catálogo de actividades simplificado con defaults editables.
 - Primera versión de `2 Horario`: vista semanal idempotente, compacta y derivada, integrada con guardado, reparación, Portada y sidebar.
 - Corrección de `2 Horario`: fórmulas sin separadores dependientes del locale, tramos identificados por rango y estilos RichText diferenciados para sigla y detalle.
+- Último ajuste de Horario: apoyo con case preservado, límite de 40 caracteres y tercera línea RichText compacta.
 
 ## Pendiente inmediato
 
 - Probar manualmente las seis paletas, el cierre del diálogo, la URL normalizada y el recorte de la Portada en `CP_DEV`.
 - Ampliar Preparar nuevo curso cuando existan calendario, tramos, módulos y horario.
 - Validación manual de Calendario completada; el bloque se considera cerrado.
-- Validar manualmente en `CP_DEV` la UX simplificada del configurador y el acabado visual, las fórmulas y el resaltado temporal de `2 Horario`; el bloque Horario aún no se considera cerrado.
+- Validar manualmente en `CP_DEV` la persistencia y presentación del apoyo junto con el acabado visual y temporal de `2 Horario`; tras esa validación podrá cerrarse el bloque Horario.
 - Evaluar en una fase posterior mover `Inicializar / reparar estructura` a un área `🛠️ Mantenimiento > 🔧 Reparar estructura` y retirar “Inicializar” de la UX final. Por ahora se conserva para desarrollo, migraciones y recuperación, no como operación cotidiana del profesor.
 
 ## Fase 1 prevista

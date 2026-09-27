@@ -25,6 +25,7 @@ const CP_SCHEDULE_ACTIVITY_DEFAULTS = Object.freeze({
 const CP_SCHEDULE_TEACHING_TYPE_IDS = Object.freeze(CP_CALENDAR_TYPE_DEFINITIONS.map(function(definition) { return definition.id; }));
 const CP_SCHEDULE_TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const CP_SCHEDULE_COLOR_PATTERN = /^#[0-9A-F]{6}$/i;
+const CP_SCHEDULE_SUPPORT_MAX_LENGTH = 40;
 
 function ensureScheduleTechnicalStructure_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
@@ -180,6 +181,7 @@ function abrirConfiguracionHorario() {
       categories: CP_SCHEDULE_ACTIVITY_CATEGORIES,
       activityDefaults: CP_SCHEDULE_ACTIVITY_DEFAULTS,
       teachingTypes: CP_SCHEDULE_TEACHING_TYPE_IDS,
+      supportMaxLength: CP_SCHEDULE_SUPPORT_MAX_LENGTH,
     };
   }
   const template = HtmlService.createTemplateFromFile('UiDialogScheduleConfig');
@@ -202,6 +204,7 @@ function getScheduleConfigForUi_(spreadsheet) {
     categories: CP_SCHEDULE_ACTIVITY_CATEGORIES,
     activityDefaults: CP_SCHEDULE_ACTIVITY_DEFAULTS,
     teachingTypes: CP_SCHEDULE_TEACHING_TYPE_IDS,
+    supportMaxLength: CP_SCHEDULE_SUPPORT_MAX_LENGTH,
   };
 }
 
@@ -352,13 +355,15 @@ function normalizeScheduleSessions_(rows, slotById, activityById) {
     const day = normalizeScheduleText_(raw.day || raw.dia_semana).toUpperCase();
     const slotId = normalizeScheduleText_(raw.slotId || raw.tramo_id);
     const activityId = normalizeScheduleText_(raw.activityId || raw.actividad_id);
-    const support = normalizeScheduleText_(raw.support || raw.apoyo_sigla).toUpperCase();
+    const support = normalizeScheduleText_(raw.support || raw.apoyo_sigla);
     const slot = slotById[slotId];
     if (!CP_SCHEDULE_DAYS.some(function(item) { return item.id === day; })) throw new Error('El día de una sesión no es válido.');
     if (!slot) throw new Error('Una sesión referencia un tramo inexistente.');
     if (slot.type !== 'SESION') throw new Error('Los descansos no pueden tener actividad asignada.');
     if (!activityById[activityId]) throw new Error('Una sesión referencia una actividad inexistente.');
-    if (support.length > 8) throw new Error('El apoyo de una sesión no puede superar 8 caracteres.');
+    if (support.length > CP_SCHEDULE_SUPPORT_MAX_LENGTH) {
+      throw new Error('El apoyo de una sesión no puede superar ' + CP_SCHEDULE_SUPPORT_MAX_LENGTH + ' caracteres.');
+    }
     const key = day + '|' + slotId;
     if (usedKeys[key]) throw new Error('No puede haber dos actividades en el mismo día y tramo.');
     usedKeys[key] = true;

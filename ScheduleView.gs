@@ -81,7 +81,7 @@ function prepareScheduleSheet_(sheet, theme, rows) {
   sheet.setColumnWidth(1, 142);
   for (let column = 2; column <= CP_SCHEDULE_VIEW.VISIBLE_COLUMNS; column += 1) sheet.setColumnWidth(column, 132);
   for (let column = 7; column <= CP_SCHEDULE_VIEW.TOTAL_COLUMNS; column += 1) sheet.setColumnWidth(column, 70);
-  sheet.setRowHeights(1, rows, 46);
+  sheet.setRowHeights(1, rows, 54);
   sheet.setRowHeight(1, 30);
   sheet.setRowHeight(2, 24);
   sheet.setRowHeight(3, 32);
@@ -204,20 +204,17 @@ function renderScheduleRows_(sheet, model) {
 }
 
 function formatScheduleCell_(activity, support) {
+  const lines = [activity.acronym];
   const details = [];
   if (activity.group) details.push(activity.group);
   if (activity.classroom) details.push(activity.classroom);
-  if (!details.length && activity.name && activity.name.toUpperCase() !== activity.acronym) {
+  if (!details.length && activity.category !== 'MODULO' && activity.name && activity.name.toUpperCase() !== activity.acronym) {
     details.push(activity.name);
   }
   const context = details.join(' · ');
-  let secondary = compactScheduleCellText_(context, 24);
-  if (support) {
-    const supportLabel = 'Apoyo ' + support;
-    const contextLimit = Math.max(6, 24 - supportLabel.length - 3);
-    secondary = context ? compactScheduleCellText_(context, contextLimit) + ' · ' + supportLabel : supportLabel;
-  }
-  return activity.acronym + (secondary ? '\n' + secondary : '');
+  if (context) lines.push(compactScheduleCellText_(context, 24));
+  if (support) lines.push('↳ ' + support);
+  return lines.join('\n');
 }
 
 function compactScheduleCellText_(value, maxLength) {
@@ -226,9 +223,11 @@ function compactScheduleCellText_(value, maxLength) {
 }
 
 function createScheduleCellRichText_(text, fontColor) {
-  const value = normalizeScheduleText_(text).replace(/\s*\n\s*/, '\n');
+  const value = normalizeScheduleText_(text).split('\n').map(function(line) { return line.trim(); }).join('\n');
   const secondaryStart = value.indexOf('\n');
   const primaryEnd = secondaryStart === -1 ? value.length : secondaryStart;
+  const supportMarker = '\n↳ ';
+  const supportStart = value.lastIndexOf(supportMarker);
   const secondaryStyle = SpreadsheetApp.newTextStyle()
     .setFontFamily('Arial')
     .setFontSize(8)
@@ -241,10 +240,18 @@ function createScheduleCellRichText_(text, fontColor) {
     .setBold(true)
     .setForegroundColor(fontColor)
     .build();
+  const supportStyle = SpreadsheetApp.newTextStyle()
+    .setFontFamily('Arial')
+    .setFontSize(8)
+    .setBold(false)
+    .setItalic(true)
+    .setForegroundColor(fontColor)
+    .build();
   const builder = SpreadsheetApp.newRichTextValue()
     .setText(value)
     .setTextStyle(secondaryStyle);
   if (primaryEnd) builder.setTextStyle(0, primaryEnd, primaryStyle);
+  if (supportStart !== -1) builder.setTextStyle(supportStart + 1, value.length, supportStyle);
   return builder.build();
 }
 
