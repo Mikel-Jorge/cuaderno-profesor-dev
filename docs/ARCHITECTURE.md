@@ -1,180 +1,219 @@
 # Arquitectura técnica
 
-**Estado:** inicial  
-**Última revisión:** 2026-09-27
+**Estado:** vigente
+**Última revisión:** 2026-09-30
+**Versión:** `1.4.0` / esquema `8`
 
-Este documento describe únicamente la arquitectura técnica vigente.  
-La funcionalidad esperada se define en `FUNCTIONAL_SPEC.md`.
+Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
-## Decisiones de la iteracion 1.3.6
-
-Los dialogos de configuracion separan lectura y reparacion: abrirlos valida y lee las tablas existentes sin escribir ni cambiar el estado de las hojas. La reparacion estructural es explicita. Los guardados persisten unicamente el modelo afectado y regeneran su vista visible solo despues de cambios validos. La edicion del tema pertenece a Preparar nuevo curso; una futura funcion global `Cambiar tema del cuaderno` reaplicara el tema a todas las hojas visibles cuando el bloque principal este construido. Los estados de carga de los configuradores comparten el patron CSS de `UiStyles.html`: se oculta el contenido editable y el pie de acciones durante la peticion, y se restaura completo si falla.
-
-## Plataforma
+# 1. Plataforma y criterios
 
 - Google Sheets como interfaz principal.
-- Google Apps Script vinculado al Spreadsheet.
-- HTML/CSS/JavaScript de Apps Script para panel lateral y diálogos.
-- Desarrollo local mediante VS Code/Codex.
-- `clasp` para sincronizar código con Apps Script.
-- Git/GitHub para control de versiones.
+- Google Apps Script V8 vinculado al Spreadsheet.
+- HTML/CSS/JavaScript de Apps Script para diálogos y Sidebar.
+- `clasp` para sincronización local → Apps Script.
+- Git/GitHub como fuente de verdad del código versionado.
+- Operaciones por bloques y sin dependencias externas innecesarias.
 
-## Principio de diseño
+La lectura de configuradores no crea, repara, oculta, reordena ni renderiza hojas. La reparación estructural es explícita. Un guardado solo persiste el modelo afectado y actualiza sus vistas derivadas necesarias.
 
-La estructura visual del Google Sheet debe poder generarse y mantenerse mayoritariamente desde Apps Script:
+Los colores son siempre presentación. Ningún cálculo reconstruye datos desde fondos o estilos.
 
-- Hojas.
-- Fórmulas.
-- Formatos.
-- Colores.
-- Anchuras y alturas.
-- Validaciones.
-- Formato condicional.
-- Rangos y configuración.
+# 2. Componentes actuales
 
-Se recurrirá a edición manual únicamente cuando resulte claramente más sencillo y no comprometa la reproducibilidad del proyecto.
+- `Config.gs`: constantes, nombres de hojas, versión `1.4.0` y esquema `8`.
+- `Theme.gs`: tema global, presets y colores semánticos.
+- `Main.gs`: menú principal.
+- `Setup.gs`: inicialización y reparación idempotente.
+- `GeneralConfig.gs`: `_CONFIG` y datos generales.
+- `Calendar.gs`: modelo y vista del calendario escolar.
+- `Schedule.gs`: modelo, validación, persistencia y consultas de Horario.
+- `ScheduleView.gs`: renderizado de `2 Horario`.
+- `Students.gs`: estructura, tema, estado y limpieza anual de `3 Alumnado`.
+- `Portada.gs`: estructura, datos e índice dinámico de `0 Portada`.
+- `NewCourse.gs`: backup y pasos de Preparar nuevo curso.
+- `Utils.gs`: acceso, tamaño, recorte y ordenación de hojas.
+- `Sidebar.gs` y `UiSidebar.html`: estado y ayuda contextual.
+- `Ui.gs` y `UiDialog*.html`: confirmaciones, asistentes y procesos secuenciales.
+- `Branding.gs` y `UiStyles.html`: identidad y estilos comunes.
 
-## Capas previstas
+No se crean capas o abstracciones sin necesidad real.
 
-La implementación inicial utiliza una separación sencilla de responsabilidades:
+# 3. Fuentes de verdad
 
-- `Config.gs`: constantes compartidas, nombres de hojas y fuente central de la versión del cuaderno.
-- `Theme.gs`: tokens visuales, presets, personalizaciones y adaptación del tema a Sheets y CSS.
-- `Main.gs`: construcción del menú y puntos de entrada públicos generales.
-- `Setup.gs`: inicialización idempotente de la estructura base.
-- `GeneralConfig.gs`: definición, migración, lectura, validación y persistencia diferencial de la configuración general y visual.
-- `Calendar.gs`: modelo normalizado, reparación, validación, persistencia, consultas, cálculos reutilizables de lectividad/estadísticas y renderizado de la hoja visible `1 Calendario`.
-- `Portada.gs`: reparación de estructura, actualización diferencial de datos, aplicación del tema y generación del índice navegable.
-- `Utils.gs`: utilidades comunes de acceso, organización, expansión y recorte de hojas.
-- `Ui.gs`: apertura de diálogos, registro de procesos UI y ejecución secuencial de pasos.
-- `UiDialogProgress.html`: diálogo reutilizable para procesos con progreso, resultado y log.
-- `UiDialogConfirmation.html`: confirmación reutilizable con variantes normal, warning y danger.
-- `UiDialogGeneralConfig.html`: edición de los datos generales almacenados en `_CONFIG`.
-- `UiDialogCalendarConfig.html`: edición de tipos, evaluaciones, prácticas, repaso y fechas especiales.
-- `NewCourse.gs`: datos, validación y pasos ejecutables de la preparación parcial de un nuevo curso.
-- `DriveFolders.gs`: acceso validado a carpetas de Mi unidad y construcción de vistas navegables.
-- `UiDialogNewCourse.html`: asistente de cinco pasos y navegador de carpetas integrado.
-- `Sidebar.gs`: preparación del estado, ayuda contextual y apertura del panel lateral.
-- `UiSidebar.html`: renderizado del estado, ayuda contextual y actualización manual en cliente.
-- `UiStyles.html`: estilos visuales comunes para HTML de Apps Script.
-- `Branding.gs`: recursos de branding embebidos y fallback visual sin dependencias externas.
+| Dominio | Fuente de verdad | Vista o consumidor |
+|---|---|---|
+| Configuración general | `_CONFIG` | Portada, tema y UI |
+| Versión y esquema | `Config.gs` | `_META` y UI |
+| Calendario escolar | `_CAL_TIPOS`, `_CAL_EVALUACIONES`, `_FECHAS`, `_CAL_FECHA_TIPOS` | `1 Calendario` y futuros calendarios de módulo |
+| Horario | `_HOR_TRAMOS`, `_HOR_ACTIVIDADES`, `_HOR_SESIONES` | `2 Horario` y futuras sesiones reales de módulo |
+| Alumnado | `3 Alumnado` | futura `6 Eval ...` |
+| Configuración de impartición | futura `4 Config <SIGLA> · <GRUPO>` | futuras `5 Seg ...` y `6 Eval ...` |
+| Seguimiento | futura `5 Seg <SIGLA> · <GRUPO>` | uso docente diario |
+| Evaluación | futura `6 Eval <SIGLA> · <GRUPO>` | cálculo y registro Educa |
 
-Como principio general para las siguientes fases:
+El nombre de una hoja ayuda a presentar y ordenar, pero no será la única identidad interna de una impartición.
 
-1. **Configuración y metadatos**
-2. **Generadores/renderizado de hojas**
-3. **Lógica de dominio**
-4. **Acceso a Sheets**
-5. **UI: menú, panel lateral y diálogos**
-6. **Utilidades comunes**
-
-No crear capas o abstracciones hasta que exista una necesidad real.
-
-## UI HTML y procesos largos
-
-Los diálogos se construyen con plantillas de `HtmlService` y parciales compartidos. La cabecera común recibe el nombre del proyecto y la versión desde `Config.gs`, evitando hardcodearlos en HTML. Los títulos nativos y el menú reutilizan las etiquetas con iconos funcionales centralizadas en `CP.MENU`. `Theme.gs` resuelve el preset y las personalizaciones almacenadas, y los inyecta como variables CSS en todas las plantillas comunes.
-
-El panel lateral utiliza esa misma cabecera, tema y pie de autor. Su estado se calcula en servidor a partir de `_CONFIG`; la ayuda se ordena según la hoja activa mediante un mapa ampliable. La actualización es manual y vuelve a solicitar estado, contexto y tema, sin polling ni triggers. Las acciones permanecen exclusivamente en el menú principal.
-
-Un proceso UI declara sus pasos en servidor; el cliente los invoca en secuencia mediante `google.script.run`, actualizando el estado después de cada respuesta. El diálogo puede transportar una entrada validada para construir pasos condicionales, como el movimiento cuando origen y destino difieren. Las funciones de dominio continúan siendo ejecutables directamente sin depender del diálogo.
-
-Las confirmaciones se definen y validan en servidor mediante identificadores de acción permitidos. El cliente solo solicita la acción después de una pulsación expresa; no recibe nombres de funciones arbitrarios. Las variantes `normal`, `warning` y `danger` comparten plantilla y estilos, reservando `danger` para operaciones destructivas.
-
-El asistente de nuevo curso reutiliza las funciones de lectura, normalización y validación de `GeneralConfig.gs`, así como los presets de `Theme.gs`. Tras la confirmación `danger`, permite revisar únicamente las áreas implementadas y delega la ejecución en el diálogo común de progreso.
-
-El navegador de carpetas se implementa con `DriveApp`: comienza en `Mi unidad`, devuelve sólo subcarpetas accesibles y valida que la ruta alcance la raíz de Mi unidad. Los IDs se transportan como datos internos, pero la UI sólo muestra nombres y rutas. Google Picker queda fuera por ahora para evitar depender de un proyecto estándar de Google Cloud, Picker API y API keys. El soporte se limita inicialmente a Mi unidad; una ampliación para Shared Drives podrá usar en el futuro la Drive API o su servicio avanzado.
-
-El orden de ejecución es copia obligatoria en la carpeta original con el nombre original, movimiento opcional mediante `File.moveTo()`, renombrado obligatorio del activo y modificación del cuaderno. `buildNotebookNameFromAcademicYear_()` reutiliza la validación central del curso y genera nombres `CuadernoProfesor_XXXX`. Mover o renombrar el archivo contenedor conserva su proyecto Apps Script vinculado. La copia se verifica antes de continuar; un error en ella impide cualquier mutación posterior. Los errores de movimiento o renombrado evitan modificar `_CONFIG` e intentan restaurar nombre y ubicación. Las operaciones posteriores conservan una instantánea de `_CONFIG` y, si fallan, intentan restaurar configuración, Portada, `_META`, nombre y ubicación originales sin eliminar nunca la copia. El uso de Drive puede solicitar autorización adicional y requiere permisos para copiar y renombrar el archivo y escribir en las carpetas de origen y destino.
-
-Los logos originales se conservan en `branding/`. Para que Apps Script pueda mostrarlos sin publicar archivos ni depender de URLs externas, `Branding.gs` contiene copias reducidas como `data:` URI. Estas constantes confiables se imprimen sin escape contextual en los atributos `src`; el resto de datos visibles permanece escapado. Si un recurso embebido no está disponible, se genera un fallback SVG simple. El recurso splash permanece disponible para usos futuros, pero no se renderiza en los diálogos comunes actuales.
-
-El marco nativo de `showModalDialog()` pertenece a Google Sheets. La X nativa no puede ocultarse ni bloquearse desde el contenido HTML; por ello los pasos deben ser idempotentes y permitir reparar una ejecución interrumpida.
-
-## Hojas técnicas previstas
-
-Según la definición funcional actual:
+# 4. Estructura técnica actual
 
 ```text
 _CONFIG
+_META
 _CAL_TIPOS
 _CAL_EVALUACIONES
 _FECHAS
 _CAL_FECHA_TIPOS
-_TRAMOS
-_MODULOS
-_MATRICULAS
-_UT
-_META
+_HOR_TRAMOS
+_HOR_ACTIVIDADES
+_HOR_SESIONES
 ```
 
-Podrán variar si la implementación demuestra que una estructura más sencilla es suficiente.
+Todas permanecen ocultas. No existen `_MODULOS`, `_MATRICULAS` ni `_UT`: no deben crearse anticipadamente.
 
-La estructura actualmente implementada crea `_CONFIG`, `_META`, `_CAL_TIPOS`, `_CAL_EVALUACIONES`, `_FECHAS` y `_CAL_FECHA_TIPOS`. El resto de hojas técnicas se crearán cuando se implemente la funcionalidad correspondiente.
+`_META` se reconstruye desde `Config.gs` y escribe `version_cuaderno` y `version_esquema` como texto literal. La versión no se duplica como constante en otros módulos.
 
-`_CONFIG` mantiene un modelo estricto de dos columnas, clave/valor, y conserva las claves desconocidas al reparar o migrar su estructura. Incluye los datos generales y la selección/personalización del tema. La web del centro se normaliza en servidor y recibe `https://` cuando no incluye protocolo. `0 Portada` es una vista generada desde esta configuración y no actúa como fuente de datos. `_META` contiene únicamente proyecto, versión del cuaderno y versión del esquema, obteniendo las versiones de `Config.gs`; sus valores de versión se formatean como texto antes de escribirse para impedir conversiones automáticas de Sheets.
+# 5. Portada y hojas visibles
 
-La inicialización puede reconstruir la estructura gestionada de la Portada. Un guardado ordinario no ejecuta ese renderizado completo: compara la configuración anterior, persiste solo las claves modificadas, actualiza los rangos de datos afectados y reaplica exclusivamente los estilos cuando cambia el tema.
+`0 Portada` se genera desde `_CONFIG`. Su índice consulta las hojas visibles existentes, excluye nombres `_...` y crea enlaces por `gid`; por ello incorpora automáticamente `3 Alumnado` y, cuando existan, las familias 4/5/6.
 
-Los presets comparten una base clara y solo varían los colores de identidad. Las hojas visibles generadas utilizan `ensureSheetSize_()` antes de escribir y `trimSheetToBounds_()` al finalizar. La Portada calcula sus filas a partir del contenido e índice y limita sus columnas a `A:H`; los futuros generadores aplicarán el mismo patrón con sus propios límites.
+Las hojas generadas usan `ensureSheetSize_()` antes de escribir y `trimSheetToBounds_()` después. `3 Alumnado` conserva un mínimo de filas editables y nunca borra datos en la reparación normal.
 
-## Modelo de calendario
+`reorderManagedVisibleSheets_()` aplica este orden:
 
-`_CAL_TIPOS` mantiene los cuatro IDs estables `FP1`, `FP2`, `ONLINE` y `CE`, su activación y sus periodos lectivo, de prácticas y de repaso. `_CAL_TIPOS` se relaciona 1:N con `_CAL_EVALUACIONES`, que usa una fila por evaluación y permite cantidades variables por tipo.
+1. `0 Portada`;
+2. `1 Calendario`;
+3. `2 Horario`;
+4. `3 Alumnado`;
+5. todas las `4 Config ...`, ordenadas alfabéticamente;
+6. todas las `5 Seg ...`, ordenadas alfabéticamente;
+7. todas las `6 Eval ...`, ordenadas alfabéticamente.
 
-`_FECHAS` almacena cada evento una sola vez con su ID, intervalo, categoría, descripción y prioridad. Las categorías soportadas son `FESTIVO`, `REUNION` y `DESTACADO`; la reparación normaliza categorías antiguas de vacaciones o no lectivo a `FESTIVO`. Se relaciona N:M con `_CAL_TIPOS` mediante `_CAL_FECHA_TIPOS(fecha_id, tipo_id)`. Cero relaciones significa evento global; una o más relaciones restringen el evento exactamente a esos tipos. La reparación migra de forma idempotente el antiguo `_FECHAS.tipo_id`, crea una relación cuando contenía un tipo y no crea ninguna para los globales. Todas las fechas se escriben como valores `Date` y se presentan con formato `dd/MM/yyyy`.
+La utilidad mueve solo hojas con nombres gestionados, no borra ni renombra hojas ajenas y conserva el orden relativo de las no gestionadas. Las técnicas continúan ocultas.
 
-El transporte con la UI usa `yyyy-MM-dd`, formato nativo de los controles HTML de fecha. `Calendar.gs` convierte y compara esos valores con la zona horaria del Spreadsheet y reutiliza el parser central del curso académico para limitar el intervalo entre el 1 de agosto y el 31 de julio.
+# 6. Modelo de calendario
 
-El guardado normaliza y valida el modelo completo antes de escribir. Después adquiere un bloqueo de documento, conserva snapshots de las cuatro tablas de calendario y realiza escrituras por bloques; si una escritura falla, intenta restaurar las cuatro tablas. Los IDs no dependen de filas físicas y la reparación conserva registros desconocidos fuera del modelo soportado.
+`_CAL_TIPOS` mantiene los IDs `FP1`, `FP2`, `ONLINE` y `CE`, su activación y periodos lectivos, de prácticas y de repaso. Se relaciona 1:N con `_CAL_EVALUACIONES`.
 
-Las consultas de dominio devuelven todos los eventos aplicables y resuelven por separado el evento visual dominante. Los solapamientos permanecen íntegros. Los fines de semana, el carácter no lectivo y el estado visual común de fin de evaluación se derivan en código; no se materializan como eventos. Los cálculos reutilizables determinan pertenencia a tipos, rangos derivados de evaluaciones, lectividad por tipo, estadísticas por evaluación y periodos de prácticas/repaso exclusivamente desde el modelo estructurado. Las notas de días se reconstruyen en cada renderizado desde descripciones de `REUNION`/`DESTACADO`, fines de evaluación e hitos de prácticas.
+`_FECHAS` almacena cada evento una sola vez con ID, intervalo, categoría, descripción y prioridad. `_CAL_FECHA_TIPOS` resuelve su relación N:M con tipos: cero relaciones significa evento global. Las categorías admitidas son `FESTIVO`, `REUNION` y `DESTACADO`.
 
-La hoja visible `1 Calendario` se renderiza como una vista idempotente de esas tablas: crea o repara la hoja, la sitúa tras `0 Portada`, dibuja septiembre-junio en una cuadrícula 5x2, aplica estilos semánticos centralizados y recorta el layout al área útil. Su orden visual es cabecera, leyenda, meses y estadísticas. La actualización puede ejecutarse desde el guardado de configuración o desde Inicializar / reparar. Los colores de la hoja son presentación; ningún cálculo inspecciona formatos.
+El guardado valida el modelo completo, usa bloqueo de documento, conserva snapshots y escribe en bloque con intento de rollback. Fines de semana, lectividad, finales de evaluación y estadísticas se derivan en código.
 
-## Restricciones técnicas vigentes
+`1 Calendario` es una vista idempotente septiembre-junio. Se regenera desde el modelo, aplica tema y recorta su layout. Calendario queda cerrado funcionalmente.
 
-- Sin triggers instalables en V1 salvo necesidad nueva aprobada.
-- Sin People API en V1.
-- Sin integración obligatoria con Google Calendar en V1.
-- Los colores nunca son la fuente de verdad del dato.
-- Priorizar operaciones batch.
-- Un cuaderno corresponde a un curso académico.
-- Las copias de uso real no forman parte del repositorio ni del flujo `clasp`.
+# 7. Modelo de Horario
 
-## Modelo de Horario
+`_HOR_TRAMOS` contiene `tramo_id`, `tipo`, `nombre`, `hora_inicio` y `duracion_minutos`. `nombre` se conserva solo por compatibilidad del esquema 7. La hora final se deriva y los tramos se normalizan en cadena consecutiva.
 
-El bloque Horario persiste sus datos en `_HOR_TRAMOS`, `_HOR_ACTIVIDADES` y `_HOR_SESIONES`. `_HOR_TRAMOS` usa `tramo_id`, `tipo`, `nombre`, `hora_inicio` y `duracion_minutos`; `nombre` permanece como columna de compatibilidad del esquema 7, pero el dominio ya no lo valida ni lo utiliza. La hora final se deriva de inicio + duracion y el orden se deriva por `hora_inicio ASC`. El primer inicio y la secuencia de duraciones son la fuente lógica de una cadena sin huecos: antes de persistir, cada inicio posterior se normaliza al final del tramo anterior. No se persisten jornada, orden manual ni hora final. `_HOR_TRAMOS` se relaciona 1:N con `_HOR_SESIONES` y `_HOR_ACTIVIDADES` se relaciona 1:N con `_HOR_SESIONES`; cada sesion semanal referencia dia + tramo + actividad. La duracion fisica no convierte ni pondera sesiones: un tramo `SESION` cuenta una unidad y un `DESCANSO` cuenta cero.
+`_HOR_ACTIVIDADES` contiene `actividad_id`, `categoria`, `nombre`, `sigla`, `tipo_ensenanza_id`, `grupo`, `aula` y `color`. `_HOR_SESIONES` contiene `sesion_id`, `dia_semana`, `tramo_id`, `actividad_id` y `apoyo_sigla`.
 
-La funcion central `ensureScheduleTechnicalStructure_()` crea o repara las tablas y migra idempotentemente `_HOR_TRAMOS` del esquema 6 al 7. La migracion valida primero todas las filas, deriva `duracion_minutos` desde `hora_fin - hora_inicio`, conserva los IDs y solo entonces reescribe la tabla ordenada; ante un dato no derivable no modifica el origen. Se reutiliza desde Inicializar / reparar y Preparar nuevo curso. El configurador solo valida y lee al abrir, por lo que un esquema antiguo exige reparacion explicita.
+`ensureScheduleTechnicalStructure_()` crea o repara las tablas y mantiene la migración idempotente anterior. El configurador solo lee al abrir. El guardado normaliza, valida y persiste antes de renderizar.
 
-El configurador deriva todos los inicios salvo el primero y propaga en tiempo real cualquier cambio de inicio general o duracion sin modificar las duraciones posteriores. El tramo se edita solo mediante tipo, inicio y duración; su rango horario derivado sustituye cualquier ordinal o nombre visible. La cuadrícula conserva `actividad_id` como fuente de verdad y deriva de la actividad el color de presentacion y el contraste. Las eliminaciones con asignaciones usan una capa de confirmacion interna al mismo HTML.
+`ScheduleView.gs` genera `2 Horario` exclusivamente desde esas tablas, con semana dinámica, RichText, apoyo, descansos, colores y resaltado actual. Horario queda cerrado funcionalmente.
 
-La columna `apoyo_sigla` de `_HOR_SESIONES` mantiene su nombre físico por compatibilidad con el esquema 7, pero representa funcionalmente un texto breve de identificación de hasta 40 caracteres. Frontend y backend conservan su capitalización; el servidor solo convierte a texto, recorta espacios exteriores y valida la longitud. Los valores históricos ya almacenados en mayúsculas no se reconstruyen.
+# 8. Identidad de impartición
 
-Las categorias de actividad son `MODULO`, `TUTORIA`, `GUARDIA`, `REUNION`, `DUAL`, `PPPP`, `P` y `OTRA`. La reparacion sustituye `COORDINACION` por `REUNION` en la columna de categoria sin alterar el resto de la fila ni `_HOR_SESIONES`. Los valores sugeridos de `P` y `PPPP` se transportan desde el modelo del servidor a la UI y solo actuan como defaults editables.
+Una fila de `_HOR_ACTIVIDADES` con `categoria = MODULO` es una impartición. `actividad_id` es su ID estable y se reutilizará en todos los módulos futuros.
 
-Las actividades `MODULO` son una base provisional y se integraran mas adelante con el modelo de imparticiones de `3 Modulos`; no se crea `_MODULOS` en esta fase. `TUTORIA`, `P` y `PPPP` transportan sugerencias editables desde el servidor, sin convertirlas en datos implícitos.
+Los helpers `getModuleActivities_()`, `getModuleActivityById_()` y `getModuleDisplayName_()` centralizan lectura, resolución y etiqueta sin crear otra entidad.
 
-`ScheduleView.gs` genera `2 Horario` de forma idempotente y exclusivamente desde las tres tablas técnicas. La vista se sitúa tras `1 Calendario`, amplía el lienzo antes de escribir, limpia combinaciones y reglas previas, aplica el tema y recorta filas y columnas al terminar. Las columnas auxiliares ocultas contienen únicamente horas derivadas y tipo de tramo para reglas de formato condicional; no son fuente de verdad. Las fórmulas de Sheets mantienen el día, la fecha, la semana y el resaltado temporal sin triggers y evitan separadores de argumentos dependientes del locale. Las actividades se escriben por bloques como `RichTextValue`: sigla en negrita, detalle secundario menor y apoyo en una tercera línea cursiva `↳ texto`, todos con contraste calculado. El guardado persiste primero el modelo con su rollback existente y renderiza después; si falla la vista, informa de que los datos sí se guardaron. Inicializar / reparar puede regenerarla cuando existen tramos válidos, mientras que abrir el configurador sigue sin efectos laterales.
+No existe sincronización entre actividades con la misma sigla. Cada grupo mantiene su Config, Seg y Eval independientes. No se replica una fuente de verdad en `_MODULOS`.
 
-## Entornos
+# 9. Modelo de Alumnado
 
-### CP_DEV
+`3 Alumnado` es simultáneamente fuente de datos y superficie editable. Sus columnas estructurales son `Apellidos`, `Nombre`, `Grupo`, `Email`.
 
-Google Sheet de desarrollo sin datos reales.
+`createOrRepairStudentsSheet_()`:
 
-Es el único Spreadsheet sincronizado con el repositorio mediante `clasp`.
+- crea o muestra la hoja;
+- asegura tamaño suficiente;
+- restaura cabeceras, formato, anchos y fila congelada;
+- mantiene texto plano para Email;
+- preserva el contenido de las filas existentes;
+- recorta a cuatro columnas y a las filas útiles o al mínimo editable.
 
-### Cuadernos reales
+`isStudentsConfiguredForSidebar_()` realiza una única lectura por bloque y considera válida una fila con Apellidos, Nombre y Grupo. Email no es obligatorio.
 
-Se crean como copias de `CP_DEV` cuando el código es estable.
+No existe matrícula por módulo. La futura Evaluación filtrará por coincidencia de Grupo; Seguimiento no leerá Alumnado.
 
-Contienen datos reales y quedan fuera de:
+# 10. Preparar nuevo curso
 
-- GitHub.
-- Codex.
-- `clasp` de desarrollo.
+El proceso UI ejecuta pasos independientes. Primero crea y verifica el backup en la carpeta original. Solo después puede mover, renombrar y modificar el cuaderno activo.
 
-## Evolución de este documento
+`clearStudentsForNewCourse_()` repara la estructura y limpia únicamente el rango de datos A:D desde la fila 2. La hoja y la cabecera permanecen. Como el backup es anterior, conserva el alumnado del curso previo.
 
-Actualizar este archivo solo cuando cambie una decisión técnica relevante, la organización de módulos o las responsabilidades entre componentes.
+La política de Calendario y Horario no cambia en esta versión. La finalización sincroniza `_META`, oculta hojas técnicas, reordena hojas gestionadas y actualiza el índice.
+
+# 11. Arquitectura futura de Config, Seg y Eval
+
+## 11.1. Flujo de generación
+
+La creación será independiente por tipo:
+
+```text
+actividad MODULO
+  └─ 4 Config <SIGLA> · <GRUPO>
+       ├─ 5 Seg <SIGLA> · <GRUPO>
+       └─ 6 Eval <SIGLA> · <GRUPO>
+```
+
+Config debe existir y cumplir sus validaciones antes de generar consumidores. No se crean las tres hojas obligatoriamente a la vez.
+
+Cada hoja futura guardará una asociación interna verificable con `actividad_id`. La estrategia concreta se elegirá al implementar Config, sin duplicar campos de `_HOR_ACTIVIDADES`.
+
+## 11.2. `4 Config`
+
+Cruza la actividad con `_HOR_SESIONES`, `_HOR_TRAMOS` y el modelo de Calendario para obtener sesiones reales cronológicas. Su calendario visual parte de la misma estructura base de `1 Calendario`, pero es una representación propia de esa impartición.
+
+La tabla editable de UT contiene código, nombre, color, horas manuales, evaluación y peso dentro de la evaluación. Las evaluaciones disponibles se obtienen de `tipo_ensenanza_id` y `_CAL_EVALUACIONES`. Los totales de horas y los pesos agregados se calculan mediante fórmulas.
+
+Config almacena la autoridad sobre:
+
+- definición y orden de UT;
+- horas/sesiones previstas;
+- asignación UT → evaluación;
+- peso UT dentro de evaluación;
+- peso evaluación dentro del curso.
+
+El recálculo explícito distribuye las UT secuencialmente sobre sesiones reales. Una firma interna de último cálculo, comparada mediante fórmulas y sin `onEdit`, muestra cambios pendientes. Una fecha con más de una UT usa el token semántico futuro `mixedDay` y una nota con el desglose de horas.
+
+## 11.3. `5 Seg`
+
+Se genera desde sesiones reales y distribución de UT. No depende de `3 Alumnado`. Mantiene datos de propuesta, realizado, horas actuales, acumulado, total y mejoras. Los colores de UT son presentación.
+
+## 11.4. `6 Eval`
+
+Selecciona inicialmente alumnos por igualdad entre `3 Alumnado.Grupo` y el grupo de la actividad. Sus fórmulas referencian la configuración vigente de `4 Config`; no copian ponderaciones como valores congelados.
+
+Incluye entradas manuales para nota Educa de cada evaluación y nota Educa final, independientes de los valores calculados.
+
+# 12. Sidebar y estados
+
+El Sidebar deriva estados desde las fuentes actuales:
+
+- Datos generales: claves mínimas de `_CONFIG`.
+- Calendario: modelo configurado y vista disponible.
+- Horario: tramos y vista disponibles.
+- Alumnado: al menos una fila válida.
+- Configuración de módulos: no disponible hasta su implementación.
+
+No existe una hoja visible de estados. Los futuros estados por actividad podrán persistirse en una hoja técnica solo si surge una necesidad real.
+
+# 13. UI, temas y procesos
+
+Las plantillas reciben nombre y versión desde la configuración central. `Theme.gs` inyecta los tokens comunes en Sheets y CSS. Los procesos largos se declaran en servidor y el cliente ejecuta los pasos mediante `google.script.run`.
+
+El botón X del marco nativo no puede bloquearse; por ello cada paso debe ser seguro e idempotente en lo posible. Las confirmaciones se resuelven por identificadores permitidos y reservan `danger` para operaciones destructivas.
+
+# 14. Restricciones vigentes
+
+- Sin triggers instalables.
+- Sin People API.
+- Sin integración obligatoria con Google Calendar.
+- Sin `_MODULOS`, `_MATRICULAS` ni `_UT` anticipados.
+- Sin herencia o sincronización automática entre grupos.
+- Sin usar colores o nombres de pestaña como identidad única.
+- Sin datos personales reales en CP_DEV, GitHub o `clasp`.
+
+# 15. Entornos
+
+`CP_DEV` es el único Spreadsheet sincronizado mediante `clasp` y no contiene datos reales. Los cuadernos de uso docente son copias independientes y quedan fuera del repositorio y del flujo `clasp`.

@@ -423,6 +423,26 @@ function getScheduleActivities_() {
   });
 }
 
+function getModuleActivities_() {
+  return getScheduleActivities_().filter(function(activity) {
+    return activity.category === 'MODULO';
+  });
+}
+
+function getModuleActivityById_(activityId) {
+  const normalizedId = normalizeScheduleText_(activityId);
+  return getModuleActivities_().find(function(activity) {
+    return activity.id === normalizedId;
+  }) || null;
+}
+
+function getModuleDisplayName_(activity) {
+  if (!activity) return '';
+  const acronym = normalizeScheduleText_(activity.acronym) || normalizeScheduleText_(activity.name);
+  const group = normalizeScheduleText_(activity.group);
+  return [acronym, group].filter(Boolean).join(' · ');
+}
+
 function getWeeklySchedule_() {
   return readScheduleRows_(CP.SHEETS.SCHEDULE_SESSIONS, CP_SCHEDULE_HEADERS.SESSIONS.length).map(function(row) {
     return { id: normalizeScheduleText_(row[0]), day: normalizeScheduleText_(row[1]), slotId: normalizeScheduleText_(row[2]), activityId: normalizeScheduleText_(row[3]), support: normalizeScheduleText_(row[4]) };

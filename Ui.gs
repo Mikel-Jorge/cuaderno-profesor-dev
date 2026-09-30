@@ -167,6 +167,11 @@ function getUiProcessDefinition_(processId, processInput) {
           run: createOrRepairScheduleSheet_,
         },
         {
+          label: 'Preparando Alumnado...',
+          completedMessage: 'Hoja de Alumnado creada o reparada sin borrar datos.',
+          run: createOrRepairStudentsSheet_,
+        },
+        {
           label: 'Actualizando metadatos...',
           completedMessage: 'Metadatos actualizados.',
           run: initializeMetaStructure_,

@@ -5,6 +5,7 @@ function inicializarCuaderno() {
   ensureScheduleTechnicalStructure_();
   createOrRepairCalendarSheet_();
   createOrRepairScheduleSheet_();
+  createOrRepairStudentsSheet_();
   initializeMetaStructure_();
   finishStructureInitialization_();
 }
@@ -32,6 +33,7 @@ function initializeMetaStructure_() {
 function finishStructureInitialization_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   hideTechnicalSheets_(spreadsheet);
+  reorderManagedVisibleSheets_(spreadsheet);
   actualizarIndicePortada();
 
   spreadsheet.toast(

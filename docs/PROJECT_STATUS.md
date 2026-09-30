@@ -1,145 +1,107 @@
 # Estado del proyecto
 
-**Última actualización:** 2026-09-27
-**Estado general:** Calendario cerrado y Horario pendiente solo de validación manual final, versión 1.3.6
+**Última actualización:** 2026-09-30
+**Estado general:** Portada, Calendario y Horario completados; Alumnado en curso
+**Versión vigente:** `1.4.0`
+**Esquema vigente:** `8`
 
-## Iteracion 1.3.6
+# Completado
 
-Version vigente del cuaderno: `1.3.6`.
+## Núcleo y Portada
 
-- Calendario cerrado funcionalmente: configurador, hoja visible, estadisticas, eventos, practicas/repaso, notas y estado del sidebar implementados.
-- Horario mantiene tablas tecnicas ocultas, configurador, horario semanal, apoyo por sesion y consultas reutilizables. Los tramos forman una cadena consecutiva definida solo por tipo, inicio y duración, sin nombres ni ordinales visibles.
-- La reparacion y Preparar nuevo curso migran idempotentemente `_HOR_TRAMOS` del esquema 6 al 7, conservando IDs y asignaciones; Configurar horario sigue siendo de solo lectura al abrir e informa si hace falta reparar.
-- Las actividades nuevas parten de `MODULO` sin textos ficticios; `TUTORIA`, `P` y `PPPP` tienen defaults editables, mientras `COORDINACION` se normaliza a `REUNION` durante la reparacion.
-- La regeneracion del calendario limpia unicamente las notas del area de dias de septiembre a junio antes de escribir las notas actuales.
-- Los tres acordeones principales de Horario parten cerrados y son exclusivos sin perder el estado interno del formulario.
-- La hoja visible `2 Horario` se genera como vista derivada tras guardar y desde la reparación, con fórmulas compatibles con el locale, contenido enriquecido, colores de actividad, descansos y resaltado temporal.
-- La columna técnica `nombre` de `_HOR_TRAMOS` se conserva sin uso para mantener compatibilidad; no hay cambio de esquema ni migración de datos en esta iteración.
-- El apoyo conserva la capitalización del usuario, admite hasta 40 caracteres y se representa en una línea propia `↳ texto` sin etiquetas redundantes.
-- Version central del cuaderno: `1.3.6`; esquema: `7`.
+- Proyecto Apps Script vinculado a `CP_DEV`, con `clasp` y Git/GitHub configurados.
+- `_CONFIG` y `_META` ocultas, versión centralizada y valores de versión escritos como texto.
+- `0 Portada` generada, temática y alimentada desde `_CONFIG`.
+- Índice dinámico navegable de todas las hojas visibles, excluyendo `_...`.
+- Datos generales, temas claros y branding común en diálogos y Sidebar.
+- Infraestructura de confirmaciones y procesos con progreso.
+- Preparar nuevo curso con backup obligatorio verificado, movimiento opcional, renombrado, actualización de datos y recuperación defensiva.
 
-- Configuradores de datos generales y calendario con apertura sin efectos laterales y reparacion explicita.
-- Guardado con formulario sustituido por estado bloqueado de carga, cierre automatico tras exito y restauracion tras error.
-- Tema retirado de Datos generales y conservado en Preparar nuevo curso.
-- Calendario con leyenda homogenea, color lavanda para Reunion, estadisticas con dias/porcentajes y borrado desde cabecera colapsable.
-- Pendiente futura: funcion global `Cambiar tema del cuaderno`, prevista cuando las hojas principales esten construidas.
-- Preparar nuevo curso recupera los tres colorpickers y persiste la personalizacion del tema.
-- Fechas especiales tienen layout estable con y sin rango; los configuradores usan loading exclusivo.
-- Se verifica el mapeo semantico de ReuniÃ³n y Destacado al renderer de celdas.
-- Version central del cuaderno: `1.3.6`; esquema: `7`.
+## Calendario — CERRADO / COMPLETADO
 
-## Completado
+- Modelo normalizado en `_CAL_TIPOS`, `_CAL_EVALUACIONES`, `_FECHAS` y `_CAL_FECHA_TIPOS`.
+- Tipos de enseñanza, evaluaciones, periodos, fechas especiales, solapamientos y prioridad visual.
+- Cálculos de lectividad, estadísticas, prácticas y repaso.
+- `1 Calendario` septiembre-junio, notas, tema, recorte y regeneración idempotente.
+- Estado y ayuda contextual en el Sidebar.
 
-- Definición funcional V1 acordada.
-- Google Sheet `CP_DEV` creado.
-- Proyecto Apps Script vinculado.
-- `clasp` configurado y probado en el ordenador de casa.
-- Repositorio Git/GitHub configurado.
-- Primer `clasp push` probado correctamente.
-- Primer `git push` probado correctamente.
-- `README.md` de configuración creado.
-- Función pública `inicializarCuaderno()` implementada.
-- Menú `📘 Cuaderno del Profesor` implementado con:
-  - `🆕 Preparar nuevo curso`.
-  - `🔄 Inicializar / reparar estructura`.
-  - `⚙️ Configuración > 👤 Datos generales`.
-  - `❓ Ayuda` mediante panel lateral.
-- Hoja visible `0 Portada` terminada, generada por Apps Script y alimentada desde `_CONFIG`, con correos diferenciados y enlaces navegables.
-- Índice dinámico navegable de hojas visibles implementado en la portada.
-- Hojas técnicas `_CONFIG` y `_META` creadas y ocultas.
-- `_META` incluye únicamente proyecto, versión del cuaderno y versión del esquema.
-- `_CONFIG` utiliza dos columnas clave/valor y contiene curso, profesor, correo del profesor, datos completos del centro y preferencias de tema.
-- Propuesta automática del curso académico según fecha y zona horaria del Spreadsheet.
-- Diálogo de datos generales con carga, validación, estado dirty/clean, cierre tras éxito y actualización diferencial de la portada.
-- Sistema global de temas claros con tokens centralizados, colores personalizables y seis presets: Océano, Turquesa naranja, Verde natural, Coral menta, Burdeos lavanda y Azul clásico.
-- Portada separada en reparación estructural, actualización de datos, aplicación de tema e índice.
-- Web del centro normalizada y validada aunque se introduzca sin protocolo.
-- Utilidades globales para ampliar hojas y recortarlas al layout; aplicadas a la Portada `A:H` con filas dinámicas.
-- `_META` escribe las versiones como texto para evitar su conversión a fecha.
-- Versión central del cuaderno `1.3.6` y esquema `7`.
-- Infraestructura HTML común para diálogos de Apps Script implementada.
-- Diálogo reutilizable de progreso con spinner, estados, log breve y resultado final.
-- La inicialización se ejecuta desde el diálogo en ocho pasos idempotentes.
-- Branding local integrado en la UI sin dependencias externas, con fallback visual.
-- Impresión de las Data URI corregida para que los logos se rendericen en las plantillas HTML.
-- Diálogo reutilizable de confirmación con variantes `normal`, `warning` y `danger`.
-- La inicialización requiere confirmación expresa antes de abrir el progreso.
-- Cabecera común con icono MJS, nombre del proyecto y versión centralizada.
-- Copyright visible de forma discreta en el pie de la UI.
-- Splash retirado de los diálogos comunes y reservado para posibles usos futuros.
-- Títulos nativos y opciones de menú con iconografía funcional coherente.
-- Panel lateral permanente con branding, tema activo, versión y copyright compartidos.
-- Estado real de datos generales y señalización explícita de áreas todavía no disponibles.
-- Ayuda breve colapsable, con Portada priorizada cuando esa hoja está activa.
-- Actualización manual del estado, contexto y tema sin polling ni triggers.
-- Sidebar simplificado sin duplicar las acciones disponibles en el menú principal.
-- Confirmación `danger` previa a Preparar nuevo curso, sin cambios antes de la aceptación expresa.
-- Primera versión del asistente de nuevo curso con curso académico, profesor y centro, apariencia, ubicación y resumen.
-- Navegador propio de carpetas de Mi unidad con ruta, subcarpetas, regreso al nivel superior y selección sin mostrar IDs.
-- Copia de seguridad obligatoria y automática, verificada en la carpeta original con el nombre original exacto.
-- Movimiento opcional del cuaderno activo mediante `File.moveTo()` antes de modificar su configuración.
-- Renombrado obligatorio del cuaderno activo a `CuadernoProfesor_XXXX` a partir del curso académico.
-- Recuperación defensiva de configuración, Portada, metadatos, nombre y ubicación originales, conservando siempre la copia.
-- Proceso de nuevo curso mediante el diálogo común de progreso, con pasos condicionales y detención ante errores.
-- Actualización validada de `_CONFIG`, Portada, índice y `_META`, sin crear ni borrar estructuras futuras.
-- Hojas técnicas `_CAL_TIPOS`, `_CAL_EVALUACIONES`, `_FECHAS` y `_CAL_FECHA_TIPOS` creadas, ocultas y reparadas de forma idempotente.
-- Migración idempotente del antiguo `_FECHAS.tipo_id` al modelo N:M, con ausencia de relaciones como semántica central de evento global.
-- Modal `📅 Configurar calendario` organizado en cinco acordeones, con separación basada en el tema, tipos activables y prácticas/repaso opcionales.
-- Fechas especiales de día único o rango, aplicables globalmente o a varios tipos sin duplicar el evento.
-- Mejora UX del configurador de calendario: al desactivar un tipo se colapsa su bloque sin perder datos, y cada fecha especial se muestra como tarjeta colapsable con resumen vivo.
-- Propuestas editables de fecha final para periodos y evaluaciones sin sobrescribir valores existentes.
-- Guardado coherente del calendario con validación completa, bloqueo, escrituras por bloques y restauración de las cuatro tablas ante errores.
-- Fechas reales, límites derivados del curso académico y tratamiento explícito de zona horaria.
-- Consultas reutilizables para tipos, evaluaciones, eventos, prioridad visual y días no lectivos.
-- Solapamientos conservados como datos independientes; fines de semana derivados sin filas técnicas.
-- Vista visible de `1 Calendario` compactada a septiembre-junio en cuadrícula 5x2, con leyenda horizontal y estadísticas sin ajuste de texto.
-- Guardar la configuración de calendario e `Inicializar / reparar` regeneran `1 Calendario` desde la fuente de verdad.
-- Categorías de fechas especiales simplificadas a `FESTIVO`, `REUNION` y `DESTACADO`, con normalización de categorías anteriores a `FESTIVO`.
-- Nueva iteración UX del calendario: configurador inicialmente colapsado, botón `+ Añadir fecha` al final, fin de evaluación con color común y layout visible en orden cabecera, leyenda, calendario y estadísticas.
-- Segunda iteración del configurador de Horario: modelo de tramos simplificado, migración segura, autoproposición, orden automático, confirmaciones internas y feedback de color inmediato.
-- Nueva iteración UX de Horario: cadena sin huecos, propagación temporal y catálogo de actividades simplificado con defaults editables.
-- Primera versión de `2 Horario`: vista semanal idempotente, compacta y derivada, integrada con guardado, reparación, Portada y sidebar.
-- Corrección de `2 Horario`: fórmulas sin separadores dependientes del locale, tramos identificados por rango y estilos RichText diferenciados para sigla y detalle.
-- Último ajuste de Horario: apoyo con case preservado, límite de 40 caracteres y tercera línea RichText compacta.
+## Horario — CERRADO / COMPLETADO
 
-## Pendiente inmediato
+- Modelo de tramos consecutivos en `_HOR_TRAMOS`.
+- Actividades y categorías, con actividades `MODULO` como catálogo definitivo de imparticiones.
+- Sesiones semanales y apoyo por sesión en `_HOR_SESIONES`.
+- Configurador, validación, persistencia y migración idempotente.
+- `2 Horario` con semana dinámica, RichText, colores, descansos, apoyo y sesión actual.
+- Sidebar, Portada y reparación integrados.
+- `actividad_id` fijado como identidad estable de cada impartición; no se creará `3 Módulos` ni `_MODULOS`.
 
-- Probar manualmente las seis paletas, el cierre del diálogo, la URL normalizada y el recorte de la Portada en `CP_DEV`.
-- Ampliar Preparar nuevo curso cuando existan calendario, tramos, módulos y horario.
-- Validación manual de Calendario completada; el bloque se considera cerrado.
-- Validar manualmente en `CP_DEV` la persistencia y presentación del apoyo junto con el acabado visual y temporal de `2 Horario`; tras esa validación podrá cerrarse el bloque Horario.
-- Evaluar en una fase posterior mover `Inicializar / reparar estructura` a un área `🛠️ Mantenimiento > 🔧 Reparar estructura` y retirar “Inicializar” de la UX final. Por ahora se conserva para desarrollo, migraciones y recuperación, no como operación cotidiana del profesor.
+# En curso
 
-## Fase 1 prevista
+## Alumnado
 
-Según la definición funcional:
+- Creada `3 Alumnado` como hoja global, visible y editable.
+- Columnas exactas: `Apellidos`, `Nombre`, `Grupo`, `Email`.
+- Tema, anchos, cabecera congelada, Email en texto y área preparada para pegado.
+- Reparación idempotente que conserva las filas de alumnado.
+- Estado `Pendiente`/`Configurado` y ayuda contextual en el Sidebar; Email no es obligatorio.
+- Preparar nuevo curso limpia los datos del activo después del backup y conserva la estructura.
+- Índice dinámico y orden de hojas gestionadas integrados.
 
-```text
-Estructura base
-_CONFIG
-_META
-0 Portada
-Menú "Cuaderno del profesor"
-Panel lateral básico
-Preparar nuevo curso
-```
+Pendiente de cierre del bloque:
 
-Estado actual de la fase:
+- validación manual en `CP_DEV` de creación, pegado, estado, reparación y limpieza anual;
+- confirmación visual del tema y de la posición tras `2 Horario`.
 
-- Completado: estructura base, configuración general, `_CONFIG`, `_META`, `0 Portada`, índice dinámico, menú inicial e infraestructura UI común.
-- Completado: panel lateral básico de ayuda y estado.
-- En curso: Preparar nuevo curso dispone de una primera versión para las áreas ya implementadas.
-- Completado: Fase 2 Calendario; modelo, persistencia, configuración, vista visible, estadísticas, eventos, prácticas/repaso, notas y sidebar.
-- En curso: bloque Horario; modelo, configurador y primera hoja visible implementados, pendientes de validación visual y cierre funcional.
+# Siguiente
 
-## Regla de actualización
+## Configuración de módulo
 
-Este archivo refleja **qué existe realmente**, no qué está previsto.
+Implementar, en un bloque posterior, `4 Config <SIGLA> · <GRUPO>` por cada actividad `MODULO`, con:
 
-Actualizarlo cuando:
+- asociación interna fiable a `actividad_id`;
+- calendario individual basado en sesiones reales;
+- tabla de UT con horas manuales;
+- evaluaciones procedentes de `_CAL_EVALUACIONES`;
+- pesos UT → evaluación y evaluación → curso;
+- totales automáticos;
+- recálculo explícito;
+- indicador de cambios pendientes sin trigger;
+- representación de día mixto.
 
-- se complete una funcionalidad;
-- se inicie o finalice una fase;
-- cambie de forma material el estado del proyecto.
+Nada de este bloque está implementado todavía.
 
-Los requisitos futuros pertenecen a `FUNCTIONAL_SPEC.md`, no a este documento.
+# Futuro
+
+## Seguimiento
+
+- `5 Seg <SIGLA> · <GRUPO>`.
+- Generado desde sesiones reales y UT.
+- Sin dependencia de alumnado.
+
+## Evaluación
+
+- `6 Eval <SIGLA> · <GRUPO>`.
+- Alumnado seleccionado inicialmente por Grupo.
+- Fórmulas referenciando `4 Config`, sin duplicar ponderaciones.
+- Notas de UT desde Moodle y columnas manuales Educa por evaluación y final.
+
+Ninguna hoja 4, 5 o 6 está implementada en la versión 1.4.0.
+
+# Decisiones vigentes
+
+- No existe `3 Módulos`.
+- No existen `_MODULOS`, `_MATRICULAS` ni `_UT`.
+- Imparticiones con igual sigla y distinto grupo son independientes.
+- Las familias 4/5/6 se ordenarán agrupadas por tipo y alfabéticamente dentro de cada familia.
+- Las hojas no gestionadas no se borran ni renombran.
+- Los colores nunca son fuente de verdad.
+- No hay triggers instalables, People API ni Google Calendar en V1.
+
+# Mejora aplazada
+
+- Función global `Cambiar tema del cuaderno` cuando estén construidas las hojas principales.
+- Posible traslado futuro de `Inicializar / reparar estructura` a un área de mantenimiento.
+
+# Regla de actualización
+
+Este archivo refleja únicamente lo implementado. Los requisitos futuros completos permanecen en `FUNCTIONAL_SPEC.md`.

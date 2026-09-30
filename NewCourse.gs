@@ -155,6 +155,11 @@ function getNewCourseProcessDefinition_(input) {
       run: ensureScheduleTechnicalStructure_,
     },
     {
+      label: 'Preparando Alumnado para el nuevo curso...',
+      completedMessage: 'Estructura de Alumnado conservada y datos anteriores eliminados.',
+      run: clearStudentsForNewCourse_,
+    },
+    {
       label: 'Finalizando...',
       completedMessage: 'Metadatos sincronizados y nuevo curso preparado.',
       run: finishNewCoursePreparation_,
@@ -288,6 +293,7 @@ function finishNewCoursePreparation_(processInput) {
     const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     initializeMetaStructure_();
     hideTechnicalSheets_(spreadsheet);
+    reorderManagedVisibleSheets_(spreadsheet);
     actualizarIndicePortada();
     spreadsheet.toast('Nuevo curso preparado.', CP.PROJECT_NAME, 5);
   } catch (error) {

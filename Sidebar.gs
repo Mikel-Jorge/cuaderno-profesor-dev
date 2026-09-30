@@ -35,6 +35,7 @@ function getSidebarStateItems_(config) {
   });
   const calendarConfigured = isCalendarConfiguredForSidebar_();
   const scheduleConfigured = isScheduleConfiguredForSidebar_();
+  const studentsConfigured = isStudentsConfiguredForSidebar_();
 
   return [
     {
@@ -52,8 +53,12 @@ function getSidebarStateItems_(config) {
       status: scheduleConfigured ? 'complete' : 'pending',
       statusLabel: scheduleConfigured ? 'Configurado' : 'Pendiente',
     },
-    { label: 'Módulos', status: 'unavailable', statusLabel: 'No disponible todavía' },
-    { label: 'Alumnado', status: 'unavailable', statusLabel: 'No disponible todavía' },
+    {
+      label: 'Alumnado',
+      status: studentsConfigured ? 'complete' : 'pending',
+      statusLabel: studentsConfigured ? 'Configurado' : 'Pendiente',
+    },
+    { label: 'Configuración de módulos', status: 'unavailable', statusLabel: 'No disponible todavía' },
   ];
 }
 
@@ -62,6 +67,7 @@ function getSidebarContextSectionId_(sheetName) {
   sectionBySheet[CP.SHEETS.COVER] = 'cover';
   sectionBySheet[CP.SHEETS.CALENDAR] = 'calendar';
   sectionBySheet[CP.SHEETS.SCHEDULE] = 'schedule';
+  sectionBySheet[CP.SHEETS.STUDENTS] = 'students';
   return sectionBySheet[sheetName] || 'first-steps';
 }
 
@@ -93,14 +99,19 @@ function getSidebarHelpSections_(contextSectionId) {
       text: 'Muestra la semana actual a partir de los tramos, actividades y sesiones configurados. El día y la sesión actuales se actualizan con fórmulas de la hoja.',
     },
     {
+      id: 'students',
+      title: 'Alumnado',
+      text: 'Introduce el alumnado una sola vez en esta hoja e indica su grupo. La futura Evaluación seleccionará por grupo; el email es opcional.',
+    },
+    {
       id: 'new-course',
       title: 'Preparar nuevo curso',
-      text: 'Permite revisar curso, profesor, centro y apariencia, crear una copia de seguridad y elegir una carpeta de Mi unidad. Calendario y horario se incorporarán cuando esas áreas estén disponibles.',
+      text: 'Permite revisar curso, profesor, centro y apariencia, crear una copia de seguridad y elegir una carpeta de Mi unidad. Tras verificar la copia, conserva la estructura de Alumnado y limpia sus datos para el nuevo curso.',
     },
     {
       id: 'initialize',
       title: 'Inicializar / reparar',
-      text: 'Comprueba la estructura base, reaplica la portada y actualiza el índice sin eliminar la configuración guardada.',
+      text: 'Comprueba la estructura base, repara Alumnado sin borrar sus filas, ordena las hojas gestionadas y actualiza el índice.',
     },
     {
       id: 'appearance',

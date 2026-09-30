@@ -8,6 +8,47 @@ function moveSheetToFirstPosition_(spreadsheet, sheet) {
   spreadsheet.moveActiveSheet(1);
 }
 
+function reorderManagedVisibleSheets_(spreadsheet) {
+  const workbook = spreadsheet || SpreadsheetApp.getActiveSpreadsheet();
+  const activeSheet = workbook.getActiveSheet();
+  const activeSheetId = activeSheet && activeSheet.getSheetId();
+  const familyPatterns = [/^4 Config\s+.+$/, /^5 Seg\s+.+$/, /^6 Eval\s+.+$/];
+  const fixedNames = [
+    CP.SHEETS.COVER,
+    CP.SHEETS.CALENDAR,
+    CP.SHEETS.SCHEDULE,
+    CP.SHEETS.STUDENTS,
+  ];
+  const sheets = workbook.getSheets();
+  const ordered = [];
+
+  fixedNames.forEach(function(sheetName) {
+    const sheet = workbook.getSheetByName(sheetName);
+    if (sheet) ordered.push(sheet);
+  });
+
+  familyPatterns.forEach(function(pattern) {
+    sheets.filter(function(sheet) {
+      return pattern.test(sheet.getName());
+    }).sort(function(first, second) {
+      return first.getName().localeCompare(second.getName(), 'es', { sensitivity: 'base' });
+    }).forEach(function(sheet) {
+      ordered.push(sheet);
+    });
+  });
+
+  ordered.forEach(function(sheet, index) {
+    sheet.showSheet();
+    workbook.setActiveSheet(sheet);
+    workbook.moveActiveSheet(index + 1);
+  });
+
+  const previousActiveSheet = workbook.getSheets().find(function(sheet) {
+    return sheet.getSheetId() === activeSheetId && !sheet.isSheetHidden();
+  });
+  if (previousActiveSheet) workbook.setActiveSheet(previousActiveSheet);
+}
+
 function hideTechnicalSheets_(spreadsheet) {
   Object.keys(CP.SHEETS).map(function(key) {
     return CP.SHEETS[key];
