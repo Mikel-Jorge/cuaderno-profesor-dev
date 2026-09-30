@@ -1,8 +1,8 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-09-30
-**Estado general:** Portada, Calendario y Horario completados; Alumnado en curso
-**Versión vigente:** `1.4.1`
+**Estado general:** Portada, Calendario, Horario y Alumnado operativos; siguiente bloque `4 Config`
+**Versión vigente:** `1.4.2`
 **Esquema vigente:** `8`
 
 # Completado
@@ -15,7 +15,8 @@
 - Índice dinámico navegable de todas las hojas visibles, excluyendo `_...`.
 - Datos generales, temas claros y branding común en diálogos y Sidebar.
 - Infraestructura de confirmaciones y procesos con progreso.
-- Preparar nuevo curso con backup obligatorio verificado, movimiento opcional, renombrado, actualización de datos y recuperación defensiva.
+- Preparar nuevo curso con backup obligatorio verificado, movimiento opcional, renombrado y transición anual coordinada con snapshots y recuperación defensiva.
+- Conservación de profesor, centro, tema, tramos y actividades; limpieza de Alumnado, sesiones/apoyos y configuración anual del Calendario.
 
 ## Calendario — CERRADO / COMPLETADO
 
@@ -23,6 +24,8 @@
 - Tipos de enseñanza, evaluaciones, periodos, fechas especiales, solapamientos y prioridad visual.
 - Cálculos de lectividad, estadísticas, prácticas y repaso.
 - `1 Calendario` septiembre-junio, notas, tema, recorte y regeneración idempotente.
+- Precarga editable de festivos habituales, Navidad 24/12–06/01 y Semana Santa calculada mediante Pascua gregoriana.
+- Regeneración limpia de notas y marcas; meses y propuestas visibles aunque los tipos estén pendientes.
 - Estado y ayuda contextual en el Sidebar.
 
 ## Horario — CERRADO / COMPLETADO
@@ -31,13 +34,12 @@
 - Actividades y categorías, con actividades `MODULO` como catálogo definitivo de imparticiones.
 - Sesiones semanales y apoyo por sesión en `_HOR_SESIONES`.
 - Configurador, validación, persistencia y migración idempotente.
-- `2 Horario` con semana dinámica, RichText, colores, descansos, apoyo y sesión actual.
+- `2 Horario` con semana dinámica, RichText, colores, descansos, apoyo y tramo actual resaltado con fondo contrastado.
+- Semana actual de lunes a viernes y semana siguiente durante sábado y domingo.
 - Sidebar, Portada y reparación integrados.
 - `actividad_id` fijado como identidad estable de cada impartición; no se creará `3 Módulos` ni `_MODULOS`.
 
-# En curso
-
-## Alumnado
+# Alumnado — FUNCIONANDO
 
 - Creada `3 Alumnado` como hoja global, visible y editable.
 - Columnas exactas: `Apellidos`, `Nombre`, `Grupo`, `Email`.
@@ -86,14 +88,14 @@ Nada de este bloque está implementado todavía.
 - Fórmulas referenciando `4 Config`, sin duplicar ponderaciones.
 - Notas de UT desde Moodle y columnas manuales Educa por evaluación y final.
 
-Ninguna hoja 4, 5 o 6 está implementada en la versión 1.4.1.
+Ninguna hoja 4, 5 o 6 está implementada en la versión 1.4.2. La política futura de cambio de curso ya exige eliminar las 4 y 6 antiguas y archivar las 5 como `OLD AACC` sin referencias rotas. Solo está implementada ahora la agrupación de nombres de la familia 5 por sigla; el archivado efectivo queda pendiente.
 
 # Decisiones vigentes
 
 - No existe `3 Módulos`.
 - No existen `_MODULOS`, `_MATRICULAS` ni `_UT`.
 - Imparticiones con igual sigla y distinto grupo son independientes.
-- Las familias 4/5/6 se ordenarán agrupadas por tipo y alfabéticamente dentro de cada familia.
+- Las familias 4/5/6 se ordenan agrupadas por tipo; la familia 5 agrupa activos e históricos por sigla independientemente del grupo.
 - Las hojas no gestionadas no se borran ni renombran.
 - Los colores nunca son fuente de verdad.
 - No hay triggers instalables, People API ni Google Calendar en V1.

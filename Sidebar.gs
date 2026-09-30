@@ -91,12 +91,12 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'calendar',
       title: 'Calendario',
-      text: 'Muestra el curso académico de septiembre a junio desde los datos estructurados. Los colores son solo representación visual.',
+      text: 'Muestra septiembre-junio desde los datos estructurados. Al preparar curso se proponen festivos y vacaciones editables; compruébalos con el calendario de tu centro.',
     },
     {
       id: 'schedule',
       title: 'Horario',
-      text: 'Muestra la semana actual a partir de los tramos, actividades y sesiones configurados. El día y la sesión actuales se actualizan con fórmulas de la hoja.',
+      text: 'Muestra la semana actual de lunes a viernes y la siguiente durante el fin de semana. El día y el tramo actuales se actualizan con fórmulas de la hoja.',
     },
     {
       id: 'students',
@@ -106,7 +106,7 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'new-course',
       title: 'Preparar nuevo curso',
-      text: 'Permite revisar curso, profesor, centro y apariencia, crear una copia de seguridad y elegir una carpeta de Mi unidad. Tras verificar la copia, conserva la estructura de Alumnado y limpia sus datos para el nuevo curso.',
+      text: 'Tras verificar el backup, conserva profesor, centro, tema, tramos y actividades; limpia Alumnado, asignaciones semanales y datos anuales del calendario, y propone festivos editables.',
     },
     {
       id: 'initialize',

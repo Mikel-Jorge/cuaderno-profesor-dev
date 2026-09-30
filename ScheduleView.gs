@@ -108,7 +108,7 @@ function renderScheduleHeader_(sheet, model) {
     .setFontSize(17)
     .setFontWeight('bold')
     .setHorizontalAlignment('center');
-  const weekRange = setMergedRangeValue_(sheet.getRange('B2:F2'), 'SEMANA ACTUAL');
+  const weekRange = setMergedRangeValue_(sheet.getRange('B2:F2'), 'HORARIO SEMANAL');
   weekRange
     .setBackground(colors.surface)
     .setFontColor(colors.mutedText)
@@ -120,7 +120,7 @@ function renderScheduleHeader_(sheet, model) {
     .setFontWeight('bold')
     .setHorizontalAlignment('center');
   const formulas = CP_SCHEDULE_DAYS.map(function(day, index) {
-    return '=TODAY()-WEEKDAY(TODAY()-1)+1+' + index;
+    return '=TODAY()-WEEKDAY(TODAY()-1)+1+7*(WEEKDAY(TODAY()-1)>5)+' + index;
   });
   sheet.getRange(3, 2, 1, 5)
     .setFormulas([formulas])
@@ -268,8 +268,9 @@ function applyScheduleCurrentTimeRules_(sheet, model) {
       .build(),
     SpreadsheetApp.newConditionalFormatRule()
       .whenFormulaSatisfied('=(WEEKDAY(TODAY()-1)<6)*(NOW()-TODAY()>=$G' + firstRow + ')*(NOW()-TODAY()<$H' + firstRow + ')')
+      .setBackground(colors.accent)
+      .setFontColor(colors.onAccent)
       .setBold(true)
-      .setUnderline(true)
       .setRanges([sheet.getRange(firstRow, 1, model.slots.length, 1)])
       .build(),
     SpreadsheetApp.newConditionalFormatRule()
@@ -308,7 +309,9 @@ function isScheduleConfiguredForSidebar_() {
   try {
     const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     assertScheduleStructureReady_(spreadsheet);
-    return getScheduleTimeSlots_().length > 0 && Boolean(spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE));
+    return getScheduleTimeSlots_().length > 0 &&
+      getWeeklySchedule_().length > 0 &&
+      Boolean(spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE));
   } catch (error) {
     return false;
   }

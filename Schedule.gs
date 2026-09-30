@@ -387,6 +387,17 @@ function writeScheduleTable_(sheet, headers, rows) {
   sheet.getRange(2, 1, Math.max(1, rows.length), headers.length).setNumberFormat('@');
 }
 
+function clearWeeklyScheduleForNewCourse_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  assertScheduleStructureReady_(spreadsheet);
+  writeScheduleTable_(
+    spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_SESSIONS),
+    CP_SCHEDULE_HEADERS.SESSIONS,
+    []
+  );
+  return 'Asignaciones semanales y apoyos del curso anterior eliminados.';
+}
+
 function captureScheduleSnapshots_(spreadsheet) {
   return [
     [CP.SHEETS.SCHEDULE_SLOTS, CP_SCHEDULE_HEADERS.SLOTS.length],

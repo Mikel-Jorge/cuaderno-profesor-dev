@@ -202,6 +202,138 @@ function initializeCalendarTableSheet_(sheet, headers, dateColumns) {
   sheet.autoResizeColumns(1, headers.length);
 }
 
+function resetCalendarForNewCourse_(academicYear) {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  assertCalendarStructureReady_(spreadsheet);
+  validateAcademicYear_(academicYear);
+  const timeZone = spreadsheet.getSpreadsheetTimeZone();
+  const supportedTypeIds = CP_CALENDAR_TYPE_DEFINITIONS.map(function(definition) {
+    return definition.id;
+  });
+  const evaluationsSheet = spreadsheet.getSheetByName(CP.SHEETS.CALENDAR_EVALUATIONS);
+  const evaluationRows = readCalendarTableRows_(
+    evaluationsSheet,
+    CP_CALENDAR_HEADERS.EVALUATIONS.length
+  ).filter(function(row) {
+    return supportedTypeIds.indexOf(normalizeCalendarText_(row[1])) !== -1 &&
+      normalizeCalendarText_(row[0]) && normalizeCalendarText_(row[3]);
+  }).map(function(row) {
+    return [row[0], row[1], row[2], row[3], ''];
+  }).sort(function(first, second) {
+    const firstType = supportedTypeIds.indexOf(normalizeCalendarText_(first[1]));
+    const secondType = supportedTypeIds.indexOf(normalizeCalendarText_(second[1]));
+    return firstType - secondType || Number(first[2]) - Number(second[2]);
+  });
+  const typeRows = CP_CALENDAR_TYPE_DEFINITIONS.map(function(definition) {
+    return [definition.id, definition.name, false, '', '', '', '', '', ''];
+  });
+  const eventRows = buildDefaultCalendarEventsForAcademicYear_(academicYear, timeZone)
+    .map(function(event) {
+      return [
+        event.id,
+        event.startDate,
+        event.endDate,
+        event.category,
+        event.description,
+        event.priority,
+      ];
+    });
+
+  writeCalendarTable_(
+    spreadsheet.getSheetByName(CP.SHEETS.CALENDAR_TYPES),
+    CP_CALENDAR_HEADERS.TYPES,
+    typeRows,
+    [4, 5, 6, 7, 8, 9]
+  );
+  writeCalendarTable_(evaluationsSheet, CP_CALENDAR_HEADERS.EVALUATIONS, evaluationRows, [5]);
+  writeCalendarTable_(
+    spreadsheet.getSheetByName(CP.SHEETS.CALENDAR_DATES),
+    CP_CALENDAR_HEADERS.DATES,
+    eventRows,
+    [2, 3]
+  );
+  writeCalendarTable_(
+    spreadsheet.getSheetByName(CP.SHEETS.CALENDAR_DATE_TYPES),
+    CP_CALENDAR_HEADERS.DATE_TYPES,
+    [],
+    []
+  );
+  hideTechnicalSheets_(spreadsheet);
+  return 'Calendario anual reiniciado y festivos habituales precargados.';
+}
+
+function buildDefaultCalendarEventsForAcademicYear_(academicYear, timeZone) {
+  const years = parseAcademicYear_(academicYear);
+  const startYear = years.startYear;
+  const endYear = years.endYear;
+  const easterSunday = calculateGregorianEasterSunday_(endYear, timeZone);
+  const allSaints = createCalendarDate_(startYear, 11, 1, timeZone);
+  const proposedAllSaints = Number(Utilities.formatDate(allSaints, timeZone, 'u')) === 7
+    ? addCalendarDays_(allSaints, 1, timeZone)
+    : allSaints;
+  const definitions = [
+    [createCalendarDate_(startYear, 10, 12, timeZone), null, 'Fiesta Nacional'],
+    [proposedAllSaints, null, 'Todos los Santos'],
+    [createCalendarDate_(startYear, 12, 3, timeZone), null, 'D\u00eda de Navarra'],
+    [createCalendarDate_(startYear, 12, 6, timeZone), null, 'D\u00eda de la Constituci\u00f3n'],
+    [createCalendarDate_(startYear, 12, 8, timeZone), null, 'Inmaculada Concepci\u00f3n'],
+    [
+      createCalendarDate_(startYear, 12, 24, timeZone),
+      createCalendarDate_(endYear, 1, 6, timeZone),
+      'Vacaciones de Navidad',
+    ],
+    [addCalendarDays_(easterSunday, -3, timeZone), addCalendarDays_(easterSunday, -2, timeZone), 'Semana Santa'],
+    [
+      addCalendarDays_(easterSunday, 1, timeZone),
+      addCalendarDays_(easterSunday, 5, timeZone),
+      'Vacaciones de Semana Santa',
+    ],
+    [createCalendarDate_(endYear, 5, 1, timeZone), null, 'D\u00eda del Trabajo'],
+  ];
+
+  return definitions.map(function(definition) {
+    return {
+      id: createCalendarRecordId_('PRE'),
+      startDate: definition[0],
+      endDate: definition[1] || definition[0],
+      category: 'FESTIVO',
+      typeIds: [],
+      description: definition[2],
+      priority: CP_CALENDAR_CATEGORIES.FESTIVO.priority,
+    };
+  });
+}
+
+function createCalendarDate_(year, month, day, timeZone) {
+  const dateKey = [
+    String(year).padStart(4, '0'),
+    String(month).padStart(2, '0'),
+    String(day).padStart(2, '0'),
+  ].join('-');
+  return parseCalendarDate_(dateKey, timeZone, 'la fecha precargada', true);
+}
+
+function calculateGregorianEasterSunday_(year, timeZone) {
+  if (!Number.isInteger(year) || year < 1583) {
+    throw new Error('El a\u00f1o para calcular la Pascua no es v\u00e1lido.');
+  }
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return createCalendarDate_(year, month, day, timeZone);
+}
+
 function abrirConfiguracionCalendario() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   let calendarConfig;
@@ -433,6 +565,7 @@ function normalizeAndValidateCalendarConfig_(input, spreadsheet) {
 
 function normalizeCalendarType_(input, definition, timeZone) {
   const evaluations = Array.isArray(input.evaluations) ? input.evaluations : [];
+  const active = input.active === true;
   const seenEvaluationIds = {};
   const configurePractices = input.configurePractices === undefined
     ? Boolean(input.practicesStart || input.practicesEnd)
@@ -443,7 +576,7 @@ function normalizeCalendarType_(input, definition, timeZone) {
   return {
     id: definition.id,
     name: definition.name,
-    active: input.active === true,
+    active: active,
     startDate: parseCalendarDate_(input.startDate, timeZone, 'la fecha de inicio', false),
     endDate: parseCalendarDate_(input.endDate, timeZone, 'la fecha de fin', false),
     practicesStart: configurePractices
@@ -472,7 +605,7 @@ function normalizeCalendarType_(input, definition, timeZone) {
           evaluation && evaluation.endDate,
           timeZone,
           'la fecha final de evaluación',
-          true
+          active
         ),
       };
     }),
@@ -988,7 +1121,9 @@ function buildCalendarRenderModel_(spreadsheet) {
 function renderCalendarSheet_(sheet, model) {
   const layout = getCalendarSheetLayout_(model);
   ensureSheetSize_(sheet, layout.rows, layout.columns);
+  clearCalendarDayNotes_(sheet, layout);
   sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).breakApart();
+  sheet.setConditionalFormatRules([]);
   const canvas = sheet.getRange(1, 1, layout.rows, layout.columns);
   canvas.clear();
   canvas
@@ -1006,16 +1141,13 @@ function renderCalendarSheet_(sheet, model) {
   applyCalendarDimensions_(sheet, layout);
   renderCalendarHeader_(sheet, model, layout);
 
-  if (!model.activeTypes.length) {
-    renderCalendarNoActiveTypes_(sheet, model, layout);
-    trimSheetToBounds_(sheet, 8, layout.columns);
-    return;
-  }
-
   renderCalendarLegend_(sheet, model, layout);
-  clearCalendarDayNotes_(sheet, layout);
   renderCalendarMonths_(sheet, model, layout);
-  renderCalendarStats_(sheet, model, layout);
+  if (model.activeTypes.length) {
+    renderCalendarStats_(sheet, model, layout);
+  } else {
+    renderCalendarNoActiveTypes_(sheet, model, layout);
+  }
   trimSheetToBounds_(sheet, layout.rows, layout.columns);
 }
 
@@ -1129,8 +1261,8 @@ function renderCalendarHeader_(sheet, model, layout) {
 
 function renderCalendarNoActiveTypes_(sheet, model, layout) {
   setMergedRangeValue_(
-    sheet.getRange(5, 1, 3, layout.columns),
-    'No hay tipos de enseñanza activos con fechas válidas. Configura al menos un tipo para generar el calendario visible.'
+    sheet.getRange(layout.statsRow, 1, 2, layout.columns),
+    'Fechas de enseñanza pendientes de configurar. Los festivos mostrados son propuestas editables.'
   )
     .setBackground(model.theme.colors.surface)
     .setFontColor(model.theme.colors.mutedText)

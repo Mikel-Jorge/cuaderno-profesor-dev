@@ -2,7 +2,7 @@
 
 **Estado:** vigente
 **Última revisión:** 2026-09-30
-**Versión:** `1.4.1` / esquema `8`
+**Versión:** `1.4.2` / esquema `8`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -21,7 +21,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.4.1` y esquema `8`.
+- `Config.gs`: constantes, nombres de hojas, versión `1.4.2` y esquema `8`.
 - `Theme.gs`: tema global, presets y colores semánticos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -85,7 +85,7 @@ Las hojas generadas usan `ensureSheetSize_()` antes de escribir y `trimSheetToBo
 3. `2 Horario`;
 4. `3 Alumnado`;
 5. todas las `4 Config ...`, ordenadas alfabéticamente;
-6. todas las `5 Seg ...`, ordenadas alfabéticamente;
+6. todas las `5 Seg ...`, agrupadas por sigla, con activas antes que históricas y sin exigir el mismo grupo;
 7. todas las `6 Eval ...`, ordenadas alfabéticamente.
 
 La utilidad mueve solo hojas con nombres gestionados, no borra ni renombra hojas ajenas y conserva el orden relativo de las no gestionadas. Las técnicas continúan ocultas.
@@ -98,7 +98,9 @@ La utilidad mueve solo hojas con nombres gestionados, no borra ni renombra hojas
 
 El guardado valida el modelo completo, usa bloqueo de documento, conserva snapshots y escribe en bloque con intento de rollback. Fines de semana, lectividad, finales de evaluación y estadísticas se derivan en código.
 
-`1 Calendario` es una vista idempotente septiembre-junio. Se regenera desde el modelo, aplica tema y recorta su layout. Calendario queda cerrado funcionalmente.
+`resetCalendarForNewCourse_()` conserva los cuatro tipos estables y la estructura de evaluaciones, pero desactiva tipos, vacía todas sus fechas, elimina eventos y relaciones anteriores y genera propuestas globales para el nuevo curso. Navidad se deriva del par de años académicos y Pascua usa el algoritmo gregoriano de Meeus/Jones/Butcher; no hay consultas de red en ejecución. No se generan puentes o días de centro no verificables.
+
+`1 Calendario` es una vista idempotente septiembre-junio. Antes de regenerarse limpia notas, formato y reglas del área gestionada. Sin tipos activos sigue dibujando los meses y eventos globales, omite estadísticas y muestra configuración pendiente. Calendario queda cerrado funcionalmente.
 
 # 7. Modelo de Horario
 
@@ -108,7 +110,7 @@ El guardado valida el modelo completo, usa bloqueo de documento, conserva snapsh
 
 `ensureScheduleTechnicalStructure_()` crea o repara las tablas y mantiene la migración idempotente anterior. El configurador solo lee al abrir. El guardado normaliza, valida y persiste antes de renderizar.
 
-`ScheduleView.gs` genera `2 Horario` exclusivamente desde esas tablas, con semana dinámica, RichText, apoyo, descansos, colores y resaltado actual. Horario queda cerrado funcionalmente.
+`ScheduleView.gs` genera `2 Horario` exclusivamente desde esas tablas. Las fórmulas muestran la semana actual de lunes a viernes y la siguiente durante el fin de semana. El formato condicional destaca con `accent` solo la celda horaria del tramo actual y no altera los fondos de actividades. Horario queda cerrado funcionalmente.
 
 # 8. Identidad de impartición
 
@@ -139,9 +141,11 @@ No existe matrícula por módulo. La futura Evaluación filtrará por coincidenc
 
 El proceso UI ejecuta pasos independientes. Primero crea y verifica el backup en la carpeta original. Solo después puede mover, renombrar y modificar el cuaderno activo.
 
-`clearStudentsForNewCourse_()` repara la estructura y limpia únicamente el rango de datos A:D desde la fila 2. La hoja y la cabecera permanecen. Como el backup es anterior, conserva el alumnado del curso previo.
+Los datos se separan en reutilizables y anuales. `_CONFIG` conserva profesor, centro y tema; `_HOR_TRAMOS` y `_HOR_ACTIVIDADES` conservan estructura, catálogo e IDs. Alumnado, `_HOR_SESIONES` y todos los valores anuales del Calendario se reinician.
 
-La política de Calendario y Horario no cambia en esta versión. La finalización sincroniza `_META`, oculta hojas técnicas, reordena hojas gestionadas y actualiza el índice.
+Tras actualizar configuración, `prepareNewCourseAnnualData_()` captura snapshots de Alumnado y de las tablas de Horario y Calendario. En una única transición limpia Alumnado, vacía sesiones y apoyos, reinicia el calendario, precarga propuestas, regenera ambas vistas y finaliza Portada, `_META`, ocultación, orden e índice. Si falla, intenta restaurar los snapshots, la configuración, nombre y ubicación, y declara explícitamente cualquier restauración parcial. El backup completo permanece como garantía.
+
+`Inicializar / reparar estructura` no llama a estas funciones anuales. Por tanto, una reparación conserva datos y no recupera propuestas que el docente haya eliminado.
 
 # 11. Arquitectura futura de Config, Seg y Eval
 
@@ -180,6 +184,8 @@ El recálculo explícito distribuye las UT secuencialmente sobre sesiones reales
 
 Se genera desde sesiones reales y distribución de UT. No depende de `3 Alumnado`. Mantiene datos de propuesta, realizado, horas actuales, acumulado, total y mejoras. Los colores de UT son presentación.
 
+En el cambio de curso, las futuras `4 Config` y `6 Eval` gestionadas se eliminarán del activo después del backup. Las `5 Seg` se convertirán en archivos `OLD AACC`, conservarán contenido, notas y aspecto, y materializarán previamente las fórmulas que quedarían rotas. Requerirán identidad interna distinta del nombre y quedarán excluidas de estados y regeneraciones activas. La implementación se pospone hasta que existan estas hojas; en 1.4.2 solo está preparada su ordenación por sigla.
+
 ## 11.4. `6 Eval`
 
 Selecciona inicialmente alumnos por igualdad entre `3 Alumnado.Grupo` y el grupo de la actividad. Sus fórmulas referencian la configuración vigente de `4 Config`; no copian ponderaciones como valores congelados.
@@ -192,7 +198,7 @@ El Sidebar deriva estados desde las fuentes actuales:
 
 - Datos generales: claves mínimas de `_CONFIG`.
 - Calendario: modelo configurado y vista disponible.
-- Horario: tramos y vista disponibles.
+- Horario: tramos, al menos una asignación semanal y vista disponibles.
 - Alumnado: al menos una fila válida.
 - Configuración de módulos: no disponible hasta su implementación.
 

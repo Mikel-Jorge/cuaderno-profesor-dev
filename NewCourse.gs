@@ -145,24 +145,9 @@ function getNewCourseProcessDefinition_(input) {
       run: updateNewCourseAppearance_,
     },
     {
-      label: 'Actualizando la portada...',
-      completedMessage: 'Portada e índice actualizados.',
-      run: updateNewCourseCover_,
-    },
-    {
-      label: 'Comprobando la estructura tecnica de Horario...',
-      completedMessage: 'Estructura tecnica de Horario preparada.',
-      run: ensureScheduleTechnicalStructure_,
-    },
-    {
-      label: 'Preparando Alumnado para el nuevo curso...',
-      completedMessage: 'Estructura de Alumnado conservada y datos anteriores eliminados.',
-      run: clearStudentsForNewCourse_,
-    },
-    {
-      label: 'Finalizando...',
-      completedMessage: 'Metadatos sincronizados y nuevo curso preparado.',
-      run: finishNewCoursePreparation_,
+      label: 'Reiniciando datos anuales y regenerando vistas...',
+      completedMessage: 'Datos anuales reiniciados y vistas del nuevo curso preparadas.',
+      run: prepareNewCourseAnnualData_,
     }
   );
 
@@ -280,28 +265,116 @@ function applyNewCourseConfigKeys_(processInput, keys, options) {
   }
 }
 
-function updateNewCourseCover_(processInput) {
-  try {
-    initializeCoverStructure_();
-  } catch (error) {
-    rollbackNewCoursePreparation_(processInput, error);
-  }
-}
-
-function finishNewCoursePreparation_(processInput) {
+function prepareNewCourseAnnualData_(processInput) {
   try {
     const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    initializeMetaStructure_();
-    hideTechnicalSheets_(spreadsheet);
-    reorderManagedVisibleSheets_(spreadsheet);
-    actualizarIndicePortada();
-    spreadsheet.toast('Nuevo curso preparado.', CP.PROJECT_NAME, 5);
+    initializeCalendarStructure_();
+    ensureScheduleTechnicalStructure_();
+    assertScheduleStructureReady_(spreadsheet);
+    assertCalendarStructureReady_(spreadsheet);
+    const snapshots = captureNewCourseAnnualSnapshots_(spreadsheet);
+
+    try {
+      clearStudentsForNewCourse_();
+      clearWeeklyScheduleForNewCourse_();
+      resetCalendarForNewCourse_(processInput.config[CP.CONFIG_KEYS.ACADEMIC_YEAR]);
+      createOrRepairCalendarSheet_();
+      createOrRepairScheduleSheet_();
+      initializeCoverStructure_();
+      initializeMetaStructure_();
+      hideTechnicalSheets_(spreadsheet);
+      reorderManagedVisibleSheets_(spreadsheet);
+      actualizarIndicePortada();
+      spreadsheet.toast('Nuevo curso preparado.', CP.PROJECT_NAME, 5);
+    } catch (error) {
+      let annualDataRestored = true;
+      try {
+        restoreNewCourseAnnualSnapshots_(spreadsheet, snapshots);
+      } catch (restoreError) {
+        annualDataRestored = false;
+      }
+      const detail = error && error.message
+        ? error.message
+        : 'No se han podido reiniciar los datos anuales.';
+      const recovery = annualDataRestored
+        ? ' Se han restaurado los datos anuales anteriores en el cuaderno activo.'
+        : ' No se han podido restaurar completamente los datos anuales en el cuaderno activo.';
+      rollbackNewCoursePreparation_(
+        processInput,
+        new Error(detail + recovery),
+        { rebuildDerivedViews: annualDataRestored }
+      );
+    }
   } catch (error) {
+    if (error && error.newCourseRollbackHandled) {
+      throw error;
+    }
     rollbackNewCoursePreparation_(processInput, error);
+  }
+  return 'Alumnado, asignaciones y calendario anual reiniciados; vistas actualizadas.';
+}
+
+function captureNewCourseAnnualSnapshots_(spreadsheet) {
+  const studentsSheet = spreadsheet.getSheetByName(CP.SHEETS.STUDENTS);
+  const studentsRows = studentsSheet ? Math.max(1, studentsSheet.getLastRow()) : 0;
+  return {
+    students: {
+      existed: Boolean(studentsSheet),
+      values: studentsSheet
+        ? studentsSheet.getRange(1, 1, studentsRows, CP_STUDENT_HEADERS.length).getValues()
+        : [],
+    },
+    schedule: captureScheduleSnapshots_(spreadsheet),
+    calendar: captureCalendarTableSnapshots_(spreadsheet),
+  };
+}
+
+function restoreNewCourseAnnualSnapshots_(spreadsheet, snapshots) {
+  let failed = false;
+  [
+    function() { restoreNewCourseStudentsSnapshot_(spreadsheet, snapshots.students); },
+    function() { restoreScheduleSnapshots_(spreadsheet, snapshots.schedule); },
+    function() { restoreCalendarTableSnapshots_(spreadsheet, snapshots.calendar); },
+  ].forEach(function(restore) {
+    try {
+      restore();
+    } catch (error) {
+      failed = true;
+    }
+  });
+  if (failed) {
+    throw new Error('No se han podido restaurar todos los datos anuales.');
   }
 }
 
-function rollbackNewCoursePreparation_(processInput, originalError) {
+function restoreNewCourseStudentsSnapshot_(spreadsheet, snapshot) {
+  const currentSheet = spreadsheet.getSheetByName(CP.SHEETS.STUDENTS);
+  if (!snapshot.existed) {
+    if (currentSheet) spreadsheet.deleteSheet(currentSheet);
+    return;
+  }
+  const sheet = currentSheet || spreadsheet.insertSheet(CP.SHEETS.STUDENTS);
+  const rowCount = Math.max(1, sheet.getLastRow(), snapshot.values.length);
+  ensureSheetSize_(sheet, rowCount, CP_STUDENT_HEADERS.length);
+  sheet.getRange(1, 1, rowCount, CP_STUDENT_HEADERS.length).clearContent();
+  sheet.getRange(1, 1, snapshot.values.length, CP_STUDENT_HEADERS.length)
+    .setValues(snapshot.values);
+  createOrRepairStudentsSheet_();
+}
+
+function rebuildNewCourseDerivedViews_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  createOrRepairCalendarSheet_();
+  createOrRepairScheduleSheet_();
+  initializeCoverStructure_();
+  initializeMetaStructure_();
+  hideTechnicalSheets_(spreadsheet);
+  reorderManagedVisibleSheets_(spreadsheet);
+  actualizarIndicePortada();
+}
+
+function rollbackNewCoursePreparation_(processInput, originalError, options) {
+  const rollbackOptions = options || {};
   const outcomes = [];
   let rollbackFailed = false;
 
@@ -344,6 +417,16 @@ function rollbackNewCoursePreparation_(processInput, originalError) {
     outcomes.push('No se han podido restaurar completamente el nombre y la ubicación originales.');
   }
 
+  if (rollbackOptions.rebuildDerivedViews && !rollbackFailed) {
+    try {
+      rebuildNewCourseDerivedViews_();
+      outcomes.push('Se han regenerado las vistas con los datos restaurados.');
+    } catch (error) {
+      rollbackFailed = true;
+      outcomes.push('No se han podido regenerar completamente las vistas restauradas.');
+    }
+  }
+
   outcomes.push('La copia de seguridad se conserva.');
 
   const prefix = originalError && originalError.message
@@ -352,7 +435,9 @@ function rollbackNewCoursePreparation_(processInput, originalError) {
   const suffix = rollbackFailed
     ? ' Revisa manualmente el cuaderno antes de continuar.'
     : '';
-  throw new Error(prefix + ' ' + outcomes.join(' ') + suffix);
+  const rollbackError = new Error(prefix + ' ' + outcomes.join(' ') + suffix);
+  rollbackError.newCourseRollbackHandled = true;
+  throw rollbackError;
 }
 
 function restoreNewCourseFileIdentity_(processInput) {

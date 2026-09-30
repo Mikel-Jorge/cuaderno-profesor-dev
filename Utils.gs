@@ -27,10 +27,13 @@ function reorderManagedVisibleSheets_(spreadsheet) {
     if (sheet) ordered.push(sheet);
   });
 
-  familyPatterns.forEach(function(pattern) {
+  familyPatterns.forEach(function(pattern, familyIndex) {
     sheets.filter(function(sheet) {
       return pattern.test(sheet.getName());
     }).sort(function(first, second) {
+      if (familyIndex === 1) {
+        return compareTrackingSheetNames_(first.getName(), second.getName());
+      }
       return first.getName().localeCompare(second.getName(), 'es', { sensitivity: 'base' });
     }).forEach(function(sheet) {
       ordered.push(sheet);
@@ -47,6 +50,35 @@ function reorderManagedVisibleSheets_(spreadsheet) {
     return sheet.getSheetId() === activeSheetId && !sheet.isSheetHidden();
   });
   if (previousActiveSheet) workbook.setActiveSheet(previousActiveSheet);
+}
+
+function compareTrackingSheetNames_(firstName, secondName) {
+  const first = parseTrackingSheetNameForOrder_(firstName);
+  const second = parseTrackingSheetNameForOrder_(secondName);
+  return first.acronym.localeCompare(second.acronym, 'es', { sensitivity: 'base' }) ||
+    Number(first.historical) - Number(second.historical) ||
+    first.group.localeCompare(second.group, 'es', { sensitivity: 'base' }) ||
+    second.academicYear.localeCompare(first.academicYear, 'es', { sensitivity: 'base' }) ||
+    first.name.localeCompare(second.name, 'es', { sensitivity: 'base' });
+}
+
+function parseTrackingSheetNameForOrder_(sheetName) {
+  const name = String(sheetName || '');
+  let body = name.replace(/^5 Seg\s+/, '').trim();
+  const historicalMatch = body.match(/\s+OLD\s+(\d{4})$/i);
+  const academicYear = historicalMatch ? historicalMatch[1] : '';
+  if (historicalMatch) {
+    body = body.slice(0, historicalMatch.index).trim();
+  }
+  const separator = ' · ';
+  const separatorIndex = body.indexOf(separator);
+  return {
+    name: name,
+    acronym: (separatorIndex === -1 ? body : body.slice(0, separatorIndex)).trim(),
+    group: separatorIndex === -1 ? '' : body.slice(separatorIndex + separator.length).trim(),
+    historical: Boolean(historicalMatch),
+    academicYear: academicYear,
+  };
 }
 
 function hideTechnicalSheets_(spreadsheet) {

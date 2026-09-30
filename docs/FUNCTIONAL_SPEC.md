@@ -10,8 +10,8 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 ## Definición funcional del proyecto
 
 **Estado:** especificación funcional vigente
-**Versión del documento:** 2.1
-**Versión del cuaderno:** `1.4.1`
+**Versión del documento:** 2.2
+**Versión del cuaderno:** `1.4.2`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.4.1
+# 2. Estado funcional de la versión 1.4.2
 
 Están cerrados funcionalmente:
 
@@ -79,7 +79,7 @@ Las hojas gestionadas se agrupan por tipo:
 6 Eval PMDM · DAM2B
 ```
 
-Dentro de cada familia 4/5/6 se usa orden alfabético estable por nombre, equivalente a `SIGLA + GRUPO`. No se intercalan Config, Seg y Eval por módulo. Las hojas visibles ajenas al sistema no se borran ni renombran y conservan su orden relativo razonablemente. Las hojas técnicas `_...` permanecen ocultas.
+Dentro de las familias 4 y 6 se usa orden alfabético estable por nombre, equivalente a `SIGLA + GRUPO`. En la familia 5 se agrupa primero por sigla normalizada, sin exigir coincidencia de grupo; los seguimientos activos preceden a los históricos de la misma sigla y los archivos de varios cursos se mantienen ordenados. No se intercalan Config, Seg y Eval por módulo. Las hojas visibles ajenas al sistema no se borran ni renombran y conservan su orden relativo razonablemente. Las hojas técnicas `_...` permanecen ocultas.
 
 ## 3.3. Dimensiones
 
@@ -109,14 +109,19 @@ La acción solicita confirmación `danger` y crea obligatoriamente una copia del
 
 Después del backup verificado puede mover el cuaderno activo dentro de Mi unidad, renombrarlo como `CuadernoProfesor_XXXX` y actualizar curso, profesor, centro y apariencia. La copia conserva el contenido anterior íntegro.
 
-Respecto a Alumnado:
+El cuaderno activo conserva profesor, centro, tema, tramos horarios y catálogo de actividades, incluidos sus IDs estables. Después del backup se reinician de forma coordinada:
 
-- conserva la hoja y sus cuatro columnas;
-- elimina del cuaderno activo los datos de alumnado del curso anterior;
-- no modifica el backup, que conserva esos datos;
-- no altera en esta versión la política existente de conservación de Calendario u Horario.
+- las filas de `3 Alumnado`, conservando hoja y cabecera;
+- `_HOR_SESIONES`, incluidos los apoyos, conservando `_HOR_TRAMOS` y `_HOR_ACTIVIDADES`;
+- activación y fechas lectivas, prácticas y repaso de `_CAL_TIPOS`;
+- fechas finales de `_CAL_EVALUACIONES`, conservando ID, nombre y orden;
+- todos los eventos anuales de `_FECHAS` y sus asociaciones en `_CAL_FECHA_TIPOS`.
 
-Los pasos deben ser idempotentes y recuperables mediante `Inicializar / reparar estructura` cuando corresponda.
+La transición anual conserva snapshots en memoria para restaurar Alumnado, Horario y Calendario si falla antes de finalizar; el backup verificado sigue siendo la garantía completa. Finalmente regenera Calendario, Horario, Portada, estados, metadatos e índice.
+
+`Inicializar / reparar estructura` nunca aplica esta política anual, no borra datos ni repone festivos eliminados por el docente.
+
+Cuando existan hojas de módulo, tras el backup se eliminarán las `4 Config ...` y `6 Eval ...` gestionadas del curso anterior. Las `5 Seg ...` se conservarán como archivo histórico; esta parte sigue pendiente hasta que dichas hojas tengan identidad interna implementada.
 
 # 7. Calendario escolar
 
@@ -126,15 +131,23 @@ Las fechas especiales se almacenan una sola vez y pueden ser globales o aplicars
 
 La hoja visible es una vista idempotente, compacta, temática y recortada. Guardar la configuración o ejecutar la reparación la regenera desde las tablas técnicas.
 
+Al preparar un curso se precargan como propuestas globales y editables el 12 de octubre, Todos los Santos o su traslado dominical propuesto, 3, 6 y 8 de diciembre y 1 de mayo. No se inventan puentes ni días de libre disposición del centro. Navidad se propone del 24 de diciembre al 6 de enero, ambos incluidos.
+
+Semana Santa se calcula localmente mediante el algoritmo gregoriano de Pascua: Jueves y Viernes Santo forman `Semana Santa`, y de Lunes a Viernes de Pascua forman `Vacaciones de Semana Santa`. No requiere Internet ni fechas fijas de un curso concreto.
+
+Estas fechas aparecen como eventos `FESTIVO` normales en el configurador: pueden modificarse o eliminarse y no se reconstruyen durante una reparación. El docente debe contrastarlas con el calendario oficial de su centro. Aunque aún no haya tipos activos, la vista muestra septiembre-junio, las propuestas y un aviso discreto de configuración pendiente; no muestra estadísticas anteriores. Cada regeneración limpia notas y formatos del área gestionada antes de dibujar el modelo vigente.
+
+Fuentes oficiales contrastadas: [Calendario escolar del Departamento de Educación](https://www.educacion.navarra.es/web/dpto/calendario-escolar), que advierte de variaciones por centro; [normativa anual de elaboración del calendario](https://www.educacion.navarra.es/web/dpto/calendario-escolar/condiciones); y [calendario de días inhábiles de Navarra para 2026](https://www.navarra.es/es/-/nota-prensa/el-gobierno-declara-los-dias-inhabiles-en-navarra-para-2026-a-efectos-de-computo-de-plazos). Por esa variabilidad no se precargan días de libre disposición, fiestas locales ni días adicionales del puente foral.
+
 # 8. Horario del docente
 
-`2 Horario` está funcionalmente cerrado en 1.4.0.
+`2 Horario` está funcionalmente cerrado y corregido en 1.4.2.
 
 Los tramos forman una única cadena cronológica consecutiva. Cada tramo tiene ID estable, tipo `SESION` o `DESCANSO`, inicio y duración positiva múltiplo de cinco minutos. La hora final se deriva. Los descansos no admiten actividad ni cuentan como sesión docente.
 
 Las actividades admiten las categorías `MODULO`, `TUTORIA`, `GUARDIA`, `REUNION`, `DUAL`, `PPPP`, `P` y `OTRA`. Las sesiones semanales relacionan día, tramo y actividad; el apoyo es un texto opcional de hasta 40 caracteres asociado a la sesión concreta.
 
-La vista muestra la semana dinámica, colores, descansos, apoyo y sesión actual. Es derivada: nunca actúa como fuente de datos.
+La vista muestra la semana actual de lunes a viernes y, durante sábado y domingo, la semana siguiente. A1 y A2 mantienen el día y la fecha/hora reales. El tramo horario activo resalta solo su celda de hora con fondo `accent`, texto contrastado y negrita; las actividades conservan sus colores y durante el fin de semana no se marca ninguna sesión actual. Es una vista derivada y nunca actúa como fuente de datos.
 
 # 9. Identidad de módulos e imparticiones
 
@@ -259,6 +272,10 @@ Podrán existir columnas técnicas ocultas como `UT_ID`. Acumuladas se calcula a
 
 Una futura replanificación solo podrá afectar sesiones futuras, respetará calendario y horario y nunca alterará registros históricos ya realizados.
 
+Al preparar otro curso, cada seguimiento gestionado se archivará con una marca interna fiable y un nombre reconocible como `5 Seg PMDM · DAM2A OLD 2526`. No se volverá a archivar una hoja ya histórica ni se sustituirán archivos de otros cursos. Antes de eliminar su antigua `4 Config`, las fórmulas que dependan de ella se convertirán en valores cuando sea necesario para evitar `#REF!`, preservando textos, notas, mejoras y presentación.
+
+Los seguimientos `OLD` no cuentan como activos, no impiden crear el seguimiento del nuevo curso, no se recalculan ni se vinculan automáticamente a una actividad actual por compartir sigla. Permanecen en Portada y en la familia 5 aunque el módulo ya no se imparta. Esta política es obligatoria para la futura implementación, pero el archivado efectivo no existe todavía porque tampoco existen las hojas 4/5/6.
+
 # 13. Evaluación futura
 
 `6 Eval <SIGLA> · <GRUPO>` se crea independientemente después de cumplir sus prerrequisitos. Carga inicialmente el alumnado de `3 Alumnado` cuyo Grupo coincide con el de la actividad `MODULO`.
@@ -289,6 +306,8 @@ No hay hoja visible de estados. El Sidebar mostrará por impartición, cuando se
 Si fueran necesarios metadatos técnicos persistentes, podrán vivir en una hoja oculta; no se crea anticipadamente.
 
 La ayuda futura explicará al menos generación de Config, recálculo, día mixto, copia manual entre grupos, totales, pesos UT-evaluación y evaluación-curso, y diferencia entre nota calculada y nota Educa.
+
+También explicará que los festivos y vacaciones precargados son propuestas editables que deben contrastarse con el calendario del centro, y que un evento eliminado no reaparece durante ese curso. Para los seguimientos históricos explicará la marca `OLD`, su consulta, su inmovilidad, el uso de las mejoras anteriores, su conservación aunque desaparezca el módulo y su ubicación junto a la misma sigla.
 
 # 15. Sidebar, estilo y seguridad
 
@@ -352,4 +371,7 @@ No todo debe completarse al principio del curso.
 - `5 Seg` no utiliza alumnado.
 - `6 Eval` selecciona alumnado por grupo y referencia dinámicamente `4 Config`.
 - Las notas Educa son manuales e independientes.
+- Preparar nuevo curso conserva datos reutilizables y reinicia datos anuales solo después del backup verificado.
+- Las futuras hojas 4 y 6 anteriores se eliminan del activo; las hojas 5 se archivan sin referencias rotas.
+- Los festivos precargados son propuestas editables y no se reponen mediante reparación.
 - Colores y nombres de hojas no son fuentes únicas de verdad.
