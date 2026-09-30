@@ -15,7 +15,7 @@ function getSidebarData_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const config = getGeneralConfigValues_(spreadsheet);
   const activeSheet = spreadsheet.getActiveSheet();
-  const contextSectionId = getSidebarContextSectionId_(activeSheet && activeSheet.getName());
+  const contextSectionId = getSidebarContextSectionId_(activeSheet);
 
   return {
     stateItems: getSidebarStateItems_(config),
@@ -37,7 +37,7 @@ function getSidebarStateItems_(config) {
   const scheduleConfigured = isScheduleConfiguredForSidebar_();
   const studentsConfigured = isStudentsConfiguredForSidebar_();
 
-  return [
+  const items = [
     {
       label: 'Datos generales',
       status: generalDataComplete ? 'complete' : 'pending',
@@ -58,16 +58,34 @@ function getSidebarStateItems_(config) {
       status: studentsConfigured ? 'complete' : 'pending',
       statusLabel: studentsConfigured ? 'Configurado' : 'Pendiente',
     },
-    { label: 'Configuración de módulos', status: 'unavailable', statusLabel: 'No disponible todavía' },
   ];
+  const moduleStatuses = getModuleConfigurationStatuses_();
+  if (!moduleStatuses.length) {
+    items.push({
+      label: 'Configuración de módulos',
+      status: 'pending',
+      statusLabel: 'Sin módulos en Horario',
+    });
+  } else {
+    moduleStatuses.forEach(function(item) {
+      items.push({
+        label: 'Config · ' + item.label,
+        status: item.status,
+        statusLabel: item.statusLabel,
+      });
+    });
+  }
+  return items;
 }
 
-function getSidebarContextSectionId_(sheetName) {
+function getSidebarContextSectionId_(sheet) {
+  const sheetName = sheet && sheet.getName();
   const sectionBySheet = {};
   sectionBySheet[CP.SHEETS.COVER] = 'cover';
   sectionBySheet[CP.SHEETS.CALENDAR] = 'calendar';
   sectionBySheet[CP.SHEETS.SCHEDULE] = 'schedule';
   sectionBySheet[CP.SHEETS.STUDENTS] = 'students';
+  if (getModuleConfigActivityIdForSheet_(sheet)) return 'module-config';
   return sectionBySheet[sheetName] || 'first-steps';
 }
 
@@ -104,9 +122,14 @@ function getSidebarHelpSections_(contextSectionId) {
       text: 'Introduce el alumnado una sola vez en esta hoja e indica su grupo. La futura Evaluación seleccionará por grupo; el email es opcional.',
     },
     {
+      id: 'module-config',
+      title: 'Configuración de módulo',
+      text: 'Cada módulo y grupo se configura por separado. Define UT, nombre, color, horas manuales y evaluación; después usa Módulos → Recalcular. Horas son sesiones docentes, no minutos. El aviso indica cambios aún no aplicados. Un día mixto contiene varias UT. Compara siempre horas previstas con sesiones reales disponibles.',
+    },
+    {
       id: 'new-course',
       title: 'Preparar nuevo curso',
-      text: 'Tras verificar el backup, conserva profesor, centro, tema, tramos y actividades; limpia Alumnado, asignaciones semanales y datos anuales del calendario, y propone festivos editables.',
+      text: 'Tras verificar el backup, conserva profesor, centro, tema, tramos y actividades; elimina las Config gestionadas del curso anterior y limpia Alumnado, asignaciones y datos anuales del calendario.',
     },
     {
       id: 'initialize',

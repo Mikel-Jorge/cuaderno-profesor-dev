@@ -41,6 +41,7 @@ function createLightThemeColors_(primary, secondary, accent) {
     success: '#13795B',
     warning: '#B54708',
     danger: '#B42318',
+    mixedDay: '#F59E0B',
     onPrimary: getAccessibleTextColor_(primary),
     onSecondary: getAccessibleTextColor_(secondary),
     onAccent: getAccessibleTextColor_(accent),
@@ -172,6 +173,7 @@ function createUiThemeCss_(theme) {
     '--success:' + colors.success + ';' +
     '--warning:' + colors.warning + ';' +
     '--danger:' + colors.danger + ';' +
+    '--mixed-day:' + colors.mixedDay + ';' +
     '--on-primary:' + colors.onPrimary + ';' +
     '}';
 }

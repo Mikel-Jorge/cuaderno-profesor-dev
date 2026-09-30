@@ -170,6 +170,11 @@ function getUiProcessDefinition_(processId, processInput) {
           run: ensureScheduleTechnicalStructure_,
         },
         {
+          label: 'Preparando la estructura tecnica de Modulos...',
+          completedMessage: 'Registro y planificacion de Modulos preparados.',
+          run: ensureModuleConfigTechnicalStructure_,
+        },
+        {
           label: 'Renderizando el calendario visible...',
           completedMessage: 'Calendario visible creado o reparado.',
           run: createOrRepairCalendarSheet_,

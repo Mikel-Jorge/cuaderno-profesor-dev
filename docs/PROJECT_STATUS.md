@@ -1,9 +1,9 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-09-30
-**Estado general:** Portada, Calendario, Horario y Alumnado operativos; siguiente bloque `4 Config`
-**Versión vigente:** `1.4.2`
-**Esquema vigente:** `8`
+**Estado general:** Portada, Calendario, Horario, Alumnado y primera fase de `4 Config` operativos
+**Versión vigente:** `1.4.3`
+**Esquema vigente:** `9`
 
 # Completado
 
@@ -55,23 +55,26 @@ Pendiente de cierre del bloque:
 - validación manual en `CP_DEV` de creación, pegado, estado, reparación y limpieza anual;
 - confirmación visual del tema y de la posición tras `2 Horario`.
 
-# Siguiente
+# Configuración de módulo — PRIMERA FASE IMPLEMENTADA
 
-## Configuración de módulo
+- Menú `Módulos` con creación y recálculo desde la hoja activa.
+- Selector tematizado y de solo lectura al abrir, limitado a actividades `MODULO`.
+- Validación explícita de grupo, tipo, sesiones semanales, periodo lectivo y evaluaciones.
+- Una sola configuración por `actividad_id`, enlazada por `sheet_id` en `_MOD_CONFIG`.
+- `4 Config <SIGLA> · <GRUPO>` con calendario septiembre-junio y tabla editable de UT.
+- UT con ID estable, orden por fila, color explícito, horas manuales y evaluación.
+- Totales automáticos por evaluación y módulo, sesiones disponibles y aviso de diferencia.
+- Sesiones reales calculadas desde Horario y Calendario, excluyendo días no lectivos.
+- Distribución cronológica exacta por sesión persistida en `_MOD_PLAN`.
+- Días de una UT, días mixtos, notas combinadas y limpieza por regeneración.
+- Firma por fórmula para detectar cambios pendientes sin trigger.
+- Estados por impartición y ayuda contextual en el Sidebar.
+- Preparar nuevo curso elimina por identidad las Config gestionadas y sus registros tras el backup.
 
-Implementar, en un bloque posterior, `4 Config <SIGLA> · <GRUPO>` por cada actividad `MODULO`, con:
+Pendiente de cierre del bloque:
 
-- asociación interna fiable a `actividad_id`;
-- calendario individual basado en sesiones reales;
-- tabla de UT con horas manuales;
-- evaluaciones procedentes de `_CAL_EVALUACIONES`;
-- pesos UT → evaluación y evaluación → curso;
-- totales automáticos;
-- recálculo explícito;
-- indicador de cambios pendientes sin trigger;
-- representación de día mixto.
-
-Nada de este bloque está implementado todavía.
+- ponderaciones UT → evaluación y evaluación → curso;
+- validación visual y funcional completa en `CP_DEV`.
 
 # Futuro
 
@@ -88,12 +91,12 @@ Nada de este bloque está implementado todavía.
 - Fórmulas referenciando `4 Config`, sin duplicar ponderaciones.
 - Notas de UT desde Moodle y columnas manuales Educa por evaluación y final.
 
-Ninguna hoja 4, 5 o 6 está implementada en la versión 1.4.2. La política futura de cambio de curso ya exige eliminar las 4 y 6 antiguas y archivar las 5 como `OLD AACC` sin referencias rotas. Solo está implementada ahora la agrupación de nombres de la familia 5 por sigla; el archivado efectivo queda pendiente.
+Las hojas 5 y 6 no están implementadas. Preparar nuevo curso ya elimina las hojas 4 registradas; la futura eliminación de 6 y el archivado de 5 como `OLD AACC` sin referencias rotas siguen pendientes.
 
 # Decisiones vigentes
 
 - No existe `3 Módulos`.
-- No existen `_MODULOS`, `_MATRICULAS` ni `_UT`.
+- No existen `_MODULOS`, `_MATRICULAS` ni `_UT`; `_MOD_CONFIG` y `_MOD_PLAN` no duplican los campos editables de UT.
 - Imparticiones con igual sigla y distinto grupo son independientes.
 - Las familias 4/5/6 se ordenan agrupadas por tipo; la familia 5 agrupa activos e históricos por sigla independientemente del grupo.
 - Las hojas no gestionadas no se borran ni renombran.

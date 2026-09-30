@@ -283,6 +283,7 @@ function prepareNewCourseAnnualData_(processInput) {
       initializeCoverStructure_();
       initializeMetaStructure_();
       hideTechnicalSheets_(spreadsheet);
+      deleteManagedModuleConfigsForNewCourse_(spreadsheet);
       reorderManagedVisibleSheets_(spreadsheet);
       actualizarIndicePortada();
       spreadsheet.toast('Nuevo curso preparado.', CP.PROJECT_NAME, 5);
@@ -311,7 +312,7 @@ function prepareNewCourseAnnualData_(processInput) {
     }
     rollbackNewCoursePreparation_(processInput, error);
   }
-  return 'Alumnado, asignaciones y calendario anual reiniciados; vistas actualizadas.';
+  return 'Alumnado, asignaciones, configuraciones de módulo y calendario anual reiniciados; vistas actualizadas.';
 }
 
 function captureNewCourseAnnualSnapshots_(spreadsheet) {

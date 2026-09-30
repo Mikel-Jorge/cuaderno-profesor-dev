@@ -2,7 +2,7 @@
 
 **Estado:** vigente
 **Última revisión:** 2026-09-30
-**Versión:** `1.4.2` / esquema `8`
+**Versión:** `1.4.3` / esquema `9`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -21,7 +21,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.4.2` y esquema `8`.
+- `Config.gs`: constantes, nombres de hojas, versión `1.4.3` y esquema `9`.
 - `Theme.gs`: tema global, presets y colores semánticos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -30,6 +30,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 - `Schedule.gs`: modelo, validación, persistencia y consultas de Horario.
 - `ScheduleView.gs`: renderizado de `2 Horario`.
 - `Students.gs`: estructura, tema, estado y limpieza anual de `3 Alumnado`.
+- `ModuleConfig.gs`: registro, creación, calendario, UT y planificación de `4 Config`.
 - `Portada.gs`: estructura, datos e índice dinámico de `0 Portada`.
 - `NewCourse.gs`: backup y pasos de Preparar nuevo curso.
 - `Utils.gs`: acceso, tamaño, recorte y ordenación de hojas.
@@ -45,10 +46,11 @@ No se crean capas o abstracciones sin necesidad real.
 |---|---|---|
 | Configuración general | `_CONFIG` | Portada, tema y UI |
 | Versión y esquema | `Config.gs` | `_META` y UI |
-| Calendario escolar | `_CAL_TIPOS`, `_CAL_EVALUACIONES`, `_FECHAS`, `_CAL_FECHA_TIPOS` | `1 Calendario` y futuros calendarios de módulo |
-| Horario | `_HOR_TRAMOS`, `_HOR_ACTIVIDADES`, `_HOR_SESIONES` | `2 Horario` y futuras sesiones reales de módulo |
+| Calendario escolar | `_CAL_TIPOS`, `_CAL_EVALUACIONES`, `_FECHAS`, `_CAL_FECHA_TIPOS` | `1 Calendario` y calendarios de módulo |
+| Horario | `_HOR_TRAMOS`, `_HOR_ACTIVIDADES`, `_HOR_SESIONES` | `2 Horario` y sesiones reales de módulo |
 | Alumnado | `3 Alumnado` | futura `6 Eval ...` |
-| Configuración de impartición | futura `4 Config <SIGLA> · <GRUPO>` | futuras `5 Seg ...` y `6 Eval ...` |
+| Configuración de impartición | tabla editable de `4 Config <SIGLA> · <GRUPO>` | calendario propio y futuros `5 Seg ...` y `6 Eval ...` |
+| Registro y plan calculado | `_MOD_CONFIG`, `_MOD_PLAN` | identidad de hoja, estado y futuras hojas `5 Seg ...` |
 | Seguimiento | futura `5 Seg <SIGLA> · <GRUPO>` | uso docente diario |
 | Evaluación | futura `6 Eval <SIGLA> · <GRUPO>` | cálculo y registro Educa |
 
@@ -66,9 +68,11 @@ _CAL_FECHA_TIPOS
 _HOR_TRAMOS
 _HOR_ACTIVIDADES
 _HOR_SESIONES
+_MOD_CONFIG
+_MOD_PLAN
 ```
 
-Todas permanecen ocultas. No existen `_MODULOS`, `_MATRICULAS` ni `_UT`: no deben crearse anticipadamente.
+Todas permanecen ocultas. No existen `_MODULOS`, `_MATRICULAS` ni `_UT`: las UT editables no se duplican en otra tabla técnica.
 
 `_META` se reconstruye desde `Config.gs` y escribe `version_cuaderno` y `version_esquema` como texto literal. La versión no se duplica como constante en otros módulos.
 
@@ -143,15 +147,15 @@ El proceso UI ejecuta pasos independientes. Primero crea y verifica el backup en
 
 Los datos se separan en reutilizables y anuales. `_CONFIG` conserva profesor, centro y tema; `_HOR_TRAMOS` y `_HOR_ACTIVIDADES` conservan estructura, catálogo e IDs. Alumnado, `_HOR_SESIONES` y todos los valores anuales del Calendario se reinician.
 
-Tras actualizar configuración, `prepareNewCourseAnnualData_()` captura snapshots de Alumnado y de las tablas de Horario y Calendario. En una única transición limpia Alumnado, vacía sesiones y apoyos, reinicia el calendario, precarga propuestas, regenera ambas vistas y finaliza Portada, `_META`, ocultación, orden e índice. Si falla, intenta restaurar los snapshots, la configuración, nombre y ubicación, y declara explícitamente cualquier restauración parcial. El backup completo permanece como garantía.
+Tras actualizar configuración, `prepareNewCourseAnnualData_()` captura snapshots de Alumnado y de las tablas de Horario y Calendario. En una única transición limpia Alumnado, vacía sesiones y apoyos, reinicia el calendario, precarga propuestas y regenera vistas. Como paso destructivo posterior al backup, elimina por `sheet_id` las `4 Config` registradas y vacía `_MOD_CONFIG` y `_MOD_PLAN`; nunca decide por el nombre de pestaña. Si falla, intenta restaurar los snapshots, la configuración, nombre y ubicación, y declara explícitamente cualquier restauración parcial. El backup completo permanece como garantía.
 
 `Inicializar / reparar estructura` no llama a estas funciones anuales. Por tanto, una reparación conserva datos y no recupera propuestas que el docente haya eliminado.
 
-# 11. Arquitectura futura de Config, Seg y Eval
+# 11. Arquitectura de Config y futura de Seg y Eval
 
 ## 11.1. Flujo de generación
 
-La creación será independiente por tipo:
+La creación es independiente por tipo:
 
 ```text
 actividad MODULO
@@ -162,29 +166,31 @@ actividad MODULO
 
 Config debe existir y cumplir sus validaciones antes de generar consumidores. No se crean las tres hojas obligatoriamente a la vez.
 
-Cada hoja futura guardará una asociación interna verificable con `actividad_id`. La estrategia concreta se elegirá al implementar Config, sin duplicar campos de `_HOR_ACTIVIDADES`.
+`4 Config` guarda una asociación verificable con `actividad_id`; las hojas futuras aplicarán el mismo principio sin duplicar campos de `_HOR_ACTIVIDADES`.
 
 ## 11.2. `4 Config`
 
-Cruza la actividad con `_HOR_SESIONES`, `_HOR_TRAMOS` y el modelo de Calendario para obtener sesiones reales cronológicas. Su calendario visual parte de la misma estructura base de `1 Calendario`, pero es una representación propia de esa impartición.
+Cruza la actividad con `_HOR_SESIONES`, `_HOR_TRAMOS` y el modelo de Calendario para obtener sesiones reales cronológicas. Su calendario visual parte de la misma estructura base de `1 Calendario`, pero es una representación propia de esa impartición y conserva combinadas las notas escolares y de planificación.
 
-La tabla editable de UT contiene código, nombre, color, horas manuales, evaluación y peso dentro de la evaluación. Las evaluaciones disponibles se obtienen de `tipo_ensenanza_id` y `_CAL_EVALUACIONES`. Los totales de horas y los pesos agregados se calculan mediante fórmulas.
+La tabla editable de UT contiene código, nombre, color explícito, horas manuales y evaluación. Sus IDs estables viven en columnas técnicas ocultas de la misma hoja; no existe `_UT`. Las evaluaciones disponibles se obtienen de `tipo_ensenanza_id` y `_CAL_EVALUACIONES`. Los totales de horas y la diferencia frente a sesiones disponibles se calculan mediante fórmulas. Los pesos quedan para la fase siguiente.
 
 Config almacena la autoridad sobre:
 
 - definición y orden de UT;
 - horas/sesiones previstas;
 - asignación UT → evaluación;
-- peso UT dentro de evaluación;
-- peso evaluación dentro del curso.
+- en una fase posterior, peso UT dentro de evaluación;
+- en una fase posterior, peso evaluación dentro del curso.
 
-El recálculo explícito distribuye las UT secuencialmente sobre sesiones reales. Una firma interna de último cálculo, comparada mediante fórmulas y sin `onEdit`, muestra cambios pendientes. Una fecha con más de una UT usa el token semántico futuro `mixedDay` y una nota con el desglose de horas.
+`_MOD_CONFIG` contiene `actividad_id`, `sheet_id`, curso, fecha de creación y firma aplicada. `_MOD_PLAN` contiene una fila por sesión asignada con actividad, curso, fecha, tramo y `ut_id`. Ninguna planificación se deduce de colores.
+
+El recálculo explícito, protegido con bloqueo de documento, distribuye las UT secuencialmente, sustituye solo el plan de la actividad activa y regenera su calendario. Una firma de orden, identidad y campos editables, comparada mediante fórmulas y sin `onEdit`, muestra cambios pendientes. Una fecha con más de una UT usa el token semántico `theme.colors.mixedDay` y una nota con el desglose de horas. El exceso no crea fechas y el defecto deja sesiones sin UT.
 
 ## 11.3. `5 Seg`
 
 Se genera desde sesiones reales y distribución de UT. No depende de `3 Alumnado`. Mantiene datos de propuesta, realizado, horas actuales, acumulado, total y mejoras. Los colores de UT son presentación.
 
-En el cambio de curso, las futuras `4 Config` y `6 Eval` gestionadas se eliminarán del activo después del backup. Las `5 Seg` se convertirán en archivos `OLD AACC`, conservarán contenido, notas y aspecto, y materializarán previamente las fórmulas que quedarían rotas. Requerirán identidad interna distinta del nombre y quedarán excluidas de estados y regeneraciones activas. La implementación se pospone hasta que existan estas hojas; en 1.4.2 solo está preparada su ordenación por sigla.
+En el cambio de curso, las `4 Config` ya se eliminan del activo después del backup. Las futuras `6 Eval` aplicarán la misma política. Las `5 Seg` se convertirán en archivos `OLD AACC`, conservarán contenido, notas y aspecto, y materializarán previamente las fórmulas que quedarían rotas. Esta parte continúa pendiente hasta que exista Seguimiento.
 
 ## 11.4. `6 Eval`
 
@@ -200,9 +206,9 @@ El Sidebar deriva estados desde las fuentes actuales:
 - Calendario: modelo configurado y vista disponible.
 - Horario: tramos, al menos una asignación semanal y vista disponibles.
 - Alumnado: al menos una fila válida.
-- Configuración de módulos: no disponible hasta su implementación.
+- Configuración de módulos: por actividad, sin configurar, configurada o con cambios pendientes según registro, hoja y firmas.
 
-No existe una hoja visible de estados. Los futuros estados por actividad podrán persistirse en una hoja técnica solo si surge una necesidad real.
+No existe una hoja visible de estados. El registro técnico se usa para identidad y el estado se deriva sin polling ni triggers.
 
 # 13. UI, temas y procesos
 

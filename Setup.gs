@@ -3,6 +3,7 @@ function inicializarCuaderno() {
   initializeConfigStructure_();
   initializeCalendarStructure_();
   ensureScheduleTechnicalStructure_();
+  ensureModuleConfigTechnicalStructure_();
   createOrRepairCalendarSheet_();
   createOrRepairScheduleSheet_();
   createOrRepairStudentsSheet_();

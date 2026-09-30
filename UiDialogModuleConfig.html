@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <style id="active-theme"><?!= uiThemeCss ?></style>
+    <?!= includeUiFile_('UiStyles'); ?>
+  </head>
+  <body>
+    <main class="app">
+      <header class="brand-header">
+        <img class="brand-logo" src="<?!= branding.icon ?>" alt="">
+        <div class="brand-copy">
+          <p class="brand-name"><?= uiConfig.projectName ?></p>
+          <span class="version-label"><?= uiConfig.versionLabel ?></span>
+        </div>
+      </header>
+
+      <form class="config-form" id="module-form">
+        <div class="config-scroll">
+          <section class="form-section">
+            <h2>Configuración individual</h2>
+            <p class="form-help">Cada módulo y grupo mantiene su propio calendario y sus propias UT.</p>
+            <div id="empty-state" class="confirmation confirmation-warning" hidden>
+              Primero configura en Horario al menos una actividad de categoría MODULO.
+            </div>
+            <div class="form-field" id="module-field">
+              <label for="module-select">Módulo</label>
+              <select id="module-select" required></select>
+              <p id="selection-help" class="form-help"></p>
+            </div>
+          </section>
+        </div>
+        <div class="config-feedback">
+          <div id="feedback" class="result" role="status"></div>
+          <div class="actions">
+            <button class="button button-secondary" type="button" id="cancel-button">Cancelar</button>
+            <button class="button" type="submit" id="submit-button">Crear configuración</button>
+          </div>
+        </div>
+      </form>
+
+      <footer class="author-footer">
+        &copy; <?= uiConfig.author ?> ·
+        <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a>
+      </footer>
+    </main>
+
+    <script>
+      const moduleData = <?!= JSON.stringify(moduleData) ?>;
+      const form = document.getElementById('module-form');
+      const select = document.getElementById('module-select');
+      const submitButton = document.getElementById('submit-button');
+      const selectionHelp = document.getElementById('selection-help');
+      const feedback = document.getElementById('feedback');
+      const emptyState = document.getElementById('empty-state');
+
+      if (!moduleData.modules.length) {
+        emptyState.hidden = false;
+        document.getElementById('module-field').hidden = true;
+        submitButton.disabled = true;
+      } else {
+        moduleData.modules.forEach(function(module) {
+          const option = document.createElement('option');
+          option.value = module.id;
+          option.textContent = module.label + (module.configured ? ' · ya creada' : '');
+          select.appendChild(option);
+        });
+        updateSelection();
+      }
+
+      select.addEventListener('change', updateSelection);
+      document.getElementById('cancel-button').addEventListener('click', function() {
+        google.script.host.close();
+      });
+
+      form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        setBusy(true);
+        feedback.textContent = '';
+        feedback.className = 'result';
+        google.script.run
+          .withSuccessHandler(function(result) {
+            feedback.className = 'result success';
+            feedback.textContent = result.message + ' Hoja: ' + result.sheetName;
+            const module = moduleData.modules.find(function(item) { return item.id === select.value; });
+            if (module) {
+              module.configured = true;
+              module.sheetName = result.sheetName;
+            }
+            setBusy(false);
+          })
+          .withFailureHandler(function(error) {
+            feedback.className = 'result error';
+            feedback.textContent = error && error.message
+              ? error.message
+              : 'No se ha podido crear la configuración.';
+            setBusy(false);
+          })
+          .crearConfiguracionModulo(select.value);
+      });
+
+      function updateSelection() {
+        const module = moduleData.modules.find(function(item) { return item.id === select.value; });
+        if (module && module.configured) {
+          selectionHelp.textContent = 'Ya existe: ' + module.sheetName + '. La acción la localizará sin crear otra.';
+          submitButton.textContent = 'Abrir configuración';
+          submitButton.disabled = false;
+        } else if (module && module.prerequisiteError) {
+          selectionHelp.textContent = module.prerequisiteError;
+          submitButton.textContent = 'Configuración incompleta';
+          submitButton.disabled = true;
+        } else {
+          selectionHelp.textContent = 'Se validarán Horario, periodo lectivo y evaluaciones antes de crearla.';
+          submitButton.textContent = 'Crear configuración';
+          submitButton.disabled = false;
+        }
+      }
+
+      function setBusy(busy) {
+        select.disabled = busy;
+        submitButton.disabled = busy;
+        if (busy) {
+          submitButton.textContent = 'Comprobando…';
+        } else {
+          updateSelection();
+        }
+      }
+    </script>
+  </body>
+</html>
