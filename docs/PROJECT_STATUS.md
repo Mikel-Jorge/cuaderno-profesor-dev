@@ -2,7 +2,7 @@
 
 **Última actualización:** 2026-09-30
 **Estado general:** Portada, Calendario y Horario completados; Alumnado en curso
-**Versión vigente:** `1.4.0`
+**Versión vigente:** `1.4.1`
 **Esquema vigente:** `8`
 
 # Completado
@@ -46,6 +46,7 @@
 - Estado `Pendiente`/`Configurado` y ayuda contextual en el Sidebar; Email no es obligatorio.
 - Preparar nuevo curso limpia los datos del activo después del backup y conserva la estructura.
 - Índice dinámico y orden de hojas gestionadas integrados.
+- Reparación secuencial corregida: sus respuestas al navegador contienen solo datos serializables y los errores identifican el paso fallido sin dejar el spinner activo.
 
 Pendiente de cierre del bloque:
 
@@ -85,7 +86,7 @@ Nada de este bloque está implementado todavía.
 - Fórmulas referenciando `4 Config`, sin duplicar ponderaciones.
 - Notas de UT desde Moodle y columnas manuales Educa por evaluación y final.
 
-Ninguna hoja 4, 5 o 6 está implementada en la versión 1.4.0.
+Ninguna hoja 4, 5 o 6 está implementada en la versión 1.4.1.
 
 # Decisiones vigentes
 

@@ -117,10 +117,23 @@ function ejecutarPasoProcesoUi(processId, stepIndex, processInput) {
   const step = process.steps[stepIndex];
   const resultMessage = step.run(process.input);
 
+  return buildUiStepResponse_(
+    stepIndex,
+    process.steps.length,
+    resultMessage,
+    step.completedMessage
+  );
+}
+
+function buildUiStepResponse_(stepIndex, totalSteps, resultMessage, completedMessage) {
+  const message = typeof resultMessage === 'string' && resultMessage.trim()
+    ? resultMessage
+    : completedMessage;
+
   return {
     completedStep: stepIndex + 1,
-    totalSteps: process.steps.length,
-    message: resultMessage || step.completedMessage,
+    totalSteps: totalSteps,
+    message: String(message || ''),
   };
 }
 

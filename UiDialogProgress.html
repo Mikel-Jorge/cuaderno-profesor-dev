@@ -83,17 +83,34 @@
       }
 
       function handleStepSuccess(response) {
+        if (!isValidStepResponse(response)) {
+          handleStepError(new Error('El servidor ha devuelto una respuesta de progreso no v\u00e1lida.'));
+          return;
+        }
         appendLog(response.message, false);
         currentStep = response.completedStep;
         progressBar.style.width = Math.round((currentStep / response.totalSteps) * 100) + '%';
         runNextStep();
       }
 
+      function isValidStepResponse(response) {
+        return response &&
+          Number.isInteger(response.completedStep) &&
+          response.completedStep === currentStep + 1 &&
+          Number.isInteger(response.totalSteps) &&
+          response.totalSteps === PROCESS.steps.length &&
+          typeof response.message === 'string';
+      }
+
       function handleStepError(error) {
-        const message = error && error.message ? error.message : 'Se ha producido un error inesperado.';
+        const detail = error && error.message ? error.message : 'Se ha producido un error inesperado.';
+        const step = PROCESS.steps[currentStep];
+        const stepLabel = step ? step.label.replace(/\.\.\.$/, '') : 'el proceso';
+        const message = 'Error en \u00ab' + stepLabel + '\u00bb: ' + detail;
+        console.error(message, error);
         appendLog(message, true);
         statusElement.textContent = 'El proceso no ha podido completarse.';
-        showResult('Error: ' + message, 'error');
+        showResult(message, 'error');
       }
 
       function finishSuccessfully() {
