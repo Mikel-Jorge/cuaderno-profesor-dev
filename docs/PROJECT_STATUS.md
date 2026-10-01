@@ -2,7 +2,7 @@
 
 **Última actualización:** 2026-10-01
 **Estado general:** Portada, Calendario, Horario, Alumnado y primera fase de `4 Config` operativos
-**Versión vigente:** `1.4.4`
+**Versión vigente:** `1.4.5`
 **Esquema vigente:** `9`
 
 # Completado
@@ -58,21 +58,22 @@ Pendiente de cierre del bloque:
 # Configuración de módulo — PRIMERA FASE IMPLEMENTADA
 
 - Menú `Módulos` con creación y recálculo desde la hoja activa.
-- Selector tematizado y de solo lectura al abrir, limitado a actividades `MODULO`.
+- Selector tematizado y de solo lectura al abrir, limitado a actividades `MODULO` sin `4 Config` ya creada.
 - Validación explícita de grupo, tipo, sesiones semanales, periodo lectivo y evaluaciones.
 - Una sola configuración por `actividad_id`, enlazada por `sheet_id` en `_MOD_CONFIG`.
-- `4 Config <SIGLA> · <GRUPO>` con calendario septiembre-junio y tabla editable de UT.
-- UT con ID estable, orden por fila, color explícito, horas manuales y evaluación.
-- Totales automáticos por evaluación y módulo, sesiones disponibles y aviso de diferencia.
-- Sesiones reales calculadas desde Horario y Calendario, excluyendo días no lectivos.
+- `4 Config <SIGLA> · <GRUPO>` con calendario septiembre-junio homogéneo y tabla de hasta 15 UT editables.
+- UT con ID estable, orden por fila, horas manuales, color explícito y evaluación calculada por último día asignado.
+- Resumen de horas escrito como valores desde Apps Script: previstas por evaluación, total previsto, sesiones disponibles y aviso de diferencia.
+- Sesiones reales calculadas desde Horario y Calendario, excluyendo días no lectivos y prácticas del tipo de enseñanza.
 - Distribución cronológica exacta por sesión persistida en `_MOD_PLAN`.
-- Días de una UT, días mixtos, notas combinadas y limpieza por regeneración.
+- Días de una UT, días mixtos solo cuando coinciden UT distintas, notas combinadas y limpieza por regeneración.
 - Firma por fórmula para detectar cambios pendientes sin trigger.
 - Estados por impartición y ayuda contextual en el Sidebar.
 - Preparar nuevo curso elimina por identidad las Config gestionadas y sus registros tras el backup.
 - Corregido el modal para que el aviso sin módulos sea exclusivo de ese estado, muestre carga real y haga visibles los errores sin perder la selección.
 - La firma inicial y la aplicada se calculan en backend sin depender del recálculo inmediato de Sheets; la tabla UT vacía es válida.
 - El rollback de creación limpia hoja, `_MOD_CONFIG` y `_MOD_PLAN` del módulo fallido y conserva los demás.
+- El recálculo muestra modal tematizado de carga y resultado `success`, `warning` o `error`; el exceso de horas aborta antes de modificar calendario o plan.
 
 Pendiente de cierre del bloque:
 

@@ -2,7 +2,7 @@
 
 **Estado:** vigente
 **Última revisión:** 2026-10-01
-**Versión:** `1.4.4` / esquema `9`
+**Versión:** `1.4.5` / esquema `9`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -21,7 +21,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.4.4` y esquema `9`.
+- `Config.gs`: constantes, nombres de hojas, versión `1.4.5` y esquema `9`.
 - `Theme.gs`: tema global, presets y colores semánticos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -172,7 +172,7 @@ Config debe existir y cumplir sus validaciones antes de generar consumidores. No
 
 Cruza la actividad con `_HOR_SESIONES`, `_HOR_TRAMOS` y el modelo de Calendario para obtener sesiones reales cronológicas. Su calendario visual parte de la misma estructura base de `1 Calendario`, pero es una representación propia de esa impartición y conserva combinadas las notas escolares y de planificación.
 
-La tabla editable de UT contiene código, nombre, color explícito, horas manuales y evaluación. Sus IDs estables viven en columnas técnicas ocultas de la misma hoja; no existe `_UT`. Las evaluaciones disponibles se obtienen de `tipo_ensenanza_id` y `_CAL_EVALUACIONES`. Los totales de horas y la diferencia frente a sesiones disponibles se calculan mediante fórmulas. Los pesos quedan para la fase siguiente.
+La tabla editable de UT contiene código, nombre, horas manuales, color explícito y evaluación calculada. Sus IDs estables y `evaluation_id` viven en columnas técnicas ocultas de la misma hoja; no existe `_UT`. Las evaluaciones se derivan del último día real asignado a cada UT y proceden de `tipo_ensenanza_id` y `_CAL_EVALUACIONES`. Los totales de horas y la diferencia frente a sesiones disponibles se calculan en Apps Script y se escriben como valores. Los pesos quedan para la fase siguiente.
 
 Config almacena la autoridad sobre:
 
@@ -184,7 +184,7 @@ Config almacena la autoridad sobre:
 
 `_MOD_CONFIG` contiene `actividad_id`, `sheet_id`, curso, fecha de creación y firma aplicada. `_MOD_PLAN` contiene una fila por sesión asignada con actividad, curso, fecha, tramo y `ut_id`. Ninguna planificación se deduce de colores.
 
-El recálculo explícito, protegido con bloqueo de documento, distribuye las UT secuencialmente, sustituye solo el plan de la actividad activa y regenera su calendario. Backend y hoja comparten una firma canónica por fila compuesta por posición, `ut_id`, código, nombre, color, horas, evaluación visible y `evaluation_id`. El backend calcula y persiste la firma aplicada directamente desde las celdas, incluida la tabla vacía, sin esperar el recálculo de Sheets. Fórmulas auxiliares por fila comparan el valor actual con la referencia aplicada y una suma de indicadores alimenta el aviso visible, sin `onEdit` y sin fórmulas con separadores dependientes del locale. Una fecha con más de una UT usa el token semántico `theme.colors.mixedDay` y una nota con el desglose de horas. El exceso no crea fechas y el defecto deja sesiones sin UT.
+El recálculo explícito, protegido con bloqueo de documento, valida primero que las horas previstas no superen las sesiones reales disponibles; si hay exceso, aborta sin sustituir plan ni redibujar calendario. Las sesiones reales cruzan Horario y Calendario, excluyen días no lectivos y el periodo de prácticas del tipo de enseñanza. Después distribuye las UT secuencialmente, calcula la evaluación por último día asignado, sustituye solo el plan de la actividad activa y regenera su calendario. Backend y hoja comparten una firma canónica por fila compuesta por posición, `ut_id`, código, nombre, color, horas, evaluación visible y `evaluation_id`. El backend calcula y persiste la firma aplicada directamente desde las celdas, incluida la tabla vacía, sin esperar el recálculo de Sheets. Fórmulas auxiliares por fila comparan el valor actual con la referencia aplicada y una suma de indicadores alimenta el aviso visible, sin `onEdit` y sin fórmulas con separadores dependientes del locale. Solo los días con varias UT reales reciben el token semántico `theme.colors.mixedDay` y una nota con el desglose de horas; dos sesiones de la misma UT no generan nota de planificación. El defecto deja sesiones sin UT y produce warning.
 
 ## 11.3. `5 Seg`
 

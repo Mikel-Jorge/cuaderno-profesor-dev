@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <style id="active-theme"><?!= uiThemeCss ?></style>
+    <?!= includeUiFile_('UiStyles'); ?>
+  </head>
+  <body>
+    <main class="app">
+      <header class="brand-header">
+        <img class="brand-logo" src="<?!= branding.icon ?>" alt="">
+        <div class="brand-copy">
+          <p class="brand-name"><?= uiConfig.projectName ?></p>
+          <span class="version-label"><?= uiConfig.versionLabel ?></span>
+        </div>
+      </header>
+
+      <section class="process" aria-label="Recalculo de configuracion">
+        <p class="progress-step" id="status" aria-live="polite">Recalculando configuracion</p>
+        <div class="activity" id="activity">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Validando UT, calendario real y horario del docente...</span>
+        </div>
+        <div class="result" id="result" role="status"></div>
+        <div class="actions">
+          <button class="button is-hidden" id="close-button" type="button">Cerrar</button>
+        </div>
+      </section>
+
+      <footer class="author-footer">
+        &copy; <?= uiConfig.author ?> &middot;
+        <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a>
+      </footer>
+    </main>
+
+    <script>
+      const statusElement = document.getElementById('status');
+      const activityElement = document.getElementById('activity');
+      const resultElement = document.getElementById('result');
+      const closeButton = document.getElementById('close-button');
+
+      function showResult(result) {
+        const state = result && result.status ? result.status : 'error';
+        const title = result && result.title ? result.title : 'Resultado del recalculo';
+        const message = result && result.message ? result.message : 'Operacion terminada.';
+        activityElement.style.display = 'none';
+        statusElement.textContent = title;
+        resultElement.textContent = message;
+        resultElement.className = 'result visible ' + state;
+        resultElement.style.whiteSpace = 'pre-line';
+        closeButton.className = 'button';
+        closeButton.focus();
+      }
+
+      google.script.run
+        .withSuccessHandler(showResult)
+        .withFailureHandler(function(error) {
+          showResult({
+            status: 'error',
+            title: 'No se ha podido recalcular',
+            message: error && error.message ? error.message : 'Se ha producido un error inesperado.'
+          });
+        })
+        .ejecutarRecalculoConfiguracionModuloUi();
+
+      closeButton.addEventListener('click', function() {
+        google.script.host.close();
+      });
+    </script>
+  </body>
+</html>

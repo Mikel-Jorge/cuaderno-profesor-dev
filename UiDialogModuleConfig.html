@@ -22,9 +22,9 @@
             <h2>Configuración individual</h2>
             <p class="form-help">Cada módulo y grupo mantiene su propio calendario y sus propias UT.</p>
             <div id="empty-state" class="confirmation confirmation-warning" hidden>
-              <p class="confirmation-message">⚠ No hay módulos configurados.</p>
+              <p class="confirmation-message">⚠ No quedan módulos elegibles.</p>
               <p class="confirmation-helper">
-                Primero configura en Horario al menos una actividad de categoría MÓDULO.
+                Todos los módulos disponibles ya tienen su hoja 4 Config o todavía no hay actividades MÓDULO en Horario.
               </p>
             </div>
             <div class="form-field" id="module-field">
@@ -81,7 +81,7 @@
         moduleData.modules.forEach(function(module) {
           const option = document.createElement('option');
           option.value = module.id;
-          option.textContent = module.label + (module.configured ? ' · ya creada' : '');
+          option.textContent = module.label;
           select.appendChild(option);
         });
         updateSelection();

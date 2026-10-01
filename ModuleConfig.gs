@@ -14,7 +14,7 @@ const CP_MODULE_CONFIG_LAYOUT = Object.freeze({
   MONTH_GAP_COLUMNS: 1,
   UT_HEADER_ROW: 27,
   UT_FIRST_ROW: 28,
-  INITIAL_UT_ROWS: 50,
+  INITIAL_UT_ROWS: 15,
   UT_ID_COLUMN: 40,
   EVALUATION_ID_COLUMN: 41,
   CURRENT_ROW_SIGNATURE_COLUMN: 42,
@@ -96,24 +96,23 @@ function getModuleConfigDialogData_() {
     modules: getModuleActivities_().map(function(activity) {
       const record = registry.find(function(item) { return item.activityId === activity.id; });
       const registeredSheet = record ? getSheetById_(spreadsheet, record.sheetId) : null;
+      if (registeredSheet) return null;
       let prerequisiteError = '';
-      if (!registeredSheet) {
-        try {
-          validateModuleConfigPrerequisites_(spreadsheet, activity);
-        } catch (error) {
-          prerequisiteError = error && error.message
-            ? error.message
-            : 'La configuración del módulo está incompleta.';
-        }
+      try {
+        validateModuleConfigPrerequisites_(spreadsheet, activity);
+      } catch (error) {
+        prerequisiteError = error && error.message
+          ? error.message
+          : 'La configuración del módulo está incompleta.';
       }
       return {
         id: activity.id,
         label: getModuleDialogLabel_(activity),
-        configured: Boolean(record && registeredSheet),
-        sheetName: registeredSheet ? registeredSheet.getName() : '',
+        configured: false,
+        sheetName: '',
         prerequisiteError: prerequisiteError,
       };
-    }),
+    }).filter(Boolean),
   };
 }
 
@@ -411,7 +410,7 @@ function renderModuleConfigCalendar_(sheet, activity, context, sessions, assignm
 
 function applyModuleConfigDimensions_(sheet) {
   for (let column = 1; column <= 39; column += 1) {
-    sheet.setColumnWidth(column, [8, 16, 24, 32].indexOf(column) !== -1 ? 10 : 31);
+    sheet.setColumnWidth(column, column % 8 === 0 ? 10 : 31);
   }
   sheet.setColumnWidths(40, 5, 40);
   sheet.setRowHeights(1, sheet.getMaxRows(), 22);
@@ -520,17 +519,17 @@ function groupModulePlanByDate_(model, sessions, assignments) {
   }, {});
   Object.keys(sessionCountByDate).forEach(function(dateKey) {
     const item = grouped[dateKey] || { assigned: 0, units: {}, order: [] };
-    const lines = item.order.map(function(id) {
-      const unit = item.units[id];
-      return unit.code + ': ' + unit.count + ' h';
-    });
+    const lines = [];
     const unassigned = sessionCountByDate[dateKey] - item.assigned;
-    if (unassigned > 0) lines.push('Sin distribuir: ' + unassigned + ' h');
     let background = '';
     if (item.order.length > 1) {
       background = model.theme && model.theme.colors.mixedDay
         ? model.theme.colors.mixedDay
         : CP_MODULE_MIXED_DAY_COLOR;
+      item.order.forEach(function(id) {
+        const unit = item.units[id];
+        lines.push(unit.code + ': ' + unit.count + ' h');
+      });
     } else if (item.order.length === 1 && unassigned === 0) {
       background = item.units[item.order[0]].color;
     }
@@ -555,12 +554,12 @@ function renderModuleConfigUtArea_(sheet, activity, context) {
     .setFontWeight('bold')
     .setHorizontalAlignment('center');
   setMergedRangeValue_(sheet.getRange(26, 1, 1, 39),
-    'Horas equivale a sesiones docentes. Añade filas si necesitas más UT; Recalcular asignará sus IDs y colores.')
+    'Horas equivale a sesiones docentes. La evaluacion se calcula con el ultimo dia asignado a cada UT.')
     .setBackground(theme.colors.surface)
     .setFontColor(theme.colors.mutedText)
     .setHorizontalAlignment('left');
   sheet.getRange(CP_MODULE_CONFIG_LAYOUT.UT_HEADER_ROW, 1, 1, 5)
-    .setValues([['UT', 'Nombre', 'Color', 'Horas', 'Evaluación']])
+    .setValues([['UT', 'Nombre', 'Horas', 'Color', 'Evaluacion']])
     .setBackground(theme.colors.secondary)
     .setFontColor(theme.colors.onSecondary)
     .setFontWeight('bold')
@@ -569,25 +568,24 @@ function renderModuleConfigUtArea_(sheet, activity, context) {
     .setBackground(theme.colors.surface)
     .setFontColor(theme.colors.text)
     .setVerticalAlignment('middle')
+    .setWrap(true)
     .setBorder(true, true, true, true, true, true, theme.colors.border, SpreadsheetApp.BorderStyle.SOLID);
-  sheet.setColumnWidth(1, 70);
-  sheet.setColumnWidth(2, 220);
-  sheet.setColumnWidth(3, 95);
-  sheet.setColumnWidth(4, 75);
-  sheet.setColumnWidth(5, 160);
-  sheet.getRange(firstRow, 3, rowCount, 1).setNumberFormat('@');
-  sheet.getRange(firstRow, 4, rowCount, 1).setNumberFormat('0');
+  applyModuleConfigDimensions_(sheet);
+  sheet.setRowHeights(firstRow, rowCount, 34);
+  sheet.getRange(firstRow, 3, rowCount, 1).setNumberFormat('0');
+  sheet.getRange(firstRow, 4, rowCount, 1).setNumberFormat('@');
+  sheet.getRange(firstRow, 5, rowCount, 1)
+    .setBackground(theme.colors.muted)
+    .setFontColor(theme.colors.mutedText)
+    .setFontStyle('italic');
   sheet.getRange(firstRow, CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN, rowCount, 2)
     .setNumberFormat('@');
 
-  const evaluationNames = context.evaluations.map(function(evaluation) { return evaluation.name; });
-  sheet.getRange(firstRow, 5, rowCount, 1).setDataValidation(
-    SpreadsheetApp.newDataValidation().requireValueInList(evaluationNames, true).setAllowInvalid(false).build()
-  );
-  sheet.getRange(firstRow, 3, rowCount, 1).setDataValidation(
+  sheet.getRange(firstRow, 5, rowCount, 1).clearDataValidations();
+  sheet.getRange(firstRow, 4, rowCount, 1).setDataValidation(
     SpreadsheetApp.newDataValidation().requireValueInList(CP_MODULE_UT_COLORS, true).setAllowInvalid(true).build()
   );
-  sheet.getRange(firstRow, 4, rowCount, 1).setDataValidation(
+  sheet.getRange(firstRow, 3, rowCount, 1).setDataValidation(
     SpreadsheetApp.newDataValidation().requireNumberGreaterThanOrEqualTo(0).setAllowInvalid(false).build()
   );
   const rules = CP_MODULE_UT_COLORS.map(function(color) {
@@ -595,7 +593,7 @@ function renderModuleConfigUtArea_(sheet, activity, context) {
       .whenTextEqualTo(color)
       .setBackground(color)
       .setFontColor(getAccessibleTextColor_(color))
-      .setRanges([sheet.getRange(firstRow, 3, rowCount, 1)])
+      .setRanges([sheet.getRange(firstRow, 4, rowCount, 1)])
       .build();
   });
   sheet.setConditionalFormatRules(rules);
@@ -613,6 +611,12 @@ function renderModuleConfigUtArea_(sheet, activity, context) {
 
 function renderModuleHoursSummary_(sheet, activity, context, startRow) {
   const theme = getActiveTheme_(sheet.getParent());
+  const sessions = buildRealModuleSessions_(sheet.getParent(), context.type, activity);
+  const units = readAndNormalizeModuleUnits_(sheet, context.evaluations, {
+    writeBack: false,
+    allowEmpty: true,
+  });
+  const summary = buildModuleHoursSummaryData_(sessions, units, context);
   sheet.getRange(startRow, 8, 1, 6).merge().setValue('RESUMEN DE HORAS')
     .setBackground(theme.colors.secondary)
     .setFontColor(theme.colors.onSecondary)
@@ -621,48 +625,66 @@ function renderModuleHoursSummary_(sheet, activity, context, startRow) {
   let row = startRow + 1;
   context.evaluations.forEach(function(evaluation) {
     sheet.getRange(row, 8, 1, 3).merge().setValue(evaluation.name);
-    sheet.getRange(row, 11, 1, 3).merge().setFormula(
-      '=SUMIF($E$' + CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW + ':$E,"' +
-      escapeModuleFormulaText_(evaluation.name) + '",$D$' + CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW + ':$D)'
-    ).setNumberFormat('0');
+    sheet.getRange(row, 11, 1, 3).merge().setValue(summary.byEvaluation[evaluation.id] || 0)
+      .setNumberFormat('0');
     row += 1;
   });
   sheet.getRange(row, 8, 1, 3).merge().setValue('Horas previstas totales').setFontWeight('bold');
-  sheet.getRange(row, 11, 1, 3).merge()
-    .setFormula('=SUM($D$' + CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW + ':$D)')
+  sheet.getRange(row, 11, 1, 3).merge().setValue(summary.planned)
     .setNumberFormat('0').setFontWeight('bold');
-  const totalRow = row;
   row += 1;
   sheet.getRange(row, 8, 1, 3).merge().setValue('Sesiones lectivas disponibles');
-  sheet.getRange(row, 11, 1, 3).merge().setValue(
-    buildRealModuleSessions_(sheet.getParent(), context.type, activity).length
-  ).setNumberFormat('0');
-  const availableRow = row;
+  sheet.getRange(row, 11, 1, 3).merge().setValue(summary.available).setNumberFormat('0');
   row += 1;
-  sheet.getRange(row, 8, 2, 6).merge().setFormula(
-    '=IF(K' + totalRow + '=K' + availableRow + ',"\u2713 Planificación completa",' +
-    'IF(K' + totalRow + '>K' + availableRow + ',"\u26a0 Exceso de "&(K' + totalRow + '-K' + availableRow +
-    ')&" h","\u26a0 Quedan "&(K' + availableRow + '-K' + totalRow + ')&" sesiones sin distribuir"))'
-  ).setBackground(theme.colors.surface)
+  sheet.getRange(row, 8, 2, 6).merge().setValue(summary.statusText)
+    .setBackground(theme.colors.surface)
     .setFontColor(theme.colors.warning)
     .setFontWeight('bold')
     .setWrap(true)
     .setHorizontalAlignment('center');
   row += 3;
-  sheet.getRange(row, 8, 1, 6).merge().setValue('Resultado del último recálculo')
+  sheet.getRange(row, 8, 1, 6).merge().setValue('Resultado del ultimo recalculo')
     .setBackground(theme.colors.muted)
     .setFontWeight('bold');
-  sheet.getRange(row + 1, 8, 5, 6).merge().setValue('Todavía no se ha recalculado.')
+  sheet.getRange(row + 1, 8, 5, 6).merge().setValue('Todavia no se ha recalculado.')
     .setBackground(theme.colors.surface)
     .setFontColor(theme.colors.mutedText)
     .setWrap(true)
     .setVerticalAlignment('top');
 }
 
-function escapeModuleFormulaText_(value) {
-  return String(value || '').replace(/"/g, '""');
+function buildModuleHoursSummaryData_(sessions, units, context) {
+  const byEvaluation = context.evaluations.reduce(function(map, evaluation) {
+    map[evaluation.id] = 0;
+    return map;
+  }, {});
+  const planned = units.reduce(function(total, unit) {
+    if (unit.evaluationId && Object.prototype.hasOwnProperty.call(byEvaluation, unit.evaluationId)) {
+      byEvaluation[unit.evaluationId] += unit.hours;
+    }
+    return total + unit.hours;
+  }, 0);
+  const available = sessions.length;
+  let statusText = 'Planificacion completa.';
+  if (planned > available) {
+    statusText = 'Exceso de ' + (planned - available) + ' h previstas sobre las sesiones disponibles.';
+  } else if (planned < available) {
+    statusText = 'Quedan ' + (available - planned) + ' sesiones reales sin distribuir.';
+  }
+  return {
+    byEvaluation: byEvaluation,
+    planned: planned,
+    available: available,
+    statusText: statusText,
+  };
 }
 
+function isDateInModulePracticePeriod_(date, type, timeZone) {
+  return type.practicesStart instanceof Date &&
+    type.practicesEnd instanceof Date &&
+    compareCalendarDates_(date, type.practicesStart, timeZone) >= 0 &&
+    compareCalendarDates_(date, type.practicesEnd, timeZone) <= 0;
+}
 function buildRealModuleSessions_(spreadsheet, type, activity) {
   const timeZone = spreadsheet.getSpreadsheetTimeZone();
   const events = getAllCalendarEvents_();
@@ -683,7 +705,8 @@ function buildRealModuleSessions_(spreadsheet, type, activity) {
   for (let date = type.startDate;
       compareCalendarDates_(date, type.endDate, timeZone) <= 0;
       date = addCalendarDays_(date, 1, timeZone)) {
-    if (!isTeachingDayForType_(date, type, events, timeZone)) continue;
+    if (!isTeachingDayForType_(date, type, events, timeZone) ||
+        isDateInModulePracticePeriod_(date, type, timeZone)) continue;
     const dayNumber = Number(Utilities.formatDate(date, timeZone, 'u'));
     const dayCode = CP_SCHEDULE_DAYS[dayNumber - 1].id;
     (byDay[dayCode] || []).forEach(function(session) {
@@ -701,15 +724,24 @@ function buildRealModuleSessions_(spreadsheet, type, activity) {
 }
 
 function recalcularConfiguracionModulo() {
+  const template = HtmlService.createTemplateFromFile('UiDialogModuleRecalculation');
+  setCommonUiTemplateData_(template);
+  const output = template.evaluate()
+    .setWidth(CP.UI.PROGRESS_DIALOG_WIDTH)
+    .setHeight(430);
+  SpreadsheetApp.getUi().showModalDialog(output, CP.MENU.MODULE_CONFIG_RECALCULATE);
+}
+
+function ejecutarRecalculoConfiguracionModuloUi() {
   try {
-    const result = recalculateActiveModuleConfig_();
-    SpreadsheetApp.getUi().alert(CP.PROJECT_NAME, result.message, SpreadsheetApp.getUi().ButtonSet.OK);
+    return recalculateActiveModuleConfig_();
   } catch (error) {
-    SpreadsheetApp.getUi().alert(
-      CP.PROJECT_NAME,
-      error && error.message ? error.message : 'No se ha podido recalcular la configuración.',
-      SpreadsheetApp.getUi().ButtonSet.OK
-    );
+    return {
+      ok: false,
+      status: 'error',
+      title: 'No se ha podido recalcular',
+      message: error && error.message ? error.message : 'No se ha podido recalcular la configuracion.',
+    };
   }
 }
 
@@ -722,23 +754,33 @@ function recalculateActiveModuleConfig_() {
     const record = findModuleConfigRecordBySheetId_(spreadsheet, sheet.getSheetId());
     if (!record) {
       throw new Error(
-        'Sitúate en una hoja 4 Config gestionada y vuelve a ejecutar Recalcular.'
+        'Situate en una hoja 4 Config gestionada y vuelve a ejecutar Recalcular.'
       );
     }
     const academicYear = getConfiguredAcademicYear_(spreadsheet);
     if (record.academicYear !== academicYear) {
-      throw new Error('Esta configuración pertenece a otro curso académico.');
+      throw new Error('Esta configuracion pertenece a otro curso academico.');
     }
     const activity = getModuleActivityById_(record.activityId);
-    if (!activity) throw new Error('La actividad asociada a esta configuración ya no existe.');
+    if (!activity) throw new Error('La actividad asociada a esta configuracion ya no existe.');
     const context = validateModuleConfigPrerequisites_(spreadsheet, activity);
-    const units = readAndNormalizeModuleUnits_(sheet, context.evaluations);
-    if (!units.length) throw new Error('Define al menos una UT con nombre, horas y evaluación.');
+    const units = readAndNormalizeModuleUnits_(sheet, context.evaluations, { writeBack: false });
+    if (!units.length) throw new Error('Define al menos una UT con nombre y horas.');
     const sessions = buildRealModuleSessions_(spreadsheet, context.type, activity);
+    const plannedHours = units.reduce(function(total, unit) { return total + unit.hours; }, 0);
+    if (plannedHours > sessions.length) {
+      throw new Error(
+        'Las horas previstas por UT (' + plannedHours + ') superan las sesiones disponibles reales (' +
+        sessions.length + '). Reduce ' + (plannedHours - sessions.length) +
+        ' h antes de recalcular. No se ha modificado el calendario.'
+      );
+    }
     const assignments = assignModuleUnitsToSessions_(sessions, units);
+    applyCalculatedEvaluationsToModuleUnits_(units, assignments, context);
     const warnings = buildModulePlanningWarnings_(sessions, assignments, units, context);
     const oldPlanRows = readModulePlanRows_(spreadsheet);
     try {
+      writeNormalizedModuleUnits_(sheet, units);
       replaceModulePlan_(spreadsheet, record.activityId, academicYear, assignments);
       renderModuleConfigCalendar_(sheet, activity, context, sessions, assignments);
       refreshModuleConfigUtSupport_(sheet, activity, context);
@@ -747,11 +789,14 @@ function recalculateActiveModuleConfig_() {
       );
       const signature = applyModuleSignatureSnapshot_(sheet);
       updateModuleConfigRecordSignature_(spreadsheet, record.activityId, signature);
-      spreadsheet.toast('Configuración del módulo recalculada.', CP.PROJECT_NAME, 5);
+      spreadsheet.toast('Configuracion del modulo recalculada.', CP.PROJECT_NAME, 5);
       return {
+        ok: true,
+        status: warnings.length ? 'warning' : 'success',
+        title: warnings.length ? 'Recalculado con avisos' : 'Configuracion recalculada',
         message: warnings.length
-          ? 'Recalculado con avisos:\n\n' + warnings.join('\n')
-          : 'Planificación recalculada: ' + assignments.length +
+          ? warnings.join('\n')
+          : 'Planificacion recalculada: ' + assignments.length +
             ' de ' + sessions.length + ' sesiones asignadas.',
       };
     } catch (error) {
@@ -766,16 +811,12 @@ function recalculateActiveModuleConfig_() {
     lock.releaseLock();
   }
 }
-
-function readAndNormalizeModuleUnits_(sheet, evaluations) {
+function readAndNormalizeModuleUnits_(sheet, evaluations, options) {
+  const readOptions = Object.assign({ writeBack: true, allowEmpty: false }, options || {});
   const firstRow = CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW;
-  const rowCount = Math.max(1, sheet.getMaxRows() - firstRow + 1);
+  const rowCount = CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS;
   const visible = sheet.getRange(firstRow, 1, rowCount, 5).getValues();
   const ids = sheet.getRange(firstRow, CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN, rowCount, 2).getValues();
-  const evaluationByName = evaluations.reduce(function(map, evaluation) {
-    map[normalizeScheduleText_(evaluation.name)] = evaluation;
-    return map;
-  }, {});
   const usedCodes = {};
   const usedIds = {};
   const units = [];
@@ -784,10 +825,11 @@ function readAndNormalizeModuleUnits_(sheet, evaluations) {
   visible.forEach(function(row, index) {
     const codeValue = normalizeScheduleText_(row[0]);
     const name = normalizeScheduleText_(row[1]);
-    const colorValue = normalizeScheduleText_(row[2]).toUpperCase();
-    const hoursValue = row[3];
+    const hoursValue = row[2];
+    const colorValue = normalizeScheduleText_(row[3]).toUpperCase();
     const evaluationName = normalizeScheduleText_(row[4]);
-    const active = Boolean(codeValue || name || evaluationName || hoursValue !== '' && hoursValue !== null);
+    const active = Boolean(codeValue || name || colorValue || evaluationName ||
+      hoursValue !== '' && hoursValue !== null);
     if (!active) {
       if (normalizeScheduleText_(ids[index][0]) || normalizeScheduleText_(ids[index][1])) {
         inactiveRowsWithMetadata.push(firstRow + index);
@@ -800,16 +842,14 @@ function readAndNormalizeModuleUnits_(sheet, evaluations) {
     if (!Number.isInteger(hours) || hours < 0) {
       throw new Error('Las horas de ' + code + ' deben ser un entero igual o mayor que cero.');
     }
-    const evaluation = evaluationByName[evaluationName];
-    if (!evaluation) {
-      throw new Error('Selecciona una evaluación válida para ' + code + '.');
-    }
     if (colorValue && !CP_SCHEDULE_COLOR_PATTERN.test(colorValue)) {
       throw new Error('El color de ' + code + ' debe tener el formato #RRGGBB.');
     }
     const color = colorValue || CP_MODULE_UT_COLORS[units.length % CP_MODULE_UT_COLORS.length];
     const id = normalizeScheduleText_(ids[index][0]) || createCalendarRecordId_('UT');
-    if (usedCodes[code.toUpperCase()]) throw new Error('El código de UT ' + code + ' está repetido.');
+    const evaluationId = normalizeScheduleText_(ids[index][1]);
+    const evaluation = getModuleEvaluationByIdOrName_(evaluations, evaluationId, evaluationName);
+    if (usedCodes[code.toUpperCase()]) throw new Error('El codigo de UT ' + code + ' esta repetido.');
     if (usedIds[id]) throw new Error('Dos UT comparten la misma identidad interna.');
     usedCodes[code.toUpperCase()] = true;
     usedIds[id] = true;
@@ -819,33 +859,50 @@ function readAndNormalizeModuleUnits_(sheet, evaluations) {
       name: name,
       color: color,
       hours: hours,
-      evaluationId: evaluation.id,
-      evaluationName: evaluation.name,
+      evaluationId: evaluation ? evaluation.id : '',
+      evaluationName: evaluation ? evaluation.name : '',
       sourceRow: firstRow + index,
     });
     if (code !== codeValue || color !== colorValue || id !== normalizeScheduleText_(ids[index][0]) ||
-        evaluation.id !== normalizeScheduleText_(ids[index][1])) changed = true;
+        (evaluation ? evaluation.id : '') !== evaluationId) changed = true;
   });
-  if (changed) {
-    units.forEach(function(unit) {
-      sheet.getRange(unit.sourceRow, 1).setValue(unit.code);
-      sheet.getRange(unit.sourceRow, 3).setValue(unit.color).setBackground(unit.color)
-        .setFontColor(getAccessibleTextColor_(unit.color));
-      sheet.getRange(unit.sourceRow, CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN).setValue(unit.id);
-      sheet.getRange(unit.sourceRow, CP_MODULE_CONFIG_LAYOUT.EVALUATION_ID_COLUMN)
-        .setValue(unit.evaluationId);
-    });
+  if (changed && readOptions.writeBack) {
+    writeNormalizedModuleUnits_(sheet, units);
   }
-  if (inactiveRowsWithMetadata.length) {
+  if (inactiveRowsWithMetadata.length && readOptions.writeBack) {
     const colors = getActiveTheme_(sheet.getParent()).colors;
     inactiveRowsWithMetadata.forEach(function(row) {
       sheet.getRange(row, CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN, 1, 2).clearContent();
-      sheet.getRange(row, 3).setBackground(colors.surface).setFontColor(colors.text);
+      sheet.getRange(row, 4).setBackground(colors.surface).setFontColor(colors.text);
     });
   }
   return units;
 }
 
+function getModuleEvaluationByIdOrName_(evaluations, evaluationId, evaluationName) {
+  return evaluations.find(function(evaluation) {
+    return normalizeScheduleText_(evaluation.id) === evaluationId;
+  }) || evaluations.find(function(evaluation) {
+    return normalizeScheduleText_(evaluation.name) === evaluationName;
+  }) || null;
+}
+
+function writeNormalizedModuleUnits_(sheet, units) {
+  const theme = getActiveTheme_(sheet.getParent());
+  units.forEach(function(unit) {
+    sheet.getRange(unit.sourceRow, 1).setValue(unit.code);
+    sheet.getRange(unit.sourceRow, 3).setValue(unit.hours);
+    sheet.getRange(unit.sourceRow, 4).setValue(unit.color).setBackground(unit.color)
+      .setFontColor(getAccessibleTextColor_(unit.color));
+    sheet.getRange(unit.sourceRow, 5).setValue(unit.evaluationName || '')
+      .setBackground(theme.colors.muted)
+      .setFontColor(theme.colors.mutedText)
+      .setFontStyle('italic');
+    sheet.getRange(unit.sourceRow, CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN).setValue(unit.id);
+    sheet.getRange(unit.sourceRow, CP_MODULE_CONFIG_LAYOUT.EVALUATION_ID_COLUMN)
+      .setValue(unit.evaluationId || '');
+  });
+}
 function assignModuleUnitsToSessions_(sessions, units) {
   const assignments = [];
   let sessionIndex = 0;
@@ -861,9 +918,7 @@ function assignModuleUnitsToSessions_(sessions, units) {
 function buildModulePlanningWarnings_(sessions, assignments, units, context) {
   const warnings = [];
   const plannedHours = units.reduce(function(total, unit) { return total + unit.hours; }, 0);
-  if (plannedHours > sessions.length) {
-    warnings.push('Sobran ' + (plannedHours - sessions.length) + ' horas previstas sin fecha disponible.');
-  } else if (plannedHours < sessions.length) {
+  if (plannedHours < sessions.length) {
     warnings.push('Quedan ' + (sessions.length - plannedHours) + ' sesiones reales sin UT.');
   }
   const evaluationPeriods = getEvaluationPeriodsForType_(context.type,
@@ -876,22 +931,42 @@ function buildModulePlanningWarnings_(sessions, assignments, units, context) {
           SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone()) <= 0;
     });
   };
-  const mismatches = {};
+  const crossed = {};
   assignments.forEach(function(assignment) {
     const actual = evaluationByDate(assignment.date);
-    if (!actual || actual.id !== assignment.ut.evaluationId) {
-      mismatches[assignment.ut.code] = true;
-    }
+    if (!actual) return;
+    crossed[assignment.ut.code] = crossed[assignment.ut.code] || {};
+    crossed[assignment.ut.code][actual.id] = true;
   });
-  if (Object.keys(mismatches).length) {
+  const crossedCodes = Object.keys(crossed).filter(function(code) {
+    return Object.keys(crossed[code]).length > 1;
+  });
+  if (crossedCodes.length) {
     warnings.push(
-      'Revisa la evaluación de estas UT: ' + Object.keys(mismatches).join(', ') +
-      '. Su distribución cruza las fechas configuradas.'
+      'Estas UT cruzan fechas de distintas evaluaciones: ' + crossedCodes.join(', ') +
+      '. Se ha asignado como evaluacion final la del ultimo dia planificado.'
     );
   }
   return warnings;
 }
 
+function applyCalculatedEvaluationsToModuleUnits_(units, assignments, context) {
+  const timeZone = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+  const periods = getEvaluationPeriodsForType_(context.type, timeZone);
+  const lastByUnitId = {};
+  assignments.forEach(function(assignment) {
+    lastByUnitId[assignment.ut.id] = assignment.date;
+  });
+  units.forEach(function(unit) {
+    const lastDate = lastByUnitId[unit.id];
+    const period = lastDate ? periods.find(function(item) {
+      return compareCalendarDates_(lastDate, item.startDate, timeZone) >= 0 &&
+        compareCalendarDates_(lastDate, item.endDate, timeZone) <= 0;
+    }) : null;
+    unit.evaluationId = period ? period.id : '';
+    unit.evaluationName = period ? period.name : '';
+  });
+}
 function updateModuleRecalculationSummary_(sheet, context, available, assigned, warnings) {
   const row = CP_MODULE_CONFIG_LAYOUT.UT_HEADER_ROW + context.evaluations.length + 7;
   const text = 'Sesiones asignadas: ' + assigned + ' de ' + available + '.' +
@@ -902,11 +977,12 @@ function updateModuleRecalculationSummary_(sheet, context, available, assigned, 
 function refreshModuleConfigUtSupport_(sheet, activity, context) {
   const firstRow = CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW;
   const rowCount = Math.max(1, sheet.getMaxRows() - firstRow + 1);
-  const evaluationNames = context.evaluations.map(function(evaluation) { return evaluation.name; });
-  sheet.getRange(firstRow, 5, rowCount, 1).setDataValidation(
-    SpreadsheetApp.newDataValidation().requireValueInList(evaluationNames, true)
-      .setAllowInvalid(false).build()
-  );
+  const theme = getActiveTheme_(sheet.getParent());
+  sheet.getRange(firstRow, 5, rowCount, 1)
+    .clearDataValidations()
+    .setBackground(theme.colors.muted)
+    .setFontColor(theme.colors.mutedText)
+    .setFontStyle('italic');
   sheet.getRange(27, 8, Math.min(20, sheet.getMaxRows() - 26), 6)
     .breakApart().clearContent().clearFormat();
   renderModuleHoursSummary_(sheet, activity, context, 27);

@@ -11,7 +11,7 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 
 **Estado:** especificación funcional vigente
 **Versión del documento:** 2.3
-**Versión del cuaderno:** `1.4.4`
+**Versión del cuaderno:** `1.4.5`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.4.4
+# 2. Estado funcional de la versión 1.4.5
 
 Están cerrados funcionalmente:
 
@@ -189,7 +189,7 @@ Si aparecen casos reales de convalidaciones, bajas, matrícula parcial u otras e
 
 Cada actividad `MODULO` puede generar independientemente una sola `4 Config <SIGLA> · <GRUPO>`. `_MOD_CONFIG` vincula `actividad_id` con el ID estable de la hoja y el curso; el nombre no basta para validar la asociación. La creación valida tipo, grupo, sesiones semanales, periodo lectivo y evaluaciones, y no modifica el libro al abrir el selector.
 
-El selector muestra el aviso de configurar Horario solo cuando no existe ninguna actividad `MODULO`. Durante la creación bloquea nuevas acciones y muestra carga. Un error conserva la selección, informa dentro del modal y elimina los artefactos parciales; el modal solo se cierra automáticamente tras completar correctamente hoja, registro y firma inicial.
+El selector muestra solo actividades `MODULO` sin hoja `4 Config` gestionada. Si no queda ninguna actividad elegible, muestra un warning y deshabilita la creación. Durante la creación bloquea nuevas acciones y muestra carga. Un error conserva la selección, informa dentro del modal y elimina los artefactos parciales; el modal solo se cierra automáticamente tras completar correctamente hoja, registro y firma inicial.
 
 La tabla visible es la autoridad sobre las UT. Las ponderaciones de evaluación siguen pendientes.
 
@@ -215,17 +215,22 @@ En la primera fase implementada la tabla contiene:
 | UT | Nombre | Color | Horas | Evaluación |
 |---|---|---|---:|---|
 
+Desde `1.4.5` el orden visible es:
+
+| UT | Nombre | Horas | Color | Evaluación |
+|---|---|---:|---|---|
+
 `Horas` es manual y significa número de sesiones reales. No se deriva del calendario ni convierte minutos físicos a fracciones.
 
-Las evaluaciones disponibles proceden del `tipo_ensenanza_id` de la actividad y de `_CAL_EVALUACIONES`. No se duplican nombres de evaluaciones dentro de otro modelo.
+La evaluación visible es calculada, no editable por el docente. Se asigna según la evaluación del último día real planificado para esa UT. Las evaluaciones disponibles proceden del `tipo_ensenanza_id` de la actividad y de `_CAL_EVALUACIONES`. No se duplican nombres de evaluaciones dentro de otro modelo.
 
-Cada UT mantiene un ID interno estable, un orden por fila, un color explícito y una evaluación válida. Al recalcular se asignan automáticamente código, color e ID cuando falten en una fila activa. Se pueden insertar filas adicionales.
+Cada UT mantiene un ID interno estable, un orden por fila, un color explícito y una evaluación calculada. Al recalcular se asignan automáticamente código, color, ID y evaluación cuando proceda. La hoja ofrece 15 filas editables de UT.
 
-Los pesos de cada UT dentro de su evaluación y los pesos de cada evaluación en la nota final se incorporarán en la siguiente fase; no forman parte de 1.4.4.
+Los pesos de cada UT dentro de su evaluación y los pesos de cada evaluación en la nota final se incorporarán en la siguiente fase; no forman parte de 1.4.5.
 
 ## 11.4. Totales automáticos
 
-Cerca de la tabla se muestran por fórmula las horas totales de cada evaluación, el total del módulo y la diferencia frente a las sesiones lectivas disponibles. No son campos editables y se actualizan inmediatamente al cambiar las horas de una UT.
+Cerca de la tabla se muestran los totales calculados por Apps Script: horas previstas por evaluación, horas previstas totales y sesiones lectivas disponibles reales. No son campos editables; se actualizan al crear o recalcular la configuración.
 
 ## 11.5. Recálculo explícito
 
@@ -235,7 +240,7 @@ El menú `📚 Módulos → 🔄 Recalcular configuración del módulo`:
 2. verificará mediante metadatos internos que es una `4 Config` gestionada;
 3. resolverá su `actividad_id`;
 4. leerá UT y horas;
-5. recorrerá cronológicamente las sesiones reales;
+5. recorrerá cronológicamente las sesiones reales, excluyendo días no lectivos y el periodo de prácticas del tipo de enseñanza de la impartición;
 6. asignará exactamente las primeras N sesiones a UT1 y continuará con las siguientes;
 7. sustituirá en `_MOD_PLAN` solo las asignaciones de esa impartición;
 8. actualizará colores y notas del calendario.
@@ -244,13 +249,13 @@ Ejecutarlo desde cualquier otra hoja mostrará un aviso para situarse en una `4 
 
 No se usa `onEdit`. Una firma interna de orden, ID, código, nombre, color, horas y evaluación aplicados en el último recálculo se compara mediante fórmulas con los valores actuales. Mientras difieran se muestra `⚠ Hay cambios pendientes de aplicar al calendario`; tras recalcular correctamente, la firma se actualiza y el aviso desaparece.
 
-Si sobran horas no se inventan fechas; si faltan, las sesiones restantes quedan sin UT. La planificación persistida contiene exclusivamente asignaciones reales. Si una UT se distribuye fuera de la evaluación indicada, se informa sin alterar sus horas.
+Si las horas previstas superan las sesiones disponibles reales, el recálculo se aborta antes de redibujar o sustituir la planificación. Si faltan horas, las sesiones restantes quedan sin UT y se informa con warning. La planificación persistida contiene exclusivamente asignaciones reales. Si una UT cruza evaluaciones, se informa y su evaluación final se calcula por el último día asignado.
 
 ## 11.6. Color por UT y día mixto
 
 Los colores de UT son presentación y se pintan sobre los fondos del calendario base. Si todas las sesiones de una fecha pertenecen a una UT, se usa su color.
 
-Si una fecha contiene varias UT, se usa el color semántico de sistema `DÍA MIXTO` y una nota como:
+Si una fecha contiene varias UT, se usa el color semántico de sistema `DÍA MIXTO` y solo se añade nota cuando hay dos o más sesiones del módulo asignadas a UT distintas, con un texto como:
 
 ```text
 UT1: 1 h
