@@ -1,8 +1,8 @@
 # Estado del proyecto
 
-**Última actualización:** 2026-09-30
+**Última actualización:** 2026-10-01
 **Estado general:** Portada, Calendario, Horario, Alumnado y primera fase de `4 Config` operativos
-**Versión vigente:** `1.4.3`
+**Versión vigente:** `1.4.4`
 **Esquema vigente:** `9`
 
 # Completado
@@ -70,6 +70,9 @@ Pendiente de cierre del bloque:
 - Firma por fórmula para detectar cambios pendientes sin trigger.
 - Estados por impartición y ayuda contextual en el Sidebar.
 - Preparar nuevo curso elimina por identidad las Config gestionadas y sus registros tras el backup.
+- Corregido el modal para que el aviso sin módulos sea exclusivo de ese estado, muestre carga real y haga visibles los errores sin perder la selección.
+- La firma inicial y la aplicada se calculan en backend sin depender del recálculo inmediato de Sheets; la tabla UT vacía es válida.
+- El rollback de creación limpia hoja, `_MOD_CONFIG` y `_MOD_PLAN` del módulo fallido y conserva los demás.
 
 Pendiente de cierre del bloque:
 

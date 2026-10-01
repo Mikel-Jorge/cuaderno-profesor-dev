@@ -17,12 +17,15 @@
       </header>
 
       <form class="config-form" id="module-form">
-        <div class="config-scroll">
+        <div class="config-scroll" id="module-content">
           <section class="form-section">
             <h2>Configuración individual</h2>
             <p class="form-help">Cada módulo y grupo mantiene su propio calendario y sus propias UT.</p>
             <div id="empty-state" class="confirmation confirmation-warning" hidden>
-              Primero configura en Horario al menos una actividad de categoría MODULO.
+              <p class="confirmation-message">⚠ No hay módulos configurados.</p>
+              <p class="confirmation-helper">
+                Primero configura en Horario al menos una actividad de categoría MÓDULO.
+              </p>
             </div>
             <div class="form-field" id="module-field">
               <label for="module-select">Módulo</label>
@@ -30,6 +33,13 @@
               <p id="selection-help" class="form-help"></p>
             </div>
           </section>
+        </div>
+        <div class="save-loading is-hidden" id="creation-loading" role="status" aria-live="polite">
+          <span class="loading-spinner" aria-hidden="true"></span>
+          <span>
+            <span id="loading-title">Comprobando módulo...</span>
+            <small id="loading-detail">Validando Horario y Calendario.</small>
+          </span>
         </div>
         <div class="config-feedback">
           <div id="feedback" class="result" role="status"></div>
@@ -51,15 +61,23 @@
       const form = document.getElementById('module-form');
       const select = document.getElementById('module-select');
       const submitButton = document.getElementById('submit-button');
+      const cancelButton = document.getElementById('cancel-button');
       const selectionHelp = document.getElementById('selection-help');
       const feedback = document.getElementById('feedback');
       const emptyState = document.getElementById('empty-state');
+      const moduleContent = document.getElementById('module-content');
+      const creationLoading = document.getElementById('creation-loading');
+      const loadingTitle = document.getElementById('loading-title');
+      const loadingDetail = document.getElementById('loading-detail');
+      let creationInProgress = false;
 
       if (!moduleData.modules.length) {
         emptyState.hidden = false;
         document.getElementById('module-field').hidden = true;
         submitButton.disabled = true;
       } else {
+        emptyState.hidden = true;
+        document.getElementById('module-field').hidden = false;
         moduleData.modules.forEach(function(module) {
           const option = document.createElement('option');
           option.value = module.id;
@@ -70,32 +88,36 @@
       }
 
       select.addEventListener('change', updateSelection);
-      document.getElementById('cancel-button').addEventListener('click', function() {
+      cancelButton.addEventListener('click', function() {
         google.script.host.close();
       });
 
       form.addEventListener('submit', function(event) {
         event.preventDefault();
-        setBusy(true);
+        if (creationInProgress || !select.value || submitButton.disabled) return;
+        showLoading('Comprobando módulo...', 'Validando Horario y Calendario.');
         feedback.textContent = '';
         feedback.className = 'result';
         google.script.run
           .withSuccessHandler(function(result) {
-            feedback.className = 'result success';
-            feedback.textContent = result.message + ' Hoja: ' + result.sheetName;
+            if (!result || !result.ok) {
+              showCreationError(result || {});
+              return;
+            }
             const module = moduleData.modules.find(function(item) { return item.id === select.value; });
             if (module) {
               module.configured = true;
               module.sheetName = result.sheetName;
             }
-            setBusy(false);
+            loadingTitle.textContent = result.created
+              ? '✓ Configuración creada.'
+              : '✓ Configuración localizada.';
+            loadingDetail.textContent = result.message + ' Hoja: ' + result.sheetName;
+            window.setTimeout(function() { google.script.host.close(); }, 900);
           })
           .withFailureHandler(function(error) {
-            feedback.className = 'result error';
-            feedback.textContent = error && error.message
-              ? error.message
-              : 'No se ha podido crear la configuración.';
-            setBusy(false);
+            console.error(error);
+            showCreationError({ ok: false, expected: false });
           })
           .crearConfiguracionModulo(select.value);
       });
@@ -103,7 +125,7 @@
       function updateSelection() {
         const module = moduleData.modules.find(function(item) { return item.id === select.value; });
         if (module && module.configured) {
-          selectionHelp.textContent = 'Ya existe: ' + module.sheetName + '. La acción la localizará sin crear otra.';
+          selectionHelp.textContent = 'Este módulo ya tiene una configuración creada. Hoja: ' + module.sheetName + '.';
           submitButton.textContent = 'Abrir configuración';
           submitButton.disabled = false;
         } else if (module && module.prerequisiteError) {
@@ -117,14 +139,45 @@
         }
       }
 
-      function setBusy(busy) {
-        select.disabled = busy;
-        submitButton.disabled = busy;
-        if (busy) {
-          submitButton.textContent = 'Comprobando…';
-        } else {
-          updateSelection();
+      function showLoading(title, detail) {
+        creationInProgress = true;
+        loadingTitle.textContent = title;
+        loadingDetail.textContent = detail;
+        select.disabled = true;
+        submitButton.disabled = true;
+        cancelButton.disabled = true;
+        moduleContent.classList.add('is-hidden');
+        form.classList.add('is-saving');
+        creationLoading.classList.remove('is-hidden');
+      }
+
+      function stopLoading() {
+        creationInProgress = false;
+        select.disabled = false;
+        cancelButton.disabled = false;
+        moduleContent.classList.remove('is-hidden');
+        form.classList.remove('is-saving');
+        creationLoading.classList.add('is-hidden');
+        updateSelection();
+      }
+
+      function showCreationError(result) {
+        stopLoading();
+        feedback.className = 'result visible error';
+        feedback.style.whiteSpace = 'pre-line';
+        if (result.expected && result.message) {
+          feedback.textContent = result.message;
+          return;
         }
+        const cleanupMessage = result.rollbackComplete === true
+          ? 'No se han guardado cambios incompletos.'
+          : result.rollbackComplete === false
+            ? 'No se ha podido completar la limpieza automática. Revisa Apps Script → Ejecuciones.'
+            : 'No se ha podido verificar la limpieza automática. Revisa Apps Script → Ejecuciones.';
+        feedback.textContent = '❌ No se ha podido crear la configuración del módulo.\n\n' +
+          'Ha ocurrido un error inesperado durante la creación.\n\n' +
+          cleanupMessage + '\n\n' +
+          'Puedes volver a intentarlo. Si el problema continúa, revisa Apps Script → Ejecuciones.';
       }
     </script>
   </body>

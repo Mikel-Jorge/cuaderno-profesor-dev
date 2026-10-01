@@ -5,7 +5,7 @@ const CP_MODULE_PLAN_HEADERS = Object.freeze([
   'plan_id', 'actividad_id', 'curso_academico', 'fecha', 'tramo_id', 'ut_id',
 ]);
 const CP_MODULE_CONFIG_LAYOUT = Object.freeze({
-  COLUMNS: 42,
+  COLUMNS: 44,
   CALENDAR_COLUMNS: 39,
   FIRST_MONTH_ROW: 7,
   MONTH_ROWS: 8,
@@ -17,8 +17,9 @@ const CP_MODULE_CONFIG_LAYOUT = Object.freeze({
   INITIAL_UT_ROWS: 50,
   UT_ID_COLUMN: 40,
   EVALUATION_ID_COLUMN: 41,
-  APPLIED_SIGNATURE_COLUMN: 41,
-  CURRENT_SIGNATURE_COLUMN: 42,
+  CURRENT_ROW_SIGNATURE_COLUMN: 42,
+  APPLIED_ROW_SIGNATURE_COLUMN: 43,
+  CHANGE_FLAG_COLUMN: 44,
 });
 const CP_MODULE_MIXED_DAY_COLOR = '#F59E0B';
 const CP_MODULE_UT_COLORS = Object.freeze([
@@ -125,13 +126,35 @@ function getModuleDialogLabel_(activity) {
 }
 
 function crearConfiguracionModulo(activityId) {
+  try {
+    const result = createModuleConfig_(activityId);
+    return Object.assign({ ok: true }, result);
+  } catch (error) {
+    console.error(
+      'Error al crear la configuración de módulo: ' +
+      (error && error.stack ? error.stack : error)
+    );
+    return {
+      ok: false,
+      expected: Boolean(error && error.moduleConfigExpected),
+      rollbackComplete: error && error.moduleConfigRollbackComplete !== false,
+      message: error && error.moduleConfigExpected
+        ? error.message
+        : 'No se ha podido crear la configuración del módulo.',
+    };
+  }
+}
+
+function createModuleConfig_(activityId) {
   const lock = LockService.getDocumentLock();
   lock.waitLock(30000);
   try {
     const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     const activity = getModuleActivityById_(activityId);
     if (!activity) {
-      throw new Error('El módulo seleccionado ya no existe en la configuración del Horario.');
+      throwModuleConfigExpectedError_(
+        'El módulo seleccionado ya no existe en la configuración del Horario.'
+      );
     }
     const existing = findModuleConfigRecordByActivityId_(spreadsheet, activity.id);
     if (existing) {
@@ -151,15 +174,17 @@ function crearConfiguracionModulo(activityId) {
     }
     const context = validateModuleConfigPrerequisites_(spreadsheet, activity);
     ensureModuleConfigTechnicalStructure_();
+    const previousConfigRows = readModuleConfigRegistry_(spreadsheet)
+      .map(moduleConfigRecordToRow_);
+    const previousPlanRows = readModulePlanRows_(spreadsheet);
 
     let sheet = null;
     try {
       const sheetName = buildUniqueModuleConfigSheetName_(spreadsheet, activity);
       sheet = spreadsheet.insertSheet(sheetName);
       renderNewModuleConfigSheet_(sheet, activity, context);
-      SpreadsheetApp.flush();
-      const signature = readModuleCurrentSignature_(sheet, true);
-      sheet.getRange(2, CP_MODULE_CONFIG_LAYOUT.APPLIED_SIGNATURE_COLUMN).setValue(signature);
+      const signature = applyModuleSignatureSnapshot_(sheet);
+      replaceModulePlan_(spreadsheet, activity.id, context.academicYear, []);
       appendModuleConfigRecord_(spreadsheet, {
         activityId: activity.id,
         sheetId: sheet.getSheetId(),
@@ -176,14 +201,26 @@ function crearConfiguracionModulo(activityId) {
         message: 'Configuración creada. Completa las UT y ejecuta Recalcular.',
       };
     } catch (error) {
-      if (sheet && !findModuleConfigRecordBySheetId_(spreadsheet, sheet.getSheetId())) {
-        spreadsheet.deleteSheet(sheet);
+      const rollbackComplete = rollbackFailedModuleConfigCreation_(
+        spreadsheet,
+        sheet,
+        previousConfigRows,
+        previousPlanRows
+      );
+      if (error && typeof error === 'object') {
+        error.moduleConfigRollbackComplete = rollbackComplete;
       }
       throw error;
     }
   } finally {
     lock.releaseLock();
   }
+}
+
+function throwModuleConfigExpectedError_(message) {
+  const error = new Error(message);
+  error.moduleConfigExpected = true;
+  throw error;
 }
 
 function validateModuleConfigPrerequisites_(spreadsheet, activity) {
@@ -206,7 +243,7 @@ function validateModuleConfigPrerequisites_(spreadsheet, activity) {
     missing.push('evaluaciones con nombre y fecha final para el tipo de enseñanza');
   }
   if (missing.length) {
-    throw new Error(
+    throwModuleConfigExpectedError_(
       'Antes de crear esta configuración, completa: ' + missing.join('; ') + '.'
     );
   }
@@ -215,17 +252,29 @@ function validateModuleConfigPrerequisites_(spreadsheet, activity) {
   let previousEnd = null;
   evaluations.forEach(function(evaluation) {
     if (previousEnd && compareCalendarDates_(evaluation.endDate, previousEnd, timeZone) <= 0) {
-      throw new Error('Las fechas finales de las evaluaciones deben estar en orden cronológico.');
+      throwModuleConfigExpectedError_(
+        'Las fechas finales de las evaluaciones deben estar en orden cronológico.'
+      );
     }
     if (compareCalendarDates_(evaluation.endDate, type.startDate, timeZone) < 0 ||
         compareCalendarDates_(evaluation.endDate, type.endDate, timeZone) > 0) {
-      throw new Error('Las fechas finales de evaluación deben estar dentro del periodo lectivo.');
+      throwModuleConfigExpectedError_(
+        'Las fechas finales de evaluación deben estar dentro del periodo lectivo.'
+      );
     }
     previousEnd = evaluation.endDate;
   });
 
+  let academicYear;
+  try {
+    academicYear = getConfiguredAcademicYear_(spreadsheet);
+  } catch (error) {
+    throwModuleConfigExpectedError_(error && error.message
+      ? error.message
+      : 'Configura primero el curso académico en Datos generales.');
+  }
   return {
-    academicYear: getConfiguredAcademicYear_(spreadsheet),
+    academicYear: academicYear,
     type: type,
     evaluations: evaluations,
     weeklySessions: weeklySessions,
@@ -264,7 +313,7 @@ function renderNewModuleConfigSheet_(sheet, activity, context) {
   const sessions = buildRealModuleSessions_(sheet.getParent(), context.type, activity);
   renderModuleConfigCalendar_(sheet, activity, context, sessions, []);
   renderModuleConfigUtArea_(sheet, activity, context);
-  sheet.hideColumns(CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN, 3);
+  sheet.hideColumns(CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN, 5);
   trimSheetToBounds_(sheet, rows, CP_MODULE_CONFIG_LAYOUT.COLUMNS);
 }
 
@@ -294,6 +343,7 @@ function buildModuleCalendarModel_(spreadsheet, type) {
 }
 
 function renderModuleConfigCalendar_(sheet, activity, context, sessions, assignments) {
+  ensureSheetSize_(sheet, sheet.getMaxRows(), CP_MODULE_CONFIG_LAYOUT.COLUMNS);
   const model = buildModuleCalendarModel_(sheet.getParent(), context.type);
   const theme = model.theme;
   const calendarRange = sheet.getRange(1, 1, 24, CP_MODULE_CONFIG_LAYOUT.CALENDAR_COLUMNS);
@@ -325,7 +375,13 @@ function renderModuleConfigCalendar_(sheet, activity, context, sessions, assignm
     .setFontColor(theme.colors.mutedText)
     .setHorizontalAlignment('center');
   sheet.getRange(4, 1, 1, 39).merge()
-    .setFormula('=IF($AP$2=$AO$2,"\u2713 Calendario actualizado","\u26a0 Hay cambios pendientes de aplicar al calendario")')
+    .setFormula(
+      '=SUM(AR' + CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW + ':AR)'
+    )
+    .setNumberFormat(
+      '[=0]"\u2713 Calendario actualizado";' +
+      '[>0]"\u26a0 Hay cambios pendientes de aplicar al calendario";;'
+    )
     .setBackground(theme.colors.surface)
     .setFontColor(theme.colors.warning)
     .setFontWeight('bold')
@@ -357,7 +413,7 @@ function applyModuleConfigDimensions_(sheet) {
   for (let column = 1; column <= 39; column += 1) {
     sheet.setColumnWidth(column, [8, 16, 24, 32].indexOf(column) !== -1 ? 10 : 31);
   }
-  sheet.setColumnWidths(40, 3, 40);
+  sheet.setColumnWidths(40, 5, 40);
   sheet.setRowHeights(1, sheet.getMaxRows(), 22);
   sheet.setRowHeight(1, 30);
   sheet.setRowHeight(2, 24);
@@ -546,15 +602,11 @@ function renderModuleConfigUtArea_(sheet, activity, context) {
 
   sheet.getRange(1, CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN).setValue('ut_id');
   sheet.getRange(1, CP_MODULE_CONFIG_LAYOUT.EVALUATION_ID_COLUMN).setValue('evaluation_id');
-  sheet.getRange(1, CP_MODULE_CONFIG_LAYOUT.CURRENT_SIGNATURE_COLUMN).setValue('current_signature');
-  sheet.getRange(2, CP_MODULE_CONFIG_LAYOUT.CURRENT_SIGNATURE_COLUMN).setFormula(
-    '=TEXTJOIN("\u2666",TRUE,ARRAYFORMULA(IF((LEN(A' + firstRow + ':A)+LEN(B' + firstRow +
-    ':B)+LEN(C' + firstRow + ':C)+LEN(D' + firstRow + ':D)+LEN(E' + firstRow +
-    ':E)+LEN(AN' + firstRow + ':AN)+LEN(AO' + firstRow + ':AO))=0,"",ROW(A' + firstRow +
-    ':A)&"\u00a6"&AN' + firstRow + ':AN&"\u00a6"&A' + firstRow + ':A&"\u00a6"&B' + firstRow +
-    ':B&"\u00a6"&C' + firstRow + ':C&"\u00a6"&D' + firstRow + ':D&"\u00a6"&E' + firstRow +
-    ':E&"\u00a6"&AO' + firstRow + ':AO)))'
-  );
+  sheet.getRange(1, CP_MODULE_CONFIG_LAYOUT.CURRENT_ROW_SIGNATURE_COLUMN)
+    .setValue('current_row_signature');
+  sheet.getRange(1, CP_MODULE_CONFIG_LAYOUT.APPLIED_ROW_SIGNATURE_COLUMN)
+    .setValue('applied_row_signature');
+  sheet.getRange(1, CP_MODULE_CONFIG_LAYOUT.CHANGE_FLAG_COLUMN).setValue('change_flag');
 
   renderModuleHoursSummary_(sheet, activity, context, 27);
 }
@@ -693,10 +745,8 @@ function recalculateActiveModuleConfig_() {
       updateModuleRecalculationSummary_(
         sheet, context, sessions.length, assignments.length, warnings
       );
-      SpreadsheetApp.flush();
-      const signature = readModuleCurrentSignature_(sheet, false);
+      const signature = applyModuleSignatureSnapshot_(sheet);
       updateModuleConfigRecordSignature_(spreadsheet, record.activityId, signature);
-      sheet.getRange(2, CP_MODULE_CONFIG_LAYOUT.APPLIED_SIGNATURE_COLUMN).setValue(signature);
       spreadsheet.toast('Configuración del módulo recalculada.', CP.PROJECT_NAME, 5);
       return {
         message: warnings.length
@@ -878,17 +928,96 @@ function readModuleConfigRegistry_(spreadsheet) {
     });
 }
 
-function readModuleCurrentSignature_(sheet, allowEmpty) {
-  const signature = String(
-    sheet.getRange(2, CP_MODULE_CONFIG_LAYOUT.CURRENT_SIGNATURE_COLUMN).getDisplayValue() || ''
+function applyModuleSignatureSnapshot_(sheet) {
+  ensureSheetSize_(
+    sheet,
+    Math.max(sheet.getMaxRows(), CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW),
+    CP_MODULE_CONFIG_LAYOUT.COLUMNS
   );
-  if ((!allowEmpty && !signature) || signature.charAt(0) === '#') {
-    throw new Error(
-      'No se ha podido verificar la firma de cambios de la tabla de UT. ' +
-      'Revisa las fórmulas de la hoja.'
-    );
+  const rows = readModuleSignatureRows_(sheet);
+  const currentFormulas = rows.map(function(row) {
+    return [buildModuleRowSignatureFormula_(row.rowNumber)];
+  });
+  const appliedValues = rows.map(function(row) { return [row.signature]; });
+  const changeFormulas = rows.map(function(row) {
+    return [
+      '=--(AP' + row.rowNumber + '<>AQ' + row.rowNumber + ')',
+    ];
+  });
+  if (rows.length) {
+    sheet.getRange(
+      CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW,
+      CP_MODULE_CONFIG_LAYOUT.CURRENT_ROW_SIGNATURE_COLUMN,
+      rows.length,
+      1
+    ).setFormulas(currentFormulas);
+    sheet.getRange(
+      CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW,
+      CP_MODULE_CONFIG_LAYOUT.APPLIED_ROW_SIGNATURE_COLUMN,
+      rows.length,
+      1
+    ).setValues(appliedValues).setNumberFormat('@');
+    sheet.getRange(
+      CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW,
+      CP_MODULE_CONFIG_LAYOUT.CHANGE_FLAG_COLUMN,
+      rows.length,
+      1
+    ).setFormulas(changeFormulas).setNumberFormat('0');
   }
-  return signature;
+  return buildModuleCanonicalSignatureFromRows_(rows);
+}
+
+function buildModuleCanonicalSignature_(sheet) {
+  return buildModuleCanonicalSignatureFromRows_(readModuleSignatureRows_(sheet));
+}
+
+function buildModuleCanonicalSignatureFromRows_(rows) {
+  return rows.filter(function(row) { return row.active; })
+    .map(function(row) { return row.signature; })
+    .join('\u2666');
+}
+
+function readModuleSignatureRows_(sheet) {
+  const firstRow = CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW;
+  const rowCount = Math.max(1, sheet.getMaxRows() - firstRow + 1);
+  const visible = sheet.getRange(firstRow, 1, rowCount, 5).getDisplayValues();
+  const technical = sheet.getRange(
+    firstRow,
+    CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN,
+    rowCount,
+    2
+  ).getDisplayValues();
+  return visible.map(function(values, index) {
+    const rowNumber = firstRow + index;
+    const fields = [
+      rowNumber,
+      technical[index][0],
+      values[0],
+      values[1],
+      values[2],
+      values[3],
+      values[4],
+      technical[index][1],
+    ].map(normalizeModuleSignatureValue_);
+    return {
+      rowNumber: rowNumber,
+      active: values.concat(technical[index]).some(function(value) {
+        return normalizeModuleSignatureValue_(value) !== '';
+      }),
+      signature: fields.join('\u00a6'),
+    };
+  });
+}
+
+function normalizeModuleSignatureValue_(value) {
+  if (value === null || value === undefined) return '';
+  return String(value).replace(/\r\n/g, '\n');
+}
+
+function buildModuleRowSignatureFormula_(rowNumber) {
+  return '=ROW()&"\u00a6"&AN' + rowNumber + '&"\u00a6"&A' + rowNumber +
+    '&"\u00a6"&B' + rowNumber + '&"\u00a6"&C' + rowNumber + '&"\u00a6"&D' + rowNumber +
+    '&"\u00a6"&E' + rowNumber + '&"\u00a6"&AO' + rowNumber;
 }
 
 function findModuleConfigRecordByActivityId_(spreadsheet, activityId) {
@@ -966,6 +1095,46 @@ function writeModuleTable_(sheet, headers, rows) {
   sheet.getRange(2, 1, Math.max(1, rows.length), headers.length).setNumberFormat('@');
 }
 
+function rollbackFailedModuleConfigCreation_(
+  spreadsheet,
+  sheet,
+  previousConfigRows,
+  previousPlanRows
+) {
+  const rollbackErrors = [];
+  const sheetId = sheet ? sheet.getSheetId() : 0;
+  try {
+    const configSheet = spreadsheet.getSheetByName(CP.SHEETS.MODULE_CONFIG);
+    if (configSheet) {
+      writeModuleTable_(
+        configSheet,
+        CP_MODULE_CONFIG_HEADERS,
+        previousConfigRows
+      );
+    }
+  } catch (error) {
+    rollbackErrors.push('registro: ' + (error && error.message ? error.message : error));
+  }
+  try {
+    const planSheet = spreadsheet.getSheetByName(CP.SHEETS.MODULE_PLAN);
+    if (planSheet) {
+      writeModuleTable_(planSheet, CP_MODULE_PLAN_HEADERS, previousPlanRows);
+    }
+  } catch (error) {
+    rollbackErrors.push('planificación: ' + (error && error.message ? error.message : error));
+  }
+  try {
+    const currentSheet = sheetId ? getSheetById_(spreadsheet, sheetId) : null;
+    if (currentSheet) spreadsheet.deleteSheet(currentSheet);
+  } catch (error) {
+    rollbackErrors.push('hoja: ' + (error && error.message ? error.message : error));
+  }
+  if (rollbackErrors.length) {
+    console.error('Rollback incompleto de 4 Config: ' + rollbackErrors.join(' | '));
+  }
+  return rollbackErrors.length === 0;
+}
+
 function getModuleConfigurationStatuses_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const registry = readModuleConfigRegistry_(spreadsheet);
@@ -975,11 +1144,7 @@ function getModuleConfigurationStatuses_() {
     if (!sheet) {
       return { label: getModuleDisplayName_(activity), status: 'pending', statusLabel: 'Sin configurar' };
     }
-    const applied = String(sheet.getRange(2, CP_MODULE_CONFIG_LAYOUT.APPLIED_SIGNATURE_COLUMN)
-      .getDisplayValue() || '');
-    const current = String(sheet.getRange(2, CP_MODULE_CONFIG_LAYOUT.CURRENT_SIGNATURE_COLUMN)
-      .getDisplayValue() || '');
-    const pending = applied !== current;
+    const pending = record.appliedSignature !== buildModuleCanonicalSignature_(sheet);
     return {
       label: getModuleDisplayName_(activity),
       status: pending ? 'pending' : 'complete',

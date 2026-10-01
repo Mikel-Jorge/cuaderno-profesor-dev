@@ -11,7 +11,7 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 
 **Estado:** especificación funcional vigente
 **Versión del documento:** 2.3
-**Versión del cuaderno:** `1.4.3`
+**Versión del cuaderno:** `1.4.4`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.4.3
+# 2. Estado funcional de la versión 1.4.4
 
 Están cerrados funcionalmente:
 
@@ -189,6 +189,8 @@ Si aparecen casos reales de convalidaciones, bajas, matrícula parcial u otras e
 
 Cada actividad `MODULO` puede generar independientemente una sola `4 Config <SIGLA> · <GRUPO>`. `_MOD_CONFIG` vincula `actividad_id` con el ID estable de la hoja y el curso; el nombre no basta para validar la asociación. La creación valida tipo, grupo, sesiones semanales, periodo lectivo y evaluaciones, y no modifica el libro al abrir el selector.
 
+El selector muestra el aviso de configurar Horario solo cuando no existe ninguna actividad `MODULO`. Durante la creación bloquea nuevas acciones y muestra carga. Un error conserva la selección, informa dentro del modal y elimina los artefactos parciales; el modal solo se cierra automáticamente tras completar correctamente hoja, registro y firma inicial.
+
 La tabla visible es la autoridad sobre las UT. Las ponderaciones de evaluación siguen pendientes.
 
 ## 11.2. Calendario propio
@@ -219,7 +221,7 @@ Las evaluaciones disponibles proceden del `tipo_ensenanza_id` de la actividad y 
 
 Cada UT mantiene un ID interno estable, un orden por fila, un color explícito y una evaluación válida. Al recalcular se asignan automáticamente código, color e ID cuando falten en una fila activa. Se pueden insertar filas adicionales.
 
-Los pesos de cada UT dentro de su evaluación y los pesos de cada evaluación en la nota final se incorporarán en la siguiente fase; no forman parte de 1.4.3.
+Los pesos de cada UT dentro de su evaluación y los pesos de cada evaluación en la nota final se incorporarán en la siguiente fase; no forman parte de 1.4.4.
 
 ## 11.4. Totales automáticos
 

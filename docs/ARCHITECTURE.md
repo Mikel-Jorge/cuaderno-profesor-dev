@@ -1,8 +1,8 @@
 # Arquitectura técnica
 
 **Estado:** vigente
-**Última revisión:** 2026-09-30
-**Versión:** `1.4.3` / esquema `9`
+**Última revisión:** 2026-10-01
+**Versión:** `1.4.4` / esquema `9`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -21,7 +21,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.4.3` y esquema `9`.
+- `Config.gs`: constantes, nombres de hojas, versión `1.4.4` y esquema `9`.
 - `Theme.gs`: tema global, presets y colores semánticos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -184,7 +184,7 @@ Config almacena la autoridad sobre:
 
 `_MOD_CONFIG` contiene `actividad_id`, `sheet_id`, curso, fecha de creación y firma aplicada. `_MOD_PLAN` contiene una fila por sesión asignada con actividad, curso, fecha, tramo y `ut_id`. Ninguna planificación se deduce de colores.
 
-El recálculo explícito, protegido con bloqueo de documento, distribuye las UT secuencialmente, sustituye solo el plan de la actividad activa y regenera su calendario. Una firma de orden, identidad y campos editables, comparada mediante fórmulas y sin `onEdit`, muestra cambios pendientes. Una fecha con más de una UT usa el token semántico `theme.colors.mixedDay` y una nota con el desglose de horas. El exceso no crea fechas y el defecto deja sesiones sin UT.
+El recálculo explícito, protegido con bloqueo de documento, distribuye las UT secuencialmente, sustituye solo el plan de la actividad activa y regenera su calendario. Backend y hoja comparten una firma canónica por fila compuesta por posición, `ut_id`, código, nombre, color, horas, evaluación visible y `evaluation_id`. El backend calcula y persiste la firma aplicada directamente desde las celdas, incluida la tabla vacía, sin esperar el recálculo de Sheets. Fórmulas auxiliares por fila comparan el valor actual con la referencia aplicada y una suma de indicadores alimenta el aviso visible, sin `onEdit` y sin fórmulas con separadores dependientes del locale. Una fecha con más de una UT usa el token semántico `theme.colors.mixedDay` y una nota con el desglose de horas. El exceso no crea fechas y el defecto deja sesiones sin UT.
 
 ## 11.3. `5 Seg`
 
@@ -213,6 +213,8 @@ No existe una hoja visible de estados. El registro técnico se usa para identida
 # 13. UI, temas y procesos
 
 Las plantillas reciben nombre y versión desde la configuración central. `Theme.gs` inyecta los tokens comunes en Sheets y CSS. Los procesos largos se declaran en servidor y el cliente ejecuta los pasos mediante `google.script.run`.
+
+El modal de creación de Config separa los estados sin módulos, disponible, cargando, error y éxito. El backend devuelve errores funcionales esperados como resultados controlados, registra la traza completa de fallos técnicos y ejecuta rollback de hoja, registro y plan antes de responder.
 
 El controlador transforma el resultado interno de cada paso en un DTO compuesto solo por el número de paso completado, el total y un mensaje de texto. Los objetos de servicios de Apps Script no atraviesan la frontera servidor-cliente.
 
