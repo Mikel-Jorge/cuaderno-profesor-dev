@@ -2,7 +2,7 @@
 
 **Última actualización:** 2026-10-03
 **Estado general:** Portada, Calendario, Horario, Alumnado y primera fase de `4 Config` operativos
-**Versión vigente:** `1.4.7`
+**Versión vigente:** `1.4.8`
 **Esquema vigente:** `9`
 
 # Completado
@@ -63,7 +63,7 @@ Pendiente de cierre del bloque:
 - Una sola configuración por `actividad_id`, enlazada por `sheet_id` en `_MOD_CONFIG`.
 - `4 Config <SIGLA> · <GRUPO>` con calendario septiembre-junio homogéneo y tabla de 15 UT editables.
 - UT con ID estable, orden por fila, horas manuales, color explícito y evaluación calculada por último día asignado.
-- Resumen de horas con fórmulas para previstas por evaluación, total y diferencia; sesiones disponibles escritas al crear o recalcular.
+- Resumen de horas con disponibles reales por evaluación y pendientes dinámicas por evaluación y total; sesiones disponibles escritas al crear o recalcular.
 - Sesiones reales calculadas desde Horario y Calendario, excluyendo días no lectivos y prácticas del tipo de enseñanza.
 - Distribución cronológica exacta por sesión persistida en `_MOD_PLAN`.
 - Días de una UT, días mixtos solo cuando coinciden UT distintas, notas combinadas y limpieza por regeneración.
@@ -91,6 +91,13 @@ Pendiente de cierre del bloque:
 - La limpieza de Config huérfana se ejecuta al abrir Crear, al crear en backend y en el proceso visible de Reparar; una hoja renombrada conserva su identidad por `sheet_id`.
 - Se eliminan solo el registro huérfano y las filas del plan de su impartición y curso, con intento de restauración si falla una parte.
 - Configuración de módulo sigue en validación manual.
+
+## Correctivo 1.4.8
+
+- Tabla UT con Color más ancho y Evaluación más compacta mediante combinaciones, sin cambiar los anchos del calendario.
+- Resumen `Pendientes | Disponibles` por evaluación y total: disponibles por sesiones reales del periodo; pendientes por fórmulas ligadas a las horas y evaluación dinámica de las UT.
+- Los pendientes negativos se destacan como error y el recálculo conserva su validación previa de exceso.
+- Configuración de módulo continúa en validación final; las ponderaciones siguen pendientes.
 
 Pendiente de cierre del bloque:
 

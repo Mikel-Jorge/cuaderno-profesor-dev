@@ -2,7 +2,7 @@
 
 **Estado:** vigente
 **Última revisión:** 2026-10-03
-**Versión:** `1.4.7` / esquema `9`
+**Versión:** `1.4.8` / esquema `9`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -21,7 +21,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.4.7` y esquema `9`.
+- `Config.gs`: constantes, nombres de hojas, versión `1.4.8` y esquema `9`.
 - `Theme.gs`: tema global, presets y colores semánticos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -188,7 +188,7 @@ El recálculo explícito, protegido con bloqueo de documento, valida primero que
 
 La hoja `4 Config` es la fuente de verdad de las UT; `_MOD_CONFIG` relaciona `actividad_id`, curso y `sheet_id`, pero no es un backup del contenido editable. Un registro es huérfano solo cuando su `sheet_id` ya no existe, con independencia del nombre actual de la hoja. `cleanupOrphanModuleConfigs_()` se ejecuta al abrir Crear configuración, dentro del backend de creación y como paso del proceso visible de Reparar. Elimina únicamente las filas huérfanas del registro y las del plan con el mismo `actividad_id` y curso, en bloques contiguos; conserva las cabeceras y los demás datos, y refresca el índice de Portada. Usa bloqueo de documento y snapshots para intentar restaurar ambas tablas si falla la operación. Es idempotente y no forma parte de la limpieza anual. Las UT perdidas con la hoja no se reconstruyen.
 
-`buildRealModuleSessions_()` termina en `fecha_fin` de la última evaluación ordenada del tipo, inclusive, y sigue excluyendo prácticas y días no lectivos. El recálculo valida el exceso de horas antes de escribir la hoja, el plan o la firma aplicada. La tabla inferior combina A:B, C:H, I:J, K:L y M:U; el resumen ocupa W:AM. Las fórmulas de evaluación visible y `evaluation_id` oculto usan cortes numéricos embebidos en la hoja y se regeneran cuando cambian las sesiones reales, sin nueva tabla técnica ni cambio de esquema. El resumen agrupa por ID para admitir nombres de evaluación repetidos.
+`buildRealModuleSessions_()` termina en `fecha_fin` de la última evaluación ordenada del tipo, inclusive, y sigue excluyendo prácticas y días no lectivos. El recálculo valida el exceso de horas antes de escribir la hoja, el plan o la firma aplicada. La tabla inferior combina A:B, C:H, I:J, K:O y P:U; la migración de la combinación anterior conserva los datos al recalcular. El resumen ocupa W:AM, con `Pendientes` en AF:AI y `Disponibles` en AJ:AM. Agrupa las sesiones reales por intervalo de evaluación para escribir los disponibles estables y calcula los pendientes con fórmulas sobre las horas y el `evaluation_id` oculto de cada UT. Las fórmulas de evaluación visible y `evaluation_id` usan cortes numéricos embebidos en la hoja y se regeneran cuando cambian las sesiones reales; por eso las horas cambian de evaluación en el resumen al editar una UT. El total pendiente resta todas las horas previstas al total disponible. El resumen agrupa por ID para admitir nombres de evaluación repetidos, sin nueva tabla técnica ni cambio de esquema.
 
 ## 11.3. `5 Seg`
 

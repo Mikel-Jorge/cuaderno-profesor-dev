@@ -20,7 +20,7 @@ const CP_MODULE_CONFIG_LAYOUT = Object.freeze({
   CURRENT_ROW_SIGNATURE_COLUMN: 42,
   APPLIED_ROW_SIGNATURE_COLUMN: 43,
   CHANGE_FLAG_COLUMN: 44,
-  UNIT_COLUMNS: Object.freeze([1, 3, 9, 11, 13]),
+  UNIT_COLUMNS: Object.freeze([1, 3, 9, 11, 16]),
 });
 const CP_MODULE_MIXED_DAY_COLOR = '#F59E0B';
 const CP_MODULE_UT_COLORS = Object.freeze([
@@ -556,8 +556,9 @@ function combineModuleCalendarNotes_(calendarNote, planningNote) {
 }
 
 function getModuleUnitColumns_(sheet) {
-  return sheet.getRange(27, 3).isPartOfMerge()
-    ? CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS : [1, 2, 3, 4, 5];
+  if (!sheet.getRange(27, 3).isPartOfMerge()) return [1, 2, 3, 4, 5];
+  return sheet.getRange(27, 13).getDisplayValue()
+    ? [1, 3, 9, 11, 13] : CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS;
 }
 
 function columnToLetter_(column) {
@@ -582,14 +583,14 @@ function migrateModuleUtLayout_(sheet) {
   const count = CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS;
   const old = sheet.getRange(first, 1, count, 21).getValues();
   const columns = getModuleUnitColumns_(sheet);
-  if (columns[1] === 3) return;
+  if (columns[4] === CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS[4]) return;
   const values = old.map(function(row) {
     return columns.map(function(column) { return row[column - 1]; });
   });
   const area = sheet.getRange(27, 1, count + 1, 21);
   area.breakApart().clearContent().clearFormat().clearDataValidations();
   const theme = getActiveTheme_(sheet.getParent());
-  const spans = [[1, 2], [3, 6], [9, 2], [11, 2], [13, 9]];
+  const spans = [[1, 2], [3, 6], [9, 2], [11, 5], [16, 6]];
   const headings = ['UT', 'Nombre', 'Horas', 'Color', 'Evaluación'];
   for (let row = 27; row < first + count; row += 1) {
     spans.forEach(function(span, index) {
@@ -610,22 +611,35 @@ function migrateModuleUtLayout_(sheet) {
   sheet.getRange(first, 11, count, 1).setNumberFormat('@')
     .setDataValidation(SpreadsheetApp.newDataValidation()
       .requireValueInList(CP_MODULE_UT_COLORS, true).setAllowInvalid(true).build());
-  sheet.getRange(first, 13, count, 9).setBackground(theme.colors.muted)
+  sheet.getRange(first, 16, count, 6).setBackground(theme.colors.muted)
     .setFontColor(theme.colors.mutedText).setFontStyle('italic');
   installModuleConfigFormatRules_(sheet);
 }
 
-function installModuleConfigFormatRules_(sheet) {
+function installModuleConfigFormatRules_(sheet, evaluationCount) {
+  const theme = getActiveTheme_(sheet.getParent());
   const first = CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW;
   const count = CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS;
   const rules = CP_MODULE_UT_COLORS.map(function(color) {
     return SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo(color)
       .setBackground(color).setFontColor(getAccessibleTextColor_(color))
-      .setRanges([sheet.getRange(first, 11, count, 2)]).build();
+      .setRanges([sheet.getRange(first, 11, count, 5)]).build();
   });
   rules.push(SpreadsheetApp.newConditionalFormatRule().whenNumberGreaterThan(0)
     .setBackground('#FBBF24').setFontColor('#1F2937').setBold(true)
     .setRanges([sheet.getRange(4, 1, 1, 39)]).build());
+  if (evaluationCount) {
+    const pending = sheet.getRange(29, 32, evaluationCount + 1, 4);
+    [
+      { condition: 'whenNumberLessThan', value: 0, background: '#FEE2E2', color: theme.colors.danger },
+      { condition: 'whenNumberEqualTo', value: 0, background: '#DCFCE7', color: theme.colors.success },
+      { condition: 'whenNumberGreaterThan', value: 0, background: '#FEF3C7', color: theme.colors.warning },
+    ].forEach(function(style) {
+      rules.push(SpreadsheetApp.newConditionalFormatRule()[style.condition](style.value)
+        .setBackground(style.background).setFontColor(style.color).setBold(true)
+        .setRanges([pending]).build());
+    });
+  }
   sheet.setConditionalFormatRules(rules);
 }
 
@@ -658,7 +672,7 @@ function installModuleEvaluationFormulas_(sheet, activity, context) {
     formulas.push(['=IF(I' + row + '=0' + separator + '""' + separator + result + ')']);
     idFormulas.push(['=IF(I' + row + '=0' + separator + '""' + separator + idResult + ')']);
   }
-  sheet.getRange(first, 13, count, 1).setFormulas(formulas);
+  sheet.getRange(first, 16, count, 1).setFormulas(formulas);
   sheet.getRange(first, CP_MODULE_CONFIG_LAYOUT.EVALUATION_ID_COLUMN, count, 1)
     .setFormulas(idFormulas);
 }
@@ -730,7 +744,10 @@ function renderModuleConfigUtArea_(sheet) {
 
 function renderModuleHoursSummary_(sheet, activity, context, startRow) {
   const theme = getActiveTheme_(sheet.getParent());
-  const sessions = buildRealModuleSessions_(sheet.getParent(), context.type, activity);
+  const spreadsheet = sheet.getParent();
+  const timeZone = spreadsheet.getSpreadsheetTimeZone();
+  const sessions = buildRealModuleSessions_(spreadsheet, context.type, activity);
+  const periods = getEvaluationPeriodsForType_(context.type, timeZone);
   const first = CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW;
   const last = first + CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS - 1;
   const hours = 'I' + first + ':I' + last;
@@ -738,31 +755,48 @@ function renderModuleHoursSummary_(sheet, activity, context, startRow) {
   const title = sheet.getRange(startRow, 23, 1, 17).merge().setValue('RESUMEN DE HORAS');
   title.setBackground(theme.colors.secondary).setFontColor(theme.colors.onSecondary)
     .setFontWeight('bold').setHorizontalAlignment('center');
-  let row = startRow + 1;
+  const headerRow = startRow + 1;
+  [
+    { column: 23, width: 9, text: 'Evaluación' },
+    { column: 32, width: 4, text: 'Pendientes' },
+    { column: 36, width: 4, text: 'Disponibles' },
+  ].forEach(function(header) {
+    sheet.getRange(headerRow, header.column, 1, header.width).merge()
+      .setValue(header.text).setBackground(theme.colors.muted)
+      .setFontColor(theme.colors.text).setFontWeight('bold')
+      .setHorizontalAlignment('center');
+  });
+  let row = headerRow + 1;
+  const firstEvaluationRow = row;
   context.evaluations.forEach(function(evaluation) {
-    sheet.getRange(row, 23, 1, 11).merge().setValue(evaluation.name);
-    sheet.getRange(row, 34, 1, 6).merge()
-      .setFormula('=SUMPRODUCT((' + evaluations + '="' +
+    const period = periods.find(function(item) { return item.id === evaluation.id; });
+    const available = sessions.filter(function(session) {
+      return period && compareCalendarDates_(session.date, period.startDate, timeZone) >= 0 &&
+        compareCalendarDates_(session.date, period.endDate, timeZone) <= 0;
+    }).length;
+    sheet.getRange(row, 23, 1, 9).merge().setValue(evaluation.name);
+    sheet.getRange(row, 32, 1, 4).merge()
+      .setFormula('=AJ' + row + '-SUMPRODUCT((' + evaluations + '="' +
         evaluation.id.replace(/"/g, '""') + '")*' + hours + ')')
-      .setNumberFormat('0');
+      .setNumberFormat('0').setHorizontalAlignment('center');
+    sheet.getRange(row, 36, 1, 4).merge().setValue(available)
+      .setNumberFormat('0').setHorizontalAlignment('center');
     row += 1;
   });
-  sheet.getRange(row, 23, 1, 11).merge().setValue('Horas previstas totales').setFontWeight('bold');
-  sheet.getRange(row, 34, 1, 6).merge().setFormula('=SUM(' + hours + ')')
-    .setNumberFormat('0').setFontWeight('bold');
-  const plannedRow = row;
+  const totalRow = row;
+  sheet.getRange(row, 23, 1, 9).merge().setValue('TOTAL').setFontWeight('bold');
+  sheet.getRange(row, 32, 1, 4).merge().setFormula('=AJ' + row + '-SUM(' + hours + ')')
+    .setNumberFormat('0').setFontWeight('bold').setHorizontalAlignment('center');
+  sheet.getRange(row, 36, 1, 4).merge()
+    .setFormula('=SUM(AJ' + firstEvaluationRow + ':AJ' + (row - 1) + ')')
+    .setNumberFormat('0').setFontWeight('bold').setHorizontalAlignment('center');
   row += 1;
-  sheet.getRange(row, 23, 1, 11).merge().setValue('Sesiones lectivas disponibles');
-  sheet.getRange(row, 34, 1, 6).merge().setValue(sessions.length).setNumberFormat('0');
-  const availableRow = row;
-  row += 1;
-  const separator = getModuleFormulaSeparator_(sheet.getParent());
-  const planned = 'AH' + plannedRow;
-  const available = 'AH' + availableRow;
-  const statusFormula = '=IF(' + planned + '>' + available + separator +
-    '"⚠ Exceso de "&(' + planned + '-' + available + ')&" sesiones"' + separator +
-    'IF(' + planned + '=' + available + separator + '"✓ Planificación completa"' + separator +
-    '"Quedan "&(' + available + '-' + planned + ')&" sesiones reales sin distribuir"))';
+  const separator = getModuleFormulaSeparator_(spreadsheet);
+  const pending = 'AF' + totalRow;
+  const statusFormula = '=IF(' + pending + '<0' + separator +
+    '"⚠ Exceso de "&(-' + pending + ')&" sesiones"' + separator +
+    'IF(' + pending + '=0' + separator + '"✓ Planificación completa"' + separator +
+    '"Quedan "&' + pending + '&" sesiones reales sin distribuir"))';
   sheet.getRange(row, 23, 2, 17).merge().setFormula(statusFormula)
     .setBackground(theme.colors.surface).setFontColor(theme.colors.warning)
     .setFontWeight('bold').setWrap(true).setHorizontalAlignment('center');
@@ -772,6 +806,7 @@ function renderModuleHoursSummary_(sheet, activity, context, startRow) {
   sheet.getRange(row + 1, 23, 5, 17).merge().setValue('Todavía no se ha recalculado.')
     .setBackground(theme.colors.surface).setFontColor(theme.colors.mutedText)
     .setWrap(true).setVerticalAlignment('top');
+  installModuleConfigFormatRules_(sheet, context.evaluations.length);
 }
 
 function isDateInModulePracticePeriod_(date, type, timeZone) {
@@ -1082,8 +1117,8 @@ function refreshModuleConfigUtSupport_(sheet, activity, context) {
     .breakApart().clearContent().clearFormat();
   renderModuleHoursSummary_(sheet, activity, context, 27);
   installModuleEvaluationFormulas_(sheet, activity, context);
-  sheet.getRange(CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW, 13,
-    CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS, 1)
+  sheet.getRange(CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW, 16,
+    CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS, 6)
     .clearDataValidations().setBackground(theme.colors.muted)
     .setFontColor(theme.colors.mutedText).setFontStyle('italic');
 }
