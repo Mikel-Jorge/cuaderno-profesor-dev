@@ -10,8 +10,8 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 ## Definición funcional del proyecto
 
 **Estado:** especificación funcional vigente
-**Versión del documento:** 2.3
-**Versión del cuaderno:** `1.4.5`
+**Versión del documento:** 2.4
+**Versión del cuaderno:** `1.4.6`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.4.5
+# 2. Estado funcional de la versión 1.4.6
 
 Están cerrados funcionalmente:
 
@@ -226,11 +226,13 @@ La evaluación visible es calculada, no editable por el docente. Se asigna segú
 
 Cada UT mantiene un ID interno estable, un orden por fila, un color explícito y una evaluación calculada. Al recalcular se asignan automáticamente código, color, ID y evaluación cuando proceda. La hoja ofrece 15 filas editables de UT.
 
-Los pesos de cada UT dentro de su evaluación y los pesos de cada evaluación en la nota final se incorporarán en la siguiente fase; no forman parte de 1.4.5.
+Los pesos de cada UT dentro de su evaluación y los pesos de cada evaluación en la nota final siguen pendientes en 1.4.6.
 
 ## 11.4. Totales automáticos
 
-Cerca de la tabla se muestran los totales calculados por Apps Script: horas previstas por evaluación, horas previstas totales y sesiones lectivas disponibles reales. No son campos editables; se actualizan al crear o recalcular la configuración.
+La zona inferior conserva exactamente 15 filas editables con `UT | Nombre | Horas | Color | Evaluación`. Usa celdas combinadas para que Nombre, Evaluación y el resumen sean legibles sin modificar los anchos de los meses. El resumen muestra horas previstas por evaluación y totales, sesiones disponibles y diferencia. Las horas y la evaluación se actualizan al editar Horas mediante fórmulas de Sheets, sin trigger ni recálculo manual. Las sesiones disponibles se calculan al crear o recalcular la Config, y el recálculo las refresca si cambió Horario o Calendario. El exceso se señala inmediatamente; Recalcular hace la validación definitiva.
+
+La evaluación visible es una fórmula basada en el fin acumulado de sesiones de cada UT y en el número de sesiones reales hasta cada fecha final de evaluación. La UT queda en la evaluación de su última sesión. Las UT de cero horas no reciben evaluación.
 
 ## 11.5. Recálculo explícito
 
@@ -248,6 +250,14 @@ El menú `📚 Módulos → 🔄 Recalcular configuración del módulo`:
 Ejecutarlo desde cualquier otra hoja mostrará un aviso para situarse en una `4 Config ...` y terminará sin modificar nada.
 
 No se usa `onEdit`. Una firma interna de orden, ID, código, nombre, color, horas y evaluación aplicados en el último recálculo se compara mediante fórmulas con los valores actuales. Mientras difieran se muestra `⚠ Hay cambios pendientes de aplicar al calendario`; tras recalcular correctamente, la firma se actualiza y el aviso desaparece.
+
+Las sesiones disponibles se limitan al intervalo desde el inicio lectivo hasta la fecha final inclusiva de la última evaluación configurada para el tipo de enseñanza. Deben ser días lectivos del Horario con tramo `SESION` y `actividad_id` del módulo, sin festivos ni periodo de prácticas. No se asignan UT a repaso, recuperaciones ni fechas posteriores a esa evaluación.
+
+Si falta la hoja visible de un registro `_MOD_CONFIG`, Crear muestra una indicación específica para ejecutar `Inicializar / reparar estructura`. Reparar elimina el registro huérfano y solo las filas de `_MOD_PLAN` de esa impartición y curso, dejándola disponible para crear una Config limpia. No reconstruye UT, nombres, horas o colores que solo existían en la hoja borrada. Una segunda reparación no altera el estado y las demás Config permanecen intactas.
+
+El recálculo muestra un estado verde cuando todas las sesiones quedan distribuidas sin avisos, ámbar cuando faltan horas o una UT cruza evaluaciones, y rojo ante un error. Mantiene una pantalla de espera durante la ejecución. La Config resalta en ámbar los cambios pendientes de aplicar al calendario y muestra un estado discreto cuando está actualizada.
+
+En el selector de la cuadrícula del Horario, las actividades `MODULO` se muestran como `SIGLA · GRUPO` (o solo sigla si el grupo falta); las demás mantienen `SIGLA · Nombre`. El valor persistido sigue siendo `actividad_id`.
 
 Si las horas previstas superan las sesiones disponibles reales, el recálculo se aborta antes de redibujar o sustituir la planificación. Si faltan horas, las sesiones restantes quedan sin UT y se informa con warning. La planificación persistida contiene exclusivamente asignaciones reales. Si una UT cruza evaluaciones, se informa y su evaluación final se calcula por el último día asignado.
 

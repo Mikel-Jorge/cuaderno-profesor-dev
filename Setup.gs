@@ -4,6 +4,7 @@ function inicializarCuaderno() {
   initializeCalendarStructure_();
   ensureScheduleTechnicalStructure_();
   ensureModuleConfigTechnicalStructure_();
+  repairOrphanModuleConfigs_(SpreadsheetApp.getActiveSpreadsheet());
   createOrRepairCalendarSheet_();
   createOrRepairScheduleSheet_();
   createOrRepairStudentsSheet_();

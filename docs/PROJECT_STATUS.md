@@ -1,8 +1,8 @@
 # Estado del proyecto
 
-**Última actualización:** 2026-10-01
+**Última actualización:** 2026-10-03
 **Estado general:** Portada, Calendario, Horario, Alumnado y primera fase de `4 Config` operativos
-**Versión vigente:** `1.4.5`
+**Versión vigente:** `1.4.6`
 **Esquema vigente:** `9`
 
 # Completado
@@ -61,9 +61,9 @@ Pendiente de cierre del bloque:
 - Selector tematizado y de solo lectura al abrir, limitado a actividades `MODULO` sin `4 Config` ya creada.
 - Validación explícita de grupo, tipo, sesiones semanales, periodo lectivo y evaluaciones.
 - Una sola configuración por `actividad_id`, enlazada por `sheet_id` en `_MOD_CONFIG`.
-- `4 Config <SIGLA> · <GRUPO>` con calendario septiembre-junio homogéneo y tabla de hasta 15 UT editables.
+- `4 Config <SIGLA> · <GRUPO>` con calendario septiembre-junio homogéneo y tabla de 15 UT editables.
 - UT con ID estable, orden por fila, horas manuales, color explícito y evaluación calculada por último día asignado.
-- Resumen de horas escrito como valores desde Apps Script: previstas por evaluación, total previsto, sesiones disponibles y aviso de diferencia.
+- Resumen de horas con fórmulas para previstas por evaluación, total y diferencia; sesiones disponibles escritas al crear o recalcular.
 - Sesiones reales calculadas desde Horario y Calendario, excluyendo días no lectivos y prácticas del tipo de enseñanza.
 - Distribución cronológica exacta por sesión persistida en `_MOD_PLAN`.
 - Días de una UT, días mixtos solo cuando coinciden UT distintas, notas combinadas y limpieza por regeneración.
@@ -74,6 +74,16 @@ Pendiente de cierre del bloque:
 - La firma inicial y la aplicada se calculan en backend sin depender del recálculo inmediato de Sheets; la tabla UT vacía es válida.
 - El rollback de creación limpia hoja, `_MOD_CONFIG` y `_MOD_PLAN` del módulo fallido y conserva los demás.
 - El recálculo muestra modal tematizado de carga y resultado `success`, `warning` o `error`; el exceso de horas aborta antes de modificar calendario o plan.
+
+## Correctivo 1.4.6
+
+- Reparación explícita de registros `_MOD_CONFIG` sin hoja: elimina su registro y plan sin modificar otras Config; la UT perdida con la hoja no se inventa.
+- Tabla inferior de 15 UT con celdas combinadas y resumen ancho, sin alterar la geometría de los meses.
+- Fórmulas inmediatas para evaluación por última sesión, horas previstas por evaluación, total y sesiones pendientes o sobrantes.
+- Sesiones disponibles limitadas a la última evaluación configurada, con prácticas y no lectivos excluidos.
+- Recálculo con exceso validado antes de escribir, estados verde/ámbar/rojo y aviso de cambios pendientes destacado.
+- Selector semanal de Horario con `SIGLA · GRUPO` para módulos, conservando `actividad_id`.
+- Configuración de módulo continúa en validación manual; ponderaciones, Seguimiento y Evaluación siguen pendientes.
 
 Pendiente de cierre del bloque:
 

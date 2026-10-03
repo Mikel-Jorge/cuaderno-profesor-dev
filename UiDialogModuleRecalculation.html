@@ -5,9 +5,14 @@
     <meta charset="utf-8">
     <style id="active-theme"><?!= uiThemeCss ?></style>
     <?!= includeUiFile_('UiStyles'); ?>
+    <style>
+      .module-recalculation .result.success { background: #DCFCE7; border-color: #16A34A; color: #14532D; }
+      .module-recalculation .result.warning { background: #FEF3C7; border-color: #D97706; color: #78350F; }
+      .module-recalculation .result.error { background: #FEE2E2; border-color: #DC2626; color: #7F1D1D; }
+    </style>
   </head>
   <body>
-    <main class="app">
+    <main class="app module-recalculation">
       <header class="brand-header">
         <img class="brand-logo" src="<?!= branding.icon ?>" alt="">
         <div class="brand-copy">
@@ -45,7 +50,8 @@
         const title = result && result.title ? result.title : 'Resultado del recalculo';
         const message = result && result.message ? result.message : 'Operacion terminada.';
         activityElement.style.display = 'none';
-        statusElement.textContent = title;
+        const icons = { success: '✓ ', warning: '⚠ ', error: '❌ ' };
+        statusElement.textContent = (icons[state] || '') + title;
         resultElement.textContent = message;
         resultElement.className = 'result visible ' + state;
         resultElement.style.whiteSpace = 'pre-line';

@@ -133,7 +133,12 @@
     const session = getSession(day, slot.id) || { activityId: '', support: '' };
     const activity = data.activities.find(function(item) { return item.id === session.activityId; });
     const cellStyle = activity ? ' style="background-color:' + escapeAttribute(activity.color) + ';color:' + getContrastColor(activity.color) + '"' : '';
-    return '<td class="schedule-session-cell" data-activity-id="' + escapeAttribute(session.activityId) + '"' + cellStyle + '><select data-kind="session" data-day="' + day + '" data-slot-id="' + escapeAttribute(slot.id) + '">' + '<option value="">Sin actividad</option>' + data.activities.map(function(item) { return '<option value="' + escapeAttribute(item.id) + '"' + (item.id === session.activityId ? ' selected' : '') + '>' + escapeHtml([item.acronym, item.name].filter(Boolean).join(' · ')) + '</option>'; }).join('') + '</select><input class="schedule-support" type="text" maxlength="' + escapeAttribute(data.supportMaxLength || 40) + '" aria-label="Apoyo" placeholder="Nombre o identificación" data-kind="support" data-day="' + day + '" data-slot-id="' + escapeAttribute(slot.id) + '" value="' + escapeAttribute(session.support || '') + '"' + (session.activityId ? '' : ' disabled') + '></td>';
+    return '<td class="schedule-session-cell" data-activity-id="' + escapeAttribute(session.activityId) + '"' + cellStyle + '><select data-kind="session" data-day="' + day + '" data-slot-id="' + escapeAttribute(slot.id) + '">' + '<option value="">Sin actividad</option>' + data.activities.map(function(item) { return '<option value="' + escapeAttribute(item.id) + '"' + (item.id === session.activityId ? ' selected' : '') + '>' + escapeHtml(scheduleActivityLabel(item)) + '</option>'; }).join('') + '</select><input class="schedule-support" type="text" maxlength="' + escapeAttribute(data.supportMaxLength || 40) + '" aria-label="Apoyo" placeholder="Nombre o identificación" data-kind="support" data-day="' + day + '" data-slot-id="' + escapeAttribute(slot.id) + '" value="' + escapeAttribute(session.support || '') + '"' + (session.activityId ? '' : ' disabled') + '></td>';
+  }
+  function scheduleActivityLabel(activity) {
+    return activity.category === 'MODULO'
+      ? [activity.acronym, activity.group].filter(Boolean).join(' · ')
+      : [activity.acronym, activity.name].filter(Boolean).join(' · ');
   }
   function handleFieldChange(event) {
     const target = event.target;
