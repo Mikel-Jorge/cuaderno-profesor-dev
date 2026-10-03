@@ -82,7 +82,18 @@ function assertModuleConfigStructureReady_(spreadsheet) {
 
 function abrirCreacionConfiguracionModulo() {
   const template = HtmlService.createTemplateFromFile('UiDialogModuleConfig');
-  template.moduleData = getModuleConfigDialogData_();
+  try {
+    cleanupOrphanModuleConfigsWithLock_();
+    template.moduleData = getModuleConfigDialogData_();
+  } catch (error) {
+    console.error('Error al sanear configuraciones de módulo: ' +
+      (error && error.stack ? error.stack : error));
+    template.moduleData = {
+      modules: [],
+      errorMessage: error && error.message ? error.message :
+        'No se ha podido comprobar el registro de configuraciones.',
+    };
+  }
   setCommonUiTemplateData_(template);
   const output = template.evaluate()
     .setWidth(CP.UI.MODULE_CONFIG_DIALOG_WIDTH)
@@ -97,7 +108,7 @@ function getModuleConfigDialogData_() {
     modules: getModuleActivities_().map(function(activity) {
       const record = registry.find(function(item) { return item.activityId === activity.id; });
       const registeredSheet = record ? getSheetById_(spreadsheet, record.sheetId) : null;
-      if (isRegisteredModuleConfigSheet_(registeredSheet)) return null;
+      if (registeredSheet) return null;
       let prerequisiteError = '';
       try {
         validateModuleConfigPrerequisites_(spreadsheet, activity);
@@ -156,15 +167,10 @@ function createModuleConfig_(activityId) {
         'El módulo seleccionado ya no existe en la configuración del Horario.'
       );
     }
+    cleanupOrphanModuleConfigs_(spreadsheet);
     const existing = findModuleConfigRecordByActivityId_(spreadsheet, activity.id);
     if (existing) {
       const existingSheet = getSheetById_(spreadsheet, existing.sheetId);
-      if (!isRegisteredModuleConfigSheet_(existingSheet)) {
-        throwModuleConfigExpectedError_(
-          '⚠ La configuración registrada de este módulo ha perdido su hoja.\n\n' +
-          'Ejecuta «Inicializar / reparar estructura» para corregirla y vuelve a intentarlo.'
-        );
-      }
       spreadsheet.setActiveSheet(existingSheet);
       return {
         created: false,
@@ -1218,45 +1224,117 @@ function isRegisteredModuleConfigSheet_(sheet) {
     sheet.getRange(25, 1).getDisplayValue() === 'UNIDADES DE TRABAJO');
 }
 
-function repairOrphanModuleConfigs_(spreadsheet) {
-  const records = readModuleConfigRegistry_(spreadsheet);
-  const invalid = records.filter(function(record) {
-    return !isRegisteredModuleConfigSheet_(getSheetById_(spreadsheet, record.sheetId));
-  });
-  if (!invalid.length) return 0;
-  const validKeys = records.filter(function(record) {
-    return isRegisteredModuleConfigSheet_(getSheetById_(spreadsheet, record.sheetId));
-  }).reduce(function(map, record) {
-    map[record.activityId + '|' + record.academicYear] = true;
-    return map;
-  }, {});
-  const orphanKeys = invalid.reduce(function(map, record) {
-    const key = record.activityId + '|' + record.academicYear;
-    if (!validKeys[key]) map[key] = true;
-    return map;
-  }, {});
-  const planSheet = spreadsheet.getSheetByName(CP.SHEETS.MODULE_PLAN);
-  if (planSheet.getLastRow() > 1) {
-    const planRows = planSheet.getRange(2, 1, planSheet.getLastRow() - 1,
-      CP_MODULE_PLAN_HEADERS.length).getValues();
-    for (let index = planRows.length - 1; index >= 0; index -= 1) {
-      const key = normalizeScheduleText_(planRows[index][1]) + '|' +
-        normalizeScheduleText_(planRows[index][2]);
-      if (orphanKeys[key]) planSheet.deleteRow(index + 2);
-    }
+function cleanupOrphanModuleConfigsWithLock_() {
+  const lock = LockService.getDocumentLock();
+  lock.waitLock(30000);
+  try {
+    return cleanupOrphanModuleConfigs_(SpreadsheetApp.getActiveSpreadsheet());
+  } finally {
+    lock.releaseLock();
   }
+}
+
+function cleanupOrphanModuleConfigs_(spreadsheet) {
   const configSheet = spreadsheet.getSheetByName(CP.SHEETS.MODULE_CONFIG);
+  if (!configSheet || configSheet.getLastRow() < 2) return 0;
   const configRows = configSheet.getRange(2, 1, configSheet.getLastRow() - 1,
     CP_MODULE_CONFIG_HEADERS.length).getValues();
-  for (let index = configRows.length - 1; index >= 0; index -= 1) {
-    const row = configRows[index];
-    if (invalid.some(function(record) {
-      return record.activityId === normalizeScheduleText_(row[0]) &&
-        record.sheetId === Number(row[1]) &&
-        record.academicYear === normalizeScheduleText_(row[2]);
-    })) configSheet.deleteRow(index + 2);
+  const existingIds = spreadsheet.getSheets().reduce(function(ids, sheet) {
+    ids[sheet.getSheetId()] = true;
+    return ids;
+  }, {});
+  const orphanRows = [];
+  const validKeys = {};
+  configRows.forEach(function(row, index) {
+    const activityId = normalizeScheduleText_(row[0]);
+    if (!activityId) return;
+    const key = activityId + '|' + normalizeScheduleText_(row[2]);
+    if (existingIds[Number(row[1])]) validKeys[key] = true;
+    else orphanRows.push({ rowNumber: index + 2, key: key });
+  });
+  if (!orphanRows.length) return 0;
+
+  const planSheet = spreadsheet.getSheetByName(CP.SHEETS.MODULE_PLAN);
+  const planSnapshot = planSheet && planSheet.getLastRow() > 1
+    ? planSheet.getRange(2, 1, planSheet.getLastRow() - 1,
+      CP_MODULE_PLAN_HEADERS.length).getValues() : [];
+  const orphanKeys = orphanRows.reduce(function(keys, record) {
+    if (!validKeys[record.key]) keys[record.key] = true;
+    return keys;
+  }, {});
+  const planRowsToDelete = [];
+  planSnapshot.forEach(function(row, index) {
+    const key = normalizeScheduleText_(row[1]) + '|' + normalizeScheduleText_(row[2]);
+    if (orphanKeys[key]) planRowsToDelete.push(index + 2);
+  });
+
+  let deletionStarted = false;
+  try {
+    assertModuleConfigStructureReady_(spreadsheet);
+    deletionStarted = true;
+    deleteModuleTableRows_(planSheet, planRowsToDelete);
+    deleteModuleTableRows_(configSheet, orphanRows.map(function(row) { return row.rowNumber; }));
+    SpreadsheetApp.flush();
+    const remainingOrphans = readModuleConfigRegistry_(spreadsheet).some(function(record) {
+      return !getSheetById_(spreadsheet, record.sheetId);
+    });
+    const remainingPlan = readModulePlanRows_(spreadsheet).some(function(row) {
+      return orphanKeys[normalizeScheduleText_(row[1]) + '|' + normalizeScheduleText_(row[2])];
+    });
+    if (remainingOrphans || remainingPlan) {
+      throw new Error('La comprobación posterior encontró referencias huérfanas.');
+    }
+    actualizarIndicePortada();
+    return orphanRows.length;
+  } catch (error) {
+    const rollbackErrors = [];
+    if (deletionStarted) {
+      try {
+        writeModuleTable_(configSheet, CP_MODULE_CONFIG_HEADERS, configRows);
+      } catch (rollbackError) {
+        rollbackErrors.push('registro: ' + (rollbackError && rollbackError.message
+          ? rollbackError.message : String(rollbackError)));
+      }
+      try {
+        writeModuleTable_(planSheet, CP_MODULE_PLAN_HEADERS, planSnapshot);
+      } catch (rollbackError) {
+        rollbackErrors.push('plan: ' + (rollbackError && rollbackError.message
+          ? rollbackError.message : String(rollbackError)));
+      }
+      try {
+        SpreadsheetApp.flush();
+      } catch (rollbackError) {
+        rollbackErrors.push('confirmación: ' + (rollbackError && rollbackError.message
+          ? rollbackError.message : String(rollbackError)));
+      }
+    }
+    console.error('Error al limpiar Config huérfana: ' +
+      (error && error.stack ? error.stack : error));
+    const failure = new Error('No se ha podido limpiar el registro de configuraciones. ' +
+      (rollbackErrors.length
+        ? 'La restauración tampoco se ha completado; revisa Apps Script → Ejecuciones.'
+        : 'Los datos anteriores se han restaurado. Revisa Apps Script → Ejecuciones.'));
+    failure.moduleConfigExpected = true;
+    failure.moduleConfigRollbackComplete = rollbackErrors.length === 0;
+    throw failure;
   }
-  return invalid.length;
+}
+
+function deleteModuleTableRows_(sheet, rowNumbers) {
+  if (!rowNumbers.length) return;
+  const descending = rowNumbers.sort(function(first, second) { return second - first; });
+  let high = descending[0];
+  let low = high;
+  for (let index = 1; index <= descending.length; index += 1) {
+    const next = descending[index];
+    if (next === low - 1) {
+      low = next;
+    } else {
+      sheet.deleteRows(low, high - low + 1);
+      high = next;
+      low = next;
+    }
+  }
 }
 
 function appendModuleConfigRecord_(spreadsheet, record) {
@@ -1361,7 +1439,7 @@ function getModuleConfigurationStatuses_() {
   return getModuleActivities_().map(function(activity) {
     const record = registry.find(function(item) { return item.activityId === activity.id; });
     const sheet = record ? getSheetById_(spreadsheet, record.sheetId) : null;
-    if (!isRegisteredModuleConfigSheet_(sheet)) {
+    if (!sheet) {
       return { label: getModuleDisplayName_(activity), status: 'pending', statusLabel: 'Sin configurar' };
     }
     const pending = record.appliedSignature !== buildModuleCanonicalSignature_(sheet);

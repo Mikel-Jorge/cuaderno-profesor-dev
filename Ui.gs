@@ -175,6 +175,11 @@ function getUiProcessDefinition_(processId, processInput) {
           run: ensureModuleConfigTechnicalStructure_,
         },
         {
+          label: 'Comprobando configuraciones de módulo...',
+          completedMessage: 'Referencias de módulos comprobadas.',
+          run: cleanupOrphanModuleConfigsWithLock_,
+        },
+        {
           label: 'Renderizando el calendario visible...',
           completedMessage: 'Calendario visible creado o reparado.',
           run: createOrRepairCalendarSheet_,

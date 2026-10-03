@@ -2,7 +2,7 @@
 
 **Última actualización:** 2026-10-03
 **Estado general:** Portada, Calendario, Horario, Alumnado y primera fase de `4 Config` operativos
-**Versión vigente:** `1.4.6`
+**Versión vigente:** `1.4.7`
 **Esquema vigente:** `9`
 
 # Completado
@@ -58,7 +58,7 @@ Pendiente de cierre del bloque:
 # Configuración de módulo — PRIMERA FASE IMPLEMENTADA
 
 - Menú `Módulos` con creación y recálculo desde la hoja activa.
-- Selector tematizado y de solo lectura al abrir, limitado a actividades `MODULO` sin `4 Config` ya creada.
+- Selector tematizado, limitado a actividades `MODULO` sin `4 Config` ya creada; al abrir sanea referencias huérfanas.
 - Validación explícita de grupo, tipo, sesiones semanales, periodo lectivo y evaluaciones.
 - Una sola configuración por `actividad_id`, enlazada por `sheet_id` en `_MOD_CONFIG`.
 - `4 Config <SIGLA> · <GRUPO>` con calendario septiembre-junio homogéneo y tabla de 15 UT editables.
@@ -84,6 +84,13 @@ Pendiente de cierre del bloque:
 - Recálculo con exceso validado antes de escribir, estados verde/ámbar/rojo y aviso de cambios pendientes destacado.
 - Selector semanal de Horario con `SIGLA · GRUPO` para módulos, conservando `actividad_id`.
 - Configuración de módulo continúa en validación manual; ponderaciones, Seguimiento y Evaluación siguen pendientes.
+
+## Correctivo 1.4.7
+
+- El proceso visible de Reparar 1.4.6 omitía la llamada al saneamiento, aunque `inicializarCuaderno()` sí la incluía.
+- La limpieza de Config huérfana se ejecuta al abrir Crear, al crear en backend y en el proceso visible de Reparar; una hoja renombrada conserva su identidad por `sheet_id`.
+- Se eliminan solo el registro huérfano y las filas del plan de su impartición y curso, con intento de restauración si falla una parte.
+- Configuración de módulo sigue en validación manual.
 
 Pendiente de cierre del bloque:
 

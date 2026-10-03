@@ -10,8 +10,8 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 ## Definición funcional del proyecto
 
 **Estado:** especificación funcional vigente
-**Versión del documento:** 2.4
-**Versión del cuaderno:** `1.4.6`
+**Versión del documento:** 2.5
+**Versión del cuaderno:** `1.4.7`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.4.6
+# 2. Estado funcional de la versión 1.4.7
 
 Están cerrados funcionalmente:
 
@@ -187,7 +187,7 @@ Si aparecen casos reales de convalidaciones, bajas, matrícula parcial u otras e
 
 ## 11.1. Hoja `4 Config`
 
-Cada actividad `MODULO` puede generar independientemente una sola `4 Config <SIGLA> · <GRUPO>`. `_MOD_CONFIG` vincula `actividad_id` con el ID estable de la hoja y el curso; el nombre no basta para validar la asociación. La creación valida tipo, grupo, sesiones semanales, periodo lectivo y evaluaciones, y no modifica el libro al abrir el selector.
+Cada actividad `MODULO` puede generar independientemente una sola `4 Config <SIGLA> · <GRUPO>`. `_MOD_CONFIG` vincula `actividad_id` con el ID estable de la hoja y el curso; el nombre no basta para validar la asociación. La creación valida tipo, grupo, sesiones semanales, periodo lectivo y evaluaciones. Al abrir el selector solo se eliminan referencias técnicas huérfanas de hojas ya borradas.
 
 El selector muestra solo actividades `MODULO` sin hoja `4 Config` gestionada. Si no queda ninguna actividad elegible, muestra un warning y deshabilita la creación. Durante la creación bloquea nuevas acciones y muestra carga. Un error conserva la selección, informa dentro del modal y elimina los artefactos parciales; el modal solo se cierra automáticamente tras completar correctamente hoja, registro y firma inicial.
 
@@ -253,7 +253,7 @@ No se usa `onEdit`. Una firma interna de orden, ID, código, nombre, color, hora
 
 Las sesiones disponibles se limitan al intervalo desde el inicio lectivo hasta la fecha final inclusiva de la última evaluación configurada para el tipo de enseñanza. Deben ser días lectivos del Horario con tramo `SESION` y `actividad_id` del módulo, sin festivos ni periodo de prácticas. No se asignan UT a repaso, recuperaciones ni fechas posteriores a esa evaluación.
 
-Si falta la hoja visible de un registro `_MOD_CONFIG`, Crear muestra una indicación específica para ejecutar `Inicializar / reparar estructura`. Reparar elimina el registro huérfano y solo las filas de `_MOD_PLAN` de esa impartición y curso, dejándola disponible para crear una Config limpia. No reconstruye UT, nombres, horas o colores que solo existían en la hoja borrada. Una segunda reparación no altera el estado y las demás Config permanecen intactas.
+Si una hoja `4 Config` es eliminada manualmente, su configuración se considera perdida. Al abrir Crear configuración, antes de mostrar los módulos, el sistema elimina automáticamente el registro `_MOD_CONFIG` cuyo `sheet_id` ya no existe y solo las filas `_MOD_PLAN` de su `actividad_id` y curso; el módulo queda disponible para crearlo de nuevo sin ejecutar Reparar. El backend repite la comprobación antes de crear y `Inicializar / reparar estructura` usa la misma rutina. Una segunda limpieza no altera el estado. La limpieza no afecta a una hoja existente que se haya renombrado. `_MOD_CONFIG` no recupera UT, nombres, horas ni colores que solo existían en la hoja borrada. Si falla la limpieza técnica, se muestra el error y se detiene la creación.
 
 El recálculo muestra un estado verde cuando todas las sesiones quedan distribuidas sin avisos, ámbar cuando faltan horas o una UT cruza evaluaciones, y rojo ante un error. Mantiene una pantalla de espera durante la ejecución. La Config resalta en ámbar los cambios pendientes de aplicar al calendario y muestra un estado discreto cuando está actualizada.
 
@@ -337,7 +337,7 @@ El Sidebar muestra estado real de Datos generales, Calendario, Horario y Alumnad
 
 La UI usa tema centralizado, branding común, confirmaciones explícitas y progreso para operaciones largas. Las acciones destructivas se identifican con `danger`.
 
-Los diálogos de configuración son side-effect free al abrirse. Leer no crea, repara, oculta, reordena ni regenera hojas. Las reparaciones son explícitas y los guardados solo actualizan el modelo afectado y las vistas derivadas necesarias.
+Los diálogos de configuración leen sin crear, reparar, ocultar, reordenar ni regenerar hojas, salvo el saneamiento automático y limitado de Config huérfanas al abrir Crear configuración de módulo. Las demás reparaciones son explícitas y los guardados solo actualizan el modelo afectado y las vistas derivadas necesarias.
 
 La plantilla y el repositorio no contienen datos personales reales. Los cuadernos de uso real no se comparten públicamente.
 

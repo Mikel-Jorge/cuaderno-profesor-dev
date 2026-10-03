@@ -2,7 +2,7 @@
 
 **Estado:** vigente
 **Última revisión:** 2026-10-03
-**Versión:** `1.4.6` / esquema `9`
+**Versión:** `1.4.7` / esquema `9`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -15,13 +15,13 @@ Este documento describe la arquitectura técnica. El comportamiento esperado se 
 - Git/GitHub como fuente de verdad del código versionado.
 - Operaciones por bloques y sin dependencias externas innecesarias.
 
-La lectura de configuradores no crea, repara, oculta, reordena ni renderiza hojas. La reparación estructural es explícita. Un guardado solo persiste el modelo afectado y actualiza sus vistas derivadas necesarias.
+La lectura ordinaria de configuradores no crea, repara, oculta, reordena ni renderiza hojas. La excepción explícita es abrir Crear configuración de módulo: elimina referencias técnicas huérfanas de hojas `4 Config` ya borradas. Un guardado solo persiste el modelo afectado y actualiza sus vistas derivadas necesarias.
 
 Los colores son siempre presentación. Ningún cálculo reconstruye datos desde fondos o estilos.
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.4.6` y esquema `9`.
+- `Config.gs`: constantes, nombres de hojas, versión `1.4.7` y esquema `9`.
 - `Theme.gs`: tema global, presets y colores semánticos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -186,7 +186,7 @@ Config almacena la autoridad sobre:
 
 El recálculo explícito, protegido con bloqueo de documento, valida primero que las horas previstas no superen las sesiones reales disponibles; si hay exceso, aborta sin sustituir plan ni redibujar calendario. Las sesiones reales cruzan Horario y Calendario, excluyen días no lectivos y el periodo de prácticas del tipo de enseñanza. Después distribuye las UT secuencialmente, calcula la evaluación por último día asignado, sustituye solo el plan de la actividad activa y regenera su calendario. Backend y hoja comparten una firma canónica por fila compuesta por posición, `ut_id`, código, nombre, color, horas, evaluación visible y `evaluation_id`. El backend calcula y persiste la firma aplicada desde las celdas tras vaciar la cola de escrituras de fórmulas, incluida la tabla vacía. Fórmulas auxiliares por fila comparan el valor actual con la referencia aplicada y una suma de indicadores alimenta el aviso visible, sin `onEdit`; las fórmulas con varios argumentos usan el separador del locale. Solo los días con varias UT reales reciben el token semántico `theme.colors.mixedDay` y una nota con el desglose de horas; dos sesiones de la misma UT no generan nota de planificación. El defecto deja sesiones sin UT y produce warning.
 
-La reparación de `_MOD_CONFIG` comprueba cada `sheet_id` contra una hoja `4 Config` con la estructura esperada. El registro relaciona `actividad_id` con esa hoja; el ID de hoja es la identidad principal. Cuando la hoja desapareció, la tabla editable de UT también desapareció y `_MOD_PLAN` no contiene nombre, horas ni color suficientes para recuperarla. Reparar elimina únicamente el registro huérfano y el plan de su `actividad_id` y curso; no recrea datos perdidos ni altera registros válidos. La operación es idempotente y está separada de la limpieza anual.
+La hoja `4 Config` es la fuente de verdad de las UT; `_MOD_CONFIG` relaciona `actividad_id`, curso y `sheet_id`, pero no es un backup del contenido editable. Un registro es huérfano solo cuando su `sheet_id` ya no existe, con independencia del nombre actual de la hoja. `cleanupOrphanModuleConfigs_()` se ejecuta al abrir Crear configuración, dentro del backend de creación y como paso del proceso visible de Reparar. Elimina únicamente las filas huérfanas del registro y las del plan con el mismo `actividad_id` y curso, en bloques contiguos; conserva las cabeceras y los demás datos, y refresca el índice de Portada. Usa bloqueo de documento y snapshots para intentar restaurar ambas tablas si falla la operación. Es idempotente y no forma parte de la limpieza anual. Las UT perdidas con la hoja no se reconstruyen.
 
 `buildRealModuleSessions_()` termina en `fecha_fin` de la última evaluación ordenada del tipo, inclusive, y sigue excluyendo prácticas y días no lectivos. El recálculo valida el exceso de horas antes de escribir la hoja, el plan o la firma aplicada. La tabla inferior combina A:B, C:H, I:J, K:L y M:U; el resumen ocupa W:AM. Las fórmulas de evaluación visible y `evaluation_id` oculto usan cortes numéricos embebidos en la hoja y se regeneran cuando cambian las sesiones reales, sin nueva tabla técnica ni cambio de esquema. El resumen agrupa por ID para admitir nombres de evaluación repetidos.
 

@@ -71,7 +71,13 @@
       const loadingDetail = document.getElementById('loading-detail');
       let creationInProgress = false;
 
-      if (!moduleData.modules.length) {
+      if (moduleData.errorMessage) {
+        emptyState.hidden = true;
+        document.getElementById('module-field').hidden = true;
+        submitButton.disabled = true;
+        feedback.className = 'result visible error';
+        feedback.textContent = moduleData.errorMessage;
+      } else if (!moduleData.modules.length) {
         emptyState.hidden = false;
         document.getElementById('module-field').hidden = true;
         submitButton.disabled = true;
