@@ -180,6 +180,11 @@ function getUiProcessDefinition_(processId, processInput) {
           run: cleanupOrphanModuleConfigsWithLock_,
         },
         {
+          label: 'Reparando configuraciones de módulos...',
+          completedMessage: 'Hojas de configuración de módulos reparadas sin borrar datos.',
+          run: repairExistingModuleConfigSheets_,
+        },
+        {
           label: 'Renderizando el calendario visible...',
           completedMessage: 'Calendario visible creado o reparado.',
           run: createOrRepairCalendarSheet_,

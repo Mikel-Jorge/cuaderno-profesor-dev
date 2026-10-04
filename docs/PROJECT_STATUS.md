@@ -2,7 +2,7 @@
 
 **Última actualización:** 2026-10-04
 **Estado general:** Portada, Calendario, Horario, Alumnado y `4 Config` con ponderaciones operativos
-**Versión vigente:** `1.5.0`
+**Versión vigente:** `1.5.1`
 **Esquema vigente:** `9`
 
 # Completado
@@ -81,6 +81,12 @@ Pendiente de cierre del bloque:
 - Sumas, estados y colores dinámicos de ponderación por evaluación y global; las filas sin UT no exigen peso.
 - Migración de las combinaciones anteriores al recalcular, conservando datos y pesos existentes; las ponderaciones no forman parte de la firma temporal del calendario.
 - `4 Config` conserva la autoridad para la futura referencia directa desde `6 Eval`; esquema `9` sin nuevas tablas técnicas.
+
+## Correctivo 1.5.1
+
+- Reparar incluye las `4 Config` válidas por identidad y migra su tabla inferior sin redistribuir UT ni alterar `_MOD_PLAN`.
+- Color ocupa O:R, Evaluación S:U; el encabezado de Peso (%) tiene nota y el resumen se titula `RESUMEN DE HORAS Y PONDERACIONES`.
+- Encabezados del resumen sin ajuste de línea y contenido de la tabla alineado a la izquierda. `4 Config` sigue en validación final.
 
 ## Correctivo 1.4.6
 

@@ -32,7 +32,7 @@ function sheetFor(capacities, locale) {
           return cell;
         },
       };
-      for (const method of ['setBackground', 'setFontColor', 'setFontWeight', 'setHorizontalAlignment', 'setNumberFormat', 'setWrap', 'setVerticalAlignment', 'setDataValidation']) {
+      for (const method of ['setBackground', 'setFontColor', 'setFontWeight', 'setHorizontalAlignment', 'setNumberFormat', 'setWrap', 'setVerticalAlignment', 'setDataValidation', 'setFontSize']) {
         cell[method] = () => cell;
       }
       return cell;
@@ -70,7 +70,7 @@ function check(name, capacities, hours, expectedEvaluations, expectedPending) {
     const { cells, sessions } = sheetFor(capacities, locale);
     const pending = capacities.map((_, index) => calculate(cells.get(`${29 + index}:28`), hours, capacities));
     const total = calculate(cells.get(`${29 + capacities.length}:28`), hours, capacities);
-    const evaluations = hours.map((_, index) => calculate(cells.get(`${28 + index}:18`), hours, capacities));
+    const evaluations = hours.map((_, index) => calculate(cells.get(`${28 + index}:19`), hours, capacities));
     const evaluationIds = hours.map((_, index) => calculate(cells.get(`${28 + index}:41`), hours, capacities));
     assert.deepEqual(pending, expectedPending, `${name} (${locale})`);
     assert.equal(total, expectedPending.reduce((a, b) => a + b, 0), `${name} total (${locale})`);

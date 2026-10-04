@@ -20,8 +20,8 @@ const CP_MODULE_CONFIG_LAYOUT = Object.freeze({
   CURRENT_ROW_SIGNATURE_COLUMN: 42,
   APPLIED_ROW_SIGNATURE_COLUMN: 43,
   CHANGE_FLAG_COLUMN: 44,
-  UNIT_COLUMNS: Object.freeze([1, 3, 11, 13, 15, 18]),
-  UNIT_SPANS: Object.freeze([[1, 2], [3, 8], [11, 2], [13, 2], [15, 3], [18, 3]]),
+  UNIT_COLUMNS: Object.freeze([1, 3, 11, 13, 15, 19]),
+  UNIT_SPANS: Object.freeze([[1, 2], [3, 8], [11, 2], [13, 2], [15, 4], [19, 3]]),
   SUMMARY_COLUMNS: Object.freeze({ EVALUATION: 23, PENDING: 28, AVAILABLE: 30,
     UNIT_WEIGHT: 32, FINAL_WEIGHT: 34, STATUS: 36 }),
 });
@@ -561,7 +561,10 @@ function combineModuleCalendarNotes_(calendarNote, planningNote) {
 function getModuleUnitColumns_(sheet) {
   if (!sheet.getRange(27, 3).isPartOfMerge()) return [1, 2, 3, 0, 4, 5];
   const middleHeading = sheet.getRange(27, 13).getDisplayValue();
-  if (middleHeading === 'Peso (%)') return CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS;
+  if (middleHeading === 'Peso (%)') {
+    return sheet.getRange(27, 18).getDisplayValue() === 'Evaluación'
+      ? [1, 3, 11, 13, 15, 18] : CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS;
+  }
   return middleHeading ? [1, 3, 9, 0, 11, 13] : [1, 3, 9, 0, 11, 16];
 }
 
@@ -587,13 +590,12 @@ function migrateModuleUtLayout_(sheet) {
   const count = CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS;
   const old = sheet.getRange(first, 1, count, 21).getValues();
   const columns = getModuleUnitColumns_(sheet);
-  if (columns[3] === CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS[3]) return;
+  if (columns[5] === CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS[5]) return;
   const values = old.map(function(row) {
     return columns.map(function(column) { return column ? row[column - 1] : ''; });
   });
   const area = sheet.getRange(27, 1, count + 1, 21);
   area.breakApart().clearContent().clearFormat().clearDataValidations();
-  const theme = getActiveTheme_(sheet.getParent());
   const spans = CP_MODULE_CONFIG_LAYOUT.UNIT_SPANS;
   const headings = ['UT', 'Nombre', 'Horas', 'Peso (%)', 'Color', 'Evaluación'];
   for (let row = 27; row < first + count; row += 1) {
@@ -602,9 +604,19 @@ function migrateModuleUtLayout_(sheet) {
       range.setValue(row === 27 ? headings[index] : values[row - first][index]);
     });
   }
+  formatModuleUtInputArea_(sheet);
+}
+
+function formatModuleUtInputArea_(sheet) {
+  const theme = getActiveTheme_(sheet.getParent());
+  const first = CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW;
+  const count = CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS;
   sheet.getRange(27, 1, 1, 21).setBackground(theme.colors.secondary)
     .setFontColor(theme.colors.onSecondary).setFontWeight('bold')
     .setHorizontalAlignment('center').setWrap(true);
+  sheet.getRange(27, 13).setNote('Peso de esta UT dentro de la evaluación en la que finaliza.\n\n' +
+    'La suma de los pesos de las UT de cada evaluación debe ser 100 %.\n\n' +
+    'Puedes comprobar el total de cada evaluación en el resumen de planificación y ponderaciones.');
   sheet.getRange(first, 1, count, 21).setBackground(theme.colors.surface)
     .setFontColor(theme.colors.text).setVerticalAlignment('middle').setWrap(true)
     .setBorder(true, true, true, true, true, true, theme.colors.border,
@@ -618,8 +630,49 @@ function migrateModuleUtLayout_(sheet) {
   sheet.getRange(first, 15, count, 1).setNumberFormat('@')
     .setDataValidation(SpreadsheetApp.newDataValidation()
       .requireValueInList(CP_MODULE_UT_COLORS, true).setAllowInvalid(true).build());
-  sheet.getRange(first, 18, count, 3).setBackground(theme.colors.muted)
+  sheet.getRange(first, CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS[5], count, 3)
+    .setBackground(theme.colors.muted)
     .setFontColor(theme.colors.mutedText).setFontStyle('italic');
+}
+
+function repairExistingModuleConfigSheets_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  readModuleConfigRegistry_(spreadsheet).forEach(function(record) {
+    const sheet = getSheetById_(spreadsheet, record.sheetId);
+    if (!sheet) return; // El paso anterior sanea los registros huérfanos.
+    if (!isRegisteredModuleConfigSheet_(sheet)) {
+      throw new Error('La hoja registrada no conserva la estructura de 4 Config: ' +
+        sheet.getName() + '.');
+    }
+    const activity = getModuleActivityById_(record.activityId);
+    if (!activity) {
+      throw new Error('No existe la actividad de la configuración ' + sheet.getName() + '.');
+    }
+    const context = validateModuleConfigPrerequisites_(spreadsheet, activity);
+    const resultRow = CP_MODULE_CONFIG_LAYOUT.UT_HEADER_ROW + context.evaluations.length + 8;
+    const previousResult = sheet.getRange(resultRow, 23).getValue();
+    migrateModuleUtLayout_(sheet);
+    formatModuleUtInputArea_(sheet);
+    refreshModuleConfigUtSupport_(sheet, activity, context);
+    if (previousResult) sheet.getRange(resultRow, 23).setValue(previousResult);
+    refreshModuleCurrentSignatureFormulas_(sheet);
+  });
+}
+
+function refreshModuleCurrentSignatureFormulas_(sheet) {
+  const first = CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW;
+  const count = CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS;
+  const columns = getModuleUnitColumns_(sheet);
+  const current = [];
+  const changes = [];
+  for (let row = first; row < first + count; row += 1) {
+    current.push([buildModuleRowSignatureFormula_(row, columns)]);
+    changes.push(['=--(AP' + row + '<>AQ' + row + ')']);
+  }
+  sheet.getRange(first, CP_MODULE_CONFIG_LAYOUT.CURRENT_ROW_SIGNATURE_COLUMN, count, 1)
+    .setFormulas(current);
+  sheet.getRange(first, CP_MODULE_CONFIG_LAYOUT.CHANGE_FLAG_COLUMN, count, 1)
+    .setFormulas(changes).setNumberFormat('0');
 }
 
 function installModuleConfigFormatRules_(sheet, evaluationCount) {
@@ -630,7 +683,7 @@ function installModuleConfigFormatRules_(sheet, evaluationCount) {
   const rules = CP_MODULE_UT_COLORS.map(function(color) {
     return SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo(color)
       .setBackground(color).setFontColor(getAccessibleTextColor_(color))
-      .setRanges([sheet.getRange(first, 15, count, 3)]).build();
+      .setRanges([sheet.getRange(first, 15, count, 4)]).build();
   });
   const weightRange = sheet.getRange(first, 13, count, 2);
   const weight = getModuleUnitWeightExpressions_('$AO' + first, separator);
@@ -813,7 +866,8 @@ function renderModuleHoursSummary_(sheet, activity, context, startRow, finalWeig
   const hours = 'K' + first + ':K' + last;
   const separator = getModuleFormulaSeparator_(spreadsheet);
   const columns = CP_MODULE_CONFIG_LAYOUT.SUMMARY_COLUMNS;
-  const title = sheet.getRange(startRow, 23, 1, 17).merge().setValue('RESUMEN DE HORAS');
+  const title = sheet.getRange(startRow, 23, 1, 17).merge()
+    .setValue('RESUMEN DE HORAS Y PONDERACIONES');
   title.setBackground(theme.colors.secondary).setFontColor(theme.colors.onSecondary)
     .setFontWeight('bold').setHorizontalAlignment('center');
   const headerRow = startRow + 1;
@@ -828,7 +882,8 @@ function renderModuleHoursSummary_(sheet, activity, context, startRow, finalWeig
     sheet.getRange(headerRow, header.column, 1, header.width).merge()
       .setValue(header.text).setBackground(theme.colors.muted)
       .setFontColor(theme.colors.text).setFontWeight('bold')
-      .setHorizontalAlignment('center').setWrap(true);
+      .setHorizontalAlignment('left').setVerticalAlignment('middle')
+      .setWrap(false).setFontSize(8);
   });
   let row = headerRow + 1;
   const firstEvaluationRow = row;
@@ -903,6 +958,8 @@ function renderModuleHoursSummary_(sheet, activity, context, startRow, finalWeig
     '"❌ Peso final incorrecto"))))';
   sheet.getRange(row, columns.STATUS, 1, 4).merge().setFormula(totalStatus)
     .setFontWeight('bold').setWrap(true).setHorizontalAlignment('center');
+  sheet.getRange(firstEvaluationRow, 23, context.evaluations.length + 1, 17)
+    .setHorizontalAlignment('left').setVerticalAlignment('middle');
   row += 1;
   const pending = 'AB' + totalRow;
   const statusFormula = '=IF(' + pending + '<0' + separator +

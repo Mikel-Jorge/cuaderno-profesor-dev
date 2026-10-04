@@ -39,9 +39,15 @@ const values = new Map();
 const formulas = new Map();
 const merges = [];
 const validations = [];
-const spreadsheet = { getSpreadsheetTimeZone: () => 'Europe/Madrid', getSpreadsheetLocale: () => 'es_ES' };
+const notes = new Map();
+const alignments = new Map();
+const wraps = new Map();
+const spreadsheet = { getSpreadsheetTimeZone: () => 'Europe/Madrid',
+  getSpreadsheetLocale: () => 'es_ES', getSheets: () => [sheet] };
 const sheet = {
   getParent: () => spreadsheet,
+  getSheetId: () => 123,
+  getName: () => '4 Config renombrada',
   getMaxRows: () => 44,
   setRowHeight: () => sheet,
   setRowHeights: () => sheet,
@@ -54,9 +60,18 @@ const sheet = {
       setFormula(value) { formulas.set(`${row}:${column}`, value); return range; },
       setFormulas(items) { items.forEach((item, index) => formulas.set(`${row + index}:${column}`, item[0])); return range; },
       setDataValidation() { validations.push([row, column]); return range; },
+      setNote(value) { notes.set(`${row}:${column}`, value); return range; },
+      setHorizontalAlignment(value) {
+        for (let r = row; r < row + height; r += 1) {
+          for (let c = column; c < column + width; c += 1) alignments.set(`${r}:${c}`, value);
+        }
+        return range;
+      },
+      setWrap(value) { wraps.set(`${row}:${column}`, value); return range; },
       getValues() { return Array.from({ length: height }, (_, index) =>
         Array.from({ length: width }, (_, offset) => values.get(`${row + index}:${column + offset}`) ?? '')); },
       getDisplayValue() { return values.get(`${row}:${column}`) ?? ''; },
+      getValue() { return values.get(`${row}:${column}`) ?? ''; },
       isPartOfMerge() { return row === 27 && column === 3; },
       clearContent() {
         for (let r = row; r < row + height; r += 1) {
@@ -69,7 +84,7 @@ const sheet = {
       },
     };
     for (const method of ['setBackground', 'setFontColor', 'setFontWeight',
-      'setHorizontalAlignment', 'setNumberFormat', 'setWrap', 'setVerticalAlignment',
+      'setNumberFormat', 'setFontSize', 'setVerticalAlignment',
       'setBorder', 'setFontStyle', 'clearDataValidations', 'breakApart',
       'clearFormat']) range[method] = () => range;
     return range;
@@ -94,6 +109,12 @@ assert.match(formulas.get('32:36'), /Ponderaciones completas/);
 assert.ok(validations.some(([row, column]) => row === 29 && column === 34));
 assert.deepEqual(merges.filter(([row]) => row === 28).map(([, column,, width]) => [column, width]),
   [[23, 5], [28, 2], [30, 2], [32, 2], [34, 2], [36, 4]]);
+assert.equal(values.get('27:23'), 'RESUMEN DE HORAS Y PONDERACIONES');
+for (const column of [23, 28, 30, 32, 34, 36]) {
+  assert.equal(alignments.get(`28:${column}`), 'left');
+  assert.equal(wraps.get(`28:${column}`), false);
+  assert.equal(alignments.get(`29:${column}`), 'left');
+}
 assert.equal(formatRules.filter(rule => rule.range[1] === 13 && rule.formula).length, 3);
 assert.equal(formatRules.filter(rule => rule.range[0] === 29 && rule.range[1] === 34 && rule.formula).length, 3);
 assert.equal(formatRules.filter(rule => rule.range[0] === 32 && rule.range[1] === 34 && rule.formula).length, 3);
@@ -217,11 +238,12 @@ values.set('28:9', 10);
 values.set('28:11', '#BFDBFE');
 values.set('28:16', 'Eval 1');
 context.migrateModuleUtLayout_(sheet);
-assert.deepEqual([1, 3, 11, 13, 15, 18].map(column => values.get(`28:${column}`)),
+assert.deepEqual([1, 3, 11, 13, 15, 19].map(column => values.get(`28:${column}`)),
   ['UT1', 'Nombre', 10, '', '#BFDBFE', 'Eval 1']);
 assert.deepEqual(merges.filter(([row, column]) => row === 27 && column <= 21)
   .map(([, column,, width]) => [column, width]),
-  [[1, 2], [3, 8], [11, 2], [13, 2], [15, 3], [18, 3]]);
+  [[1, 2], [3, 8], [11, 2], [13, 2], [15, 4], [19, 3]]);
+assert.match(notes.get('27:13'), /100 %/);
 
 // Recalcular writes planning fields but never writes the two editable weight ranges.
 const writesBefore = new Map(values);
@@ -229,8 +251,8 @@ context.writeNormalizedModuleUnits_(sheet, [{ sourceRow: 28, code: 'UT1', hours:
   color: '#BFDBFE', id: 'ut1', evaluationId: 'e0' }]);
 assert.equal(values.get('28:13'), writesBefore.get('28:13'));
 assert.deepEqual([29, 30, 31].map(row => values.get(`${row}:34`)), [30, 30, 40]);
-const signature = context.buildModuleRowSignatureFormula_(28, [1, 3, 11, 13, 15, 18]);
-assert.ok(signature.includes('K28') && signature.includes('O28') && signature.includes('R28'));
+const signature = context.buildModuleRowSignatureFormula_(28, [1, 3, 11, 13, 15, 19]);
+assert.ok(signature.includes('K28') && signature.includes('O28') && signature.includes('S28'));
 assert.ok(!signature.includes('M28') && !signature.includes('AH'));
 
 // A changed evaluation ID immediately moves the same weight to the other SUMIFS.
@@ -245,4 +267,45 @@ unitRows[1].evaluationId = 'e1';
 result = evaluateWeightFormulas(unitRows, [30, 30, 40]);
 assert.deepEqual([result.get('AF29'), result.get('AF30')], [30, 70]);
 assert.equal(unitRows[1].weight, 70);
+
+// Reparar migrates a registered 1.5.0 sheet in place, without replacing applied signatures.
+values.delete('27:19');
+values.set('27:18', 'Evaluación');
+values.set('27:13', 'Peso (%)');
+values.set('1:1', 'CONFIGURACIÓN DEL MÓDULO');
+values.set('25:1', 'UNIDADES DE TRABAJO');
+values.set('28:1', 'UT1');
+values.set('28:3', 'Nombre');
+values.set('28:11', 10);
+values.set('28:13', 25);
+values.set('28:15', '#BFDBFE');
+values.set('28:18', 'Eval 1');
+values.delete('28:19');
+values.set('28:43', 'firma aplicada');
+notes.clear();
+const plan = [{ unit: 'ut1', date: '2026-10-01' }];
+context.SpreadsheetApp.getActiveSpreadsheet = () => spreadsheet;
+vm.runInContext(`
+  readModuleConfigRegistry_ = () => [{ sheetId: 123, activityId: 'activity' }];
+  getModuleActivityById_ = () => ({ id: 'activity' });
+  validateModuleConfigPrerequisites_ = () => ({ type: repairType, evaluations: repairPeriods });
+`, Object.assign(context, { repairType: type, repairPeriods: periods }));
+context.repairExistingModuleConfigSheets_();
+assert.deepEqual([1, 3, 11, 13, 15, 19].map(column => values.get(`28:${column}`)),
+  ['UT1', 'Nombre', 10, 25, '#BFDBFE', 'Eval 1']);
+assert.deepEqual([29, 30, 31].map(row => values.get(`${row}:34`)), [30, 30, 40]);
+assert.equal(values.get('28:43'), 'firma aplicada');
+assert.match(formulas.get('28:42'), /S28/);
+assert.equal(values.get('27:23'), 'RESUMEN DE HORAS Y PONDERACIONES');
+assert.match(notes.get('27:13'), /100 %/);
+const repairedValues = new Map(values);
+const repairedFormulas = new Map(formulas);
+const repairedNotes = new Map(notes);
+const ruleCount = formatRules.length;
+context.repairExistingModuleConfigSheets_();
+assert.deepEqual(values, repairedValues);
+assert.deepEqual(formulas, repairedFormulas);
+assert.deepEqual(notes, repairedNotes);
+assert.equal(formatRules.length, ruleCount);
+assert.deepEqual(plan, [{ unit: 'ut1', date: '2026-10-01' }]);
 console.log('Module Config weight layout and preservation cases passed');

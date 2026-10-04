@@ -11,7 +11,7 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 
 **Estado:** especificación funcional vigente
 **Versión del documento:** 2.7
-**Versión del cuaderno:** `1.5.0`
+**Versión del cuaderno:** `1.5.1`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.5.0
+# 2. Estado funcional de la versión 1.5.1
 
 Están cerrados funcionalmente:
 
@@ -228,13 +228,15 @@ Cada UT mantiene un ID interno estable, un orden por fila, un color explícito y
 
 Desde `1.5.0`, la tabla contiene `UT | Nombre | Horas | Peso (%) | Color | Evaluación`. Peso (%) es editable, admite números de 0 a 100 con decimales y no recibe valor automático. Una UT con Nombre y Horas positivas requiere peso; las filas vacías no lo requieren. El peso completo de cada UT pertenece a la evaluación donde termina, aunque sus horas se distribuyan entre varias evaluaciones.
 
+El encabezado `Peso (%)` tiene una nota explicativa sobre el peso dentro de la evaluación final y la comprobación de su suma en el resumen.
+
 ## 11.4. Totales automáticos
 
-La zona inferior conserva exactamente 15 filas editables con `UT | Nombre | Horas | Peso (%) | Color | Evaluación`. Usa celdas combinadas sin modificar los anchos de los meses. El resumen muestra, por evaluación y para el total, `Pendientes` a la izquierda de `Disponibles`. Las sesiones disponibles son las sesiones reales planificables dentro de cada evaluación; se calculan al crear o recalcular la Config y permanecen estables hasta el siguiente recálculo. Una UT puede consumir sesiones de varias evaluaciones, aunque su Evaluación visible indica dónde termina. Las horas previstas consumen las sesiones disponibles en orden cronológico: el exceso de una evaluación pasa a la siguiente, y solo la última puede tener pendientes negativos. El total pendiente resta todas las horas previstas a la suma de disponibles. Las pendientes y la evaluación se actualizan al editar Horas mediante fórmulas de Sheets, sin trigger ni recálculo manual. El exceso se destaca y Recalcular hace la validación definitiva.
+La zona inferior conserva exactamente 15 filas editables con `UT | Nombre | Horas | Peso (%) | Color | Evaluación`. Usa celdas combinadas sin modificar los anchos de los meses. El resumen muestra, por evaluación y para el total, `Pendientes` a la izquierda de `Disponibles`. Las sesiones disponibles son las sesiones reales planificables dentro de cada evaluación; se calculan al crear, recalcular o reparar la Config y permanecen estables entre esas acciones. Una UT puede consumir sesiones de varias evaluaciones, aunque su Evaluación visible indica dónde termina. Las horas previstas consumen las sesiones disponibles en orden cronológico: el exceso de una evaluación pasa a la siguiente, y solo la última puede tener pendientes negativos. El total pendiente resta todas las horas previstas a la suma de disponibles. Las pendientes y la evaluación se actualizan al editar Horas mediante fórmulas de Sheets, sin trigger ni recálculo manual. El exceso se destaca y Recalcular hace la validación definitiva.
 
 La evaluación visible es una fórmula basada en el fin acumulado de sesiones de cada UT y en el número de sesiones reales hasta cada fecha final de evaluación. La UT queda en la evaluación de su última sesión; si excede la capacidad total, figura en la última evaluación configurada. Las UT de cero horas no reciben evaluación.
 
-El mismo resumen de horas incluye `Peso UTs`, `Peso final` y `Estado`. `Peso UTs` suma los pesos de las UT activas cuya evaluación final coincide; una evaluación sin UT muestra `—` y `Sin UT`, sin exigir 100 %. Una evaluación con UT debe sumar 100 %. `Peso final` es editable de 0 a 100 en cada evaluación, y todas las evaluaciones deben tenerlo configurado y sumar 100 % para completar la ponderación del módulo. El total de `Peso UTs` muestra `—`; el total de `Peso final` muestra su suma y el estado global. Los campos vacíos necesarios aparecen en ámbar, los configurados que cuadran en verde y los importes erróneos en rojo. Las fórmulas y los formatos se actualizan al editar Horas, Peso (%) o Peso final, sin triggers ni Recalcular.
+El `RESUMEN DE HORAS Y PONDERACIONES` incluye `Peso UTs`, `Peso final` y `Estado`. `Peso UTs` suma los pesos de las UT activas cuya evaluación final coincide; una evaluación sin UT muestra `—` y `Sin UT`, sin exigir 100 %. Una evaluación con UT debe sumar 100 %. `Peso final` es editable de 0 a 100 en cada evaluación, y todas las evaluaciones deben tenerlo configurado y sumar 100 % para completar la ponderación del módulo. El total de `Peso UTs` muestra `—`; el total de `Peso final` muestra su suma y el estado global. Los campos vacíos necesarios aparecen en ámbar, los configurados que cuadran en verde y los importes erróneos en rojo. Las fórmulas y los formatos se actualizan al editar Horas, Peso (%) o Peso final, sin triggers ni Recalcular.
 
 ## 11.5. Recálculo explícito
 
@@ -258,6 +260,8 @@ Los pesos de UT y de evaluación no forman parte de esa firma porque no alteran 
 Las sesiones disponibles se limitan al intervalo desde el inicio lectivo hasta la fecha final inclusiva de la última evaluación configurada para el tipo de enseñanza. Deben ser días lectivos del Horario con tramo `SESION` y `actividad_id` del módulo, sin festivos ni periodo de prácticas. No se asignan UT a repaso, recuperaciones ni fechas posteriores a esa evaluación.
 
 Si una hoja `4 Config` es eliminada manualmente, su configuración se considera perdida. Al abrir Crear configuración, antes de mostrar los módulos, el sistema elimina automáticamente el registro `_MOD_CONFIG` cuyo `sheet_id` ya no existe y solo las filas `_MOD_PLAN` de su `actividad_id` y curso; el módulo queda disponible para crearlo de nuevo sin ejecutar Reparar. El backend repite la comprobación antes de crear y `Inicializar / reparar estructura` usa la misma rutina. Una segunda limpieza no altera el estado. La limpieza no afecta a una hoja existente que se haya renombrado. `_MOD_CONFIG` no recupera UT, nombres, horas ni colores que solo existían en la hoja borrada. Si falla la limpieza técnica, se muestra el error y se detiene la creación.
+
+`Inicializar / reparar estructura` actualiza también las hojas `4 Config` registradas que aún existen: migra las combinaciones, restaura la nota y las fórmulas y formatos del resumen sin borrar UT, horas, pesos, colores ni el plan aplicado. No redistribuye sesiones; esa operación sigue siendo exclusiva de Recalcular.
 
 El recálculo muestra un estado verde cuando todas las sesiones quedan distribuidas sin avisos, ámbar cuando faltan horas o una UT cruza evaluaciones, y rojo ante un error. Mantiene una pantalla de espera durante la ejecución. La Config resalta en ámbar los cambios pendientes de aplicar al calendario y muestra un estado discreto cuando está actualizada.
 
