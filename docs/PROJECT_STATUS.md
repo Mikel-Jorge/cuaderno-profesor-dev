@@ -1,8 +1,8 @@
 # Estado del proyecto
 
-**Última actualización:** 2026-10-03
+**Última actualización:** 2026-10-04
 **Estado general:** Portada, Calendario, Horario, Alumnado y primera fase de `4 Config` operativos
-**Versión vigente:** `1.4.8`
+**Versión vigente:** `1.4.9`
 **Esquema vigente:** `9`
 
 # Completado
@@ -91,6 +91,12 @@ Pendiente de cierre del bloque:
 - La limpieza de Config huérfana se ejecuta al abrir Crear, al crear en backend y en el proceso visible de Reparar; una hoja renombrada conserva su identidad por `sheet_id`.
 - Se eliminan solo el registro huérfano y las filas del plan de su impartición y curso, con intento de restauración si falla una parte.
 - Configuración de módulo sigue en validación manual.
+
+## Correctivo 1.4.9
+
+- El resumen dinámico consume las horas de UT en secuencia cronológica y reparte las UT que cruzan evaluaciones; solo la última puede mostrar exceso.
+- La evaluación visible conserva la última evaluación configurada si las horas exceden la capacidad total.
+- Se mantiene el esquema `9` y la planificación real de Recalcular.
 
 ## Correctivo 1.4.8
 

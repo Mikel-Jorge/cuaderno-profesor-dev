@@ -11,7 +11,7 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 
 **Estado:** especificación funcional vigente
 **Versión del documento:** 2.6
-**Versión del cuaderno:** `1.4.8`
+**Versión del cuaderno:** `1.4.9`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.4.8
+# 2. Estado funcional de la versión 1.4.9
 
 Están cerrados funcionalmente:
 
@@ -226,13 +226,13 @@ La evaluación visible es calculada, no editable por el docente. Se asigna segú
 
 Cada UT mantiene un ID interno estable, un orden por fila, un color explícito y una evaluación calculada. Al recalcular se asignan automáticamente código, color, ID y evaluación cuando proceda. La hoja ofrece 15 filas editables de UT.
 
-Los pesos de cada UT dentro de su evaluación y los pesos de cada evaluación en la nota final siguen pendientes en 1.4.8.
+Los pesos de cada UT dentro de su evaluación y los pesos de cada evaluación en la nota final siguen pendientes en 1.4.9.
 
 ## 11.4. Totales automáticos
 
-La zona inferior conserva exactamente 15 filas editables con `UT | Nombre | Horas | Color | Evaluación`. Usa celdas combinadas para dar más espacio a Color y menos a Evaluación sin modificar los anchos de los meses. El resumen muestra, por evaluación y para el total, `Pendientes` a la izquierda de `Disponibles`. Las sesiones disponibles son las sesiones reales planificables dentro de cada evaluación; se calculan al crear o recalcular la Config y permanecen estables hasta el siguiente recálculo. Las pendientes equivalen a disponibles menos horas de las UT cuya última sesión cae en esa evaluación; el total resta todas las horas previstas a la suma de disponibles. Las pendientes y la evaluación se actualizan al editar Horas mediante fórmulas de Sheets, sin trigger ni recálculo manual. Un valor negativo permanece numérico y se destaca como exceso; Recalcular hace la validación definitiva.
+La zona inferior conserva exactamente 15 filas editables con `UT | Nombre | Horas | Color | Evaluación`. Usa celdas combinadas para dar más espacio a Color y menos a Evaluación sin modificar los anchos de los meses. El resumen muestra, por evaluación y para el total, `Pendientes` a la izquierda de `Disponibles`. Las sesiones disponibles son las sesiones reales planificables dentro de cada evaluación; se calculan al crear o recalcular la Config y permanecen estables hasta el siguiente recálculo. Una UT puede consumir sesiones de varias evaluaciones, aunque su Evaluación visible indica dónde termina. Las horas previstas consumen las sesiones disponibles en orden cronológico: el exceso de una evaluación pasa a la siguiente, y solo la última puede tener pendientes negativos. El total pendiente resta todas las horas previstas a la suma de disponibles. Las pendientes y la evaluación se actualizan al editar Horas mediante fórmulas de Sheets, sin trigger ni recálculo manual. El exceso se destaca y Recalcular hace la validación definitiva.
 
-La evaluación visible es una fórmula basada en el fin acumulado de sesiones de cada UT y en el número de sesiones reales hasta cada fecha final de evaluación. La UT queda en la evaluación de su última sesión. Las UT de cero horas no reciben evaluación.
+La evaluación visible es una fórmula basada en el fin acumulado de sesiones de cada UT y en el número de sesiones reales hasta cada fecha final de evaluación. La UT queda en la evaluación de su última sesión; si excede la capacidad total, figura en la última evaluación configurada. Las UT de cero horas no reciben evaluación.
 
 ## 11.5. Recálculo explícito
 

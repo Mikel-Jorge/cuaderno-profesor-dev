@@ -660,8 +660,8 @@ function installModuleEvaluationFormulas_(sheet, activity, context) {
   const idFormulas = [];
   for (let row = first; row < first + count; row += 1) {
     const total = 'SUM($I$' + first + ':I' + row + ')';
-    let result = '"Exceso"';
-    let idResult = '""';
+    let result = '"' + periods[periods.length - 1].name.replace(/"/g, '""') + '"';
+    let idResult = '"' + periods[periods.length - 1].id.replace(/"/g, '""') + '"';
     for (let index = periods.length - 1; index >= 0; index -= 1) {
       const name = periods[index].name.replace(/"/g, '""');
       result = 'IF(' + total + '<=' + cutoffs[index] + separator +
@@ -751,7 +751,7 @@ function renderModuleHoursSummary_(sheet, activity, context, startRow) {
   const first = CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW;
   const last = first + CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS - 1;
   const hours = 'I' + first + ':I' + last;
-  const evaluations = 'AO' + first + ':AO' + last;
+  const separator = getModuleFormulaSeparator_(spreadsheet);
   const title = sheet.getRange(startRow, 23, 1, 17).merge().setValue('RESUMEN DE HORAS');
   title.setBackground(theme.colors.secondary).setFontColor(theme.colors.onSecondary)
     .setFontWeight('bold').setHorizontalAlignment('center');
@@ -768,16 +768,20 @@ function renderModuleHoursSummary_(sheet, activity, context, startRow) {
   });
   let row = headerRow + 1;
   const firstEvaluationRow = row;
-  context.evaluations.forEach(function(evaluation) {
+  context.evaluations.forEach(function(evaluation, index) {
     const period = periods.find(function(item) { return item.id === evaluation.id; });
     const available = sessions.filter(function(session) {
       return period && compareCalendarDates_(session.date, period.startDate, timeZone) >= 0 &&
         compareCalendarDates_(session.date, period.endDate, timeZone) <= 0;
     }).length;
     sheet.getRange(row, 23, 1, 9).merge().setValue(evaluation.name);
+    const remaining = index === 0 ? 'SUM(' + hours + ')' :
+      'MAX(SUM(' + hours + ')-SUM($AJ$' + firstEvaluationRow + ':AJ' +
+      (row - 1) + ')' + separator + '0)';
+    const assigned = index === context.evaluations.length - 1 ? remaining :
+      'MIN(AJ' + row + separator + remaining + ')';
     sheet.getRange(row, 32, 1, 4).merge()
-      .setFormula('=AJ' + row + '-SUMPRODUCT((' + evaluations + '="' +
-        evaluation.id.replace(/"/g, '""') + '")*' + hours + ')')
+      .setFormula('=AJ' + row + '-' + assigned)
       .setNumberFormat('0').setHorizontalAlignment('center');
     sheet.getRange(row, 36, 1, 4).merge().setValue(available)
       .setNumberFormat('0').setHorizontalAlignment('center');
@@ -791,7 +795,6 @@ function renderModuleHoursSummary_(sheet, activity, context, startRow) {
     .setFormula('=SUM(AJ' + firstEvaluationRow + ':AJ' + (row - 1) + ')')
     .setNumberFormat('0').setFontWeight('bold').setHorizontalAlignment('center');
   row += 1;
-  const separator = getModuleFormulaSeparator_(spreadsheet);
   const pending = 'AF' + totalRow;
   const statusFormula = '=IF(' + pending + '<0' + separator +
     '"⚠ Exceso de "&(-' + pending + ')&" sesiones"' + separator +
