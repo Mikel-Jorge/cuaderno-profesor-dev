@@ -10,8 +10,8 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 ## Definición funcional del proyecto
 
 **Estado:** especificación funcional vigente
-**Versión del documento:** 2.6
-**Versión del cuaderno:** `1.4.9`
+**Versión del documento:** 2.7
+**Versión del cuaderno:** `1.5.0`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.4.9
+# 2. Estado funcional de la versión 1.5.0
 
 Están cerrados funcionalmente:
 
@@ -37,7 +37,7 @@ Están cerrados funcionalmente:
 - `1 Calendario`;
 - `2 Horario`.
 
-Alumnado está operativo y se implementa la primera fase de `4 Config ...`: calendario individual, UT con horas manuales, totales y distribución automática. Las ponderaciones de `4 Config`, `5 Seg ...` y `6 Eval ...` siguen pendientes.
+Alumnado está operativo. `4 Config ...` incluye calendario individual, distribución automática y ponderaciones editables con validación dinámica. `5 Seg ...` y `6 Eval ...` siguen pendientes.
 
 # 3. Estructura del libro
 
@@ -191,7 +191,7 @@ Cada actividad `MODULO` puede generar independientemente una sola `4 Config <SIG
 
 El selector muestra solo actividades `MODULO` sin hoja `4 Config` gestionada. Si no queda ninguna actividad elegible, muestra un warning y deshabilita la creación. Durante la creación bloquea nuevas acciones y muestra carga. Un error conserva la selección, informa dentro del modal y elimina los artefactos parciales; el modal solo se cierra automáticamente tras completar correctamente hoja, registro y firma inicial.
 
-La tabla visible es la autoridad sobre las UT. Las ponderaciones de evaluación siguen pendientes.
+La tabla visible es la autoridad sobre las UT y sus ponderaciones. El resumen de la misma hoja es la autoridad sobre los pesos finales de evaluación.
 
 ## 11.2. Calendario propio
 
@@ -226,13 +226,15 @@ La evaluación visible es calculada, no editable por el docente. Se asigna segú
 
 Cada UT mantiene un ID interno estable, un orden por fila, un color explícito y una evaluación calculada. Al recalcular se asignan automáticamente código, color, ID y evaluación cuando proceda. La hoja ofrece 15 filas editables de UT.
 
-Los pesos de cada UT dentro de su evaluación y los pesos de cada evaluación en la nota final siguen pendientes en 1.4.9.
+Desde `1.5.0`, la tabla contiene `UT | Nombre | Horas | Peso (%) | Color | Evaluación`. Peso (%) es editable, admite números de 0 a 100 con decimales y no recibe valor automático. Una UT con Nombre y Horas positivas requiere peso; las filas vacías no lo requieren. El peso completo de cada UT pertenece a la evaluación donde termina, aunque sus horas se distribuyan entre varias evaluaciones.
 
 ## 11.4. Totales automáticos
 
-La zona inferior conserva exactamente 15 filas editables con `UT | Nombre | Horas | Color | Evaluación`. Usa celdas combinadas para dar más espacio a Color y menos a Evaluación sin modificar los anchos de los meses. El resumen muestra, por evaluación y para el total, `Pendientes` a la izquierda de `Disponibles`. Las sesiones disponibles son las sesiones reales planificables dentro de cada evaluación; se calculan al crear o recalcular la Config y permanecen estables hasta el siguiente recálculo. Una UT puede consumir sesiones de varias evaluaciones, aunque su Evaluación visible indica dónde termina. Las horas previstas consumen las sesiones disponibles en orden cronológico: el exceso de una evaluación pasa a la siguiente, y solo la última puede tener pendientes negativos. El total pendiente resta todas las horas previstas a la suma de disponibles. Las pendientes y la evaluación se actualizan al editar Horas mediante fórmulas de Sheets, sin trigger ni recálculo manual. El exceso se destaca y Recalcular hace la validación definitiva.
+La zona inferior conserva exactamente 15 filas editables con `UT | Nombre | Horas | Peso (%) | Color | Evaluación`. Usa celdas combinadas sin modificar los anchos de los meses. El resumen muestra, por evaluación y para el total, `Pendientes` a la izquierda de `Disponibles`. Las sesiones disponibles son las sesiones reales planificables dentro de cada evaluación; se calculan al crear o recalcular la Config y permanecen estables hasta el siguiente recálculo. Una UT puede consumir sesiones de varias evaluaciones, aunque su Evaluación visible indica dónde termina. Las horas previstas consumen las sesiones disponibles en orden cronológico: el exceso de una evaluación pasa a la siguiente, y solo la última puede tener pendientes negativos. El total pendiente resta todas las horas previstas a la suma de disponibles. Las pendientes y la evaluación se actualizan al editar Horas mediante fórmulas de Sheets, sin trigger ni recálculo manual. El exceso se destaca y Recalcular hace la validación definitiva.
 
 La evaluación visible es una fórmula basada en el fin acumulado de sesiones de cada UT y en el número de sesiones reales hasta cada fecha final de evaluación. La UT queda en la evaluación de su última sesión; si excede la capacidad total, figura en la última evaluación configurada. Las UT de cero horas no reciben evaluación.
+
+El mismo resumen de horas incluye `Peso UTs`, `Peso final` y `Estado`. `Peso UTs` suma los pesos de las UT activas cuya evaluación final coincide; una evaluación sin UT muestra `—` y `Sin UT`, sin exigir 100 %. Una evaluación con UT debe sumar 100 %. `Peso final` es editable de 0 a 100 en cada evaluación, y todas las evaluaciones deben tenerlo configurado y sumar 100 % para completar la ponderación del módulo. El total de `Peso UTs` muestra `—`; el total de `Peso final` muestra su suma y el estado global. Los campos vacíos necesarios aparecen en ámbar, los configurados que cuadran en verde y los importes erróneos en rojo. Las fórmulas y los formatos se actualizan al editar Horas, Peso (%) o Peso final, sin triggers ni Recalcular.
 
 ## 11.5. Recálculo explícito
 
@@ -250,6 +252,8 @@ El menú `📚 Módulos → 🔄 Recalcular configuración del módulo`:
 Ejecutarlo desde cualquier otra hoja mostrará un aviso para situarse en una `4 Config ...` y terminará sin modificar nada.
 
 No se usa `onEdit`. Una firma interna de orden, ID, código, nombre, color, horas y evaluación aplicados en el último recálculo se compara mediante fórmulas con los valores actuales. Mientras difieran se muestra `⚠ Hay cambios pendientes de aplicar al calendario`; tras recalcular correctamente, la firma se actualiza y el aviso desaparece.
+
+Los pesos de UT y de evaluación no forman parte de esa firma porque no alteran el calendario. Recalcular conserva todos los pesos exactamente, incluidos los vacíos, y no los distribuye ni los completa.
 
 Las sesiones disponibles se limitan al intervalo desde el inicio lectivo hasta la fecha final inclusiva de la última evaluación configurada para el tipo de enseñanza. Deben ser días lectivos del Horario con tramo `SESION` y `actividad_id` del módulo, sin festivos ni periodo de prácticas. No se asignan UT a repaso, recuperaciones ni fechas posteriores a esa evaluación.
 

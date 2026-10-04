@@ -20,7 +20,10 @@ const CP_MODULE_CONFIG_LAYOUT = Object.freeze({
   CURRENT_ROW_SIGNATURE_COLUMN: 42,
   APPLIED_ROW_SIGNATURE_COLUMN: 43,
   CHANGE_FLAG_COLUMN: 44,
-  UNIT_COLUMNS: Object.freeze([1, 3, 9, 11, 16]),
+  UNIT_COLUMNS: Object.freeze([1, 3, 11, 13, 15, 18]),
+  UNIT_SPANS: Object.freeze([[1, 2], [3, 8], [11, 2], [13, 2], [15, 3], [18, 3]]),
+  SUMMARY_COLUMNS: Object.freeze({ EVALUATION: 23, PENDING: 28, AVAILABLE: 30,
+    UNIT_WEIGHT: 32, FINAL_WEIGHT: 34, STATUS: 36 }),
 });
 const CP_MODULE_MIXED_DAY_COLOR = '#F59E0B';
 const CP_MODULE_UT_COLORS = Object.freeze([
@@ -398,7 +401,7 @@ function renderModuleConfigCalendar_(sheet, activity, context, sessions, assignm
     .setFontWeight('normal')
     .setHorizontalAlignment('center');
   setMergedRangeValue_(sheet.getRange(5, 1, 1, 39),
-    'Edita las UT y usa Módulos → Recalcular configuración del módulo.')
+    'Edita las ponderaciones directamente. Usa Recalcular solo para aplicar cambios al calendario.')
     .setBackground(theme.colors.background)
     .setFontColor(theme.colors.mutedText)
     .setHorizontalAlignment('center');
@@ -556,9 +559,10 @@ function combineModuleCalendarNotes_(calendarNote, planningNote) {
 }
 
 function getModuleUnitColumns_(sheet) {
-  if (!sheet.getRange(27, 3).isPartOfMerge()) return [1, 2, 3, 4, 5];
-  return sheet.getRange(27, 13).getDisplayValue()
-    ? [1, 3, 9, 11, 13] : CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS;
+  if (!sheet.getRange(27, 3).isPartOfMerge()) return [1, 2, 3, 0, 4, 5];
+  const middleHeading = sheet.getRange(27, 13).getDisplayValue();
+  if (middleHeading === 'Peso (%)') return CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS;
+  return middleHeading ? [1, 3, 9, 0, 11, 13] : [1, 3, 9, 0, 11, 16];
 }
 
 function columnToLetter_(column) {
@@ -583,15 +587,15 @@ function migrateModuleUtLayout_(sheet) {
   const count = CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS;
   const old = sheet.getRange(first, 1, count, 21).getValues();
   const columns = getModuleUnitColumns_(sheet);
-  if (columns[4] === CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS[4]) return;
+  if (columns[3] === CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS[3]) return;
   const values = old.map(function(row) {
-    return columns.map(function(column) { return row[column - 1]; });
+    return columns.map(function(column) { return column ? row[column - 1] : ''; });
   });
   const area = sheet.getRange(27, 1, count + 1, 21);
   area.breakApart().clearContent().clearFormat().clearDataValidations();
   const theme = getActiveTheme_(sheet.getParent());
-  const spans = [[1, 2], [3, 6], [9, 2], [11, 5], [16, 6]];
-  const headings = ['UT', 'Nombre', 'Horas', 'Color', 'Evaluación'];
+  const spans = CP_MODULE_CONFIG_LAYOUT.UNIT_SPANS;
+  const headings = ['UT', 'Nombre', 'Horas', 'Peso (%)', 'Color', 'Evaluación'];
   for (let row = 27; row < first + count; row += 1) {
     spans.forEach(function(span, index) {
       const range = sheet.getRange(row, span[0], 1, span[1]).merge();
@@ -600,36 +604,59 @@ function migrateModuleUtLayout_(sheet) {
   }
   sheet.getRange(27, 1, 1, 21).setBackground(theme.colors.secondary)
     .setFontColor(theme.colors.onSecondary).setFontWeight('bold')
-    .setHorizontalAlignment('center');
+    .setHorizontalAlignment('center').setWrap(true);
   sheet.getRange(first, 1, count, 21).setBackground(theme.colors.surface)
     .setFontColor(theme.colors.text).setVerticalAlignment('middle').setWrap(true)
     .setBorder(true, true, true, true, true, true, theme.colors.border,
       SpreadsheetApp.BorderStyle.SOLID);
-  sheet.getRange(first, 9, count, 1).setNumberFormat('0')
+  sheet.getRange(first, 11, count, 1).setNumberFormat('0')
     .setDataValidation(SpreadsheetApp.newDataValidation()
       .requireNumberGreaterThanOrEqualTo(0).setAllowInvalid(false).build());
-  sheet.getRange(first, 11, count, 1).setNumberFormat('@')
+  sheet.getRange(first, 13, count, 1).setNumberFormat('0.##"%"')
+    .setDataValidation(SpreadsheetApp.newDataValidation()
+      .requireNumberBetween(0, 100).setAllowInvalid(false).build());
+  sheet.getRange(first, 15, count, 1).setNumberFormat('@')
     .setDataValidation(SpreadsheetApp.newDataValidation()
       .requireValueInList(CP_MODULE_UT_COLORS, true).setAllowInvalid(true).build());
-  sheet.getRange(first, 16, count, 6).setBackground(theme.colors.muted)
+  sheet.getRange(first, 18, count, 3).setBackground(theme.colors.muted)
     .setFontColor(theme.colors.mutedText).setFontStyle('italic');
-  installModuleConfigFormatRules_(sheet);
 }
 
 function installModuleConfigFormatRules_(sheet, evaluationCount) {
   const theme = getActiveTheme_(sheet.getParent());
   const first = CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW;
   const count = CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS;
+  const separator = getModuleFormulaSeparator_(sheet.getParent());
   const rules = CP_MODULE_UT_COLORS.map(function(color) {
     return SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo(color)
       .setBackground(color).setFontColor(getAccessibleTextColor_(color))
-      .setRanges([sheet.getRange(first, 11, count, 5)]).build();
+      .setRanges([sheet.getRange(first, 15, count, 3)]).build();
+  });
+  const weightRange = sheet.getRange(first, 13, count, 2);
+  const weight = getModuleUnitWeightExpressions_('$AO' + first, separator);
+  const active = '$C' + first + '<>""' + separator + '$K' + first + '>0';
+  [
+    { formula: '=AND(' + active + separator + '$M' + first + '="")',
+      background: '#FEF3C7', color: '#1F2937' },
+    { formula: '=AND(' + active + separator + 'ISNUMBER($M' + first + ')' + separator +
+        weight.sum + '=100' + separator + weight.missing + '=0)',
+      background: '#DCFCE7', color: theme.colors.success },
+    { formula: '=AND(' + active + separator + 'ISNUMBER($M' + first + ')' + separator +
+        'OR(' + weight.sum + '<>100' + separator + weight.missing + '>0))',
+      background: '#FEE2E2', color: theme.colors.danger },
+  ].forEach(function(style) {
+    rules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenFormulaSatisfied(style.formula).setBackground(style.background)
+      .setFontColor(style.color).setBold(true).setRanges([weightRange]).build());
   });
   rules.push(SpreadsheetApp.newConditionalFormatRule().whenNumberGreaterThan(0)
     .setBackground('#FBBF24').setFontColor('#1F2937').setBold(true)
     .setRanges([sheet.getRange(4, 1, 1, 39)]).build());
   if (evaluationCount) {
-    const pending = sheet.getRange(29, 32, evaluationCount + 1, 4);
+    const firstEvaluationRow = 29;
+    const lastEvaluationRow = firstEvaluationRow + evaluationCount - 1;
+    const totalRow = lastEvaluationRow + 1;
+    const pending = sheet.getRange(firstEvaluationRow, 28, evaluationCount + 1, 2);
     [
       { condition: 'whenNumberLessThan', value: 0, background: '#FEE2E2', color: theme.colors.danger },
       { condition: 'whenNumberEqualTo', value: 0, background: '#DCFCE7', color: theme.colors.success },
@@ -638,6 +665,59 @@ function installModuleConfigFormatRules_(sheet, evaluationCount) {
       rules.push(SpreadsheetApp.newConditionalFormatRule()[style.condition](style.value)
         .setBackground(style.background).setFontColor(style.color).setBold(true)
         .setRanges([pending]).build());
+    });
+    const unitTotals = sheet.getRange(firstEvaluationRow, 32, evaluationCount, 2);
+    [
+      { condition: 'whenNumberLessThan', value: 100, background: '#FEF3C7', color: '#1F2937' },
+      { condition: 'whenNumberEqualTo', value: 100, background: '#DCFCE7', color: theme.colors.success },
+      { condition: 'whenNumberGreaterThan', value: 100, background: '#FEE2E2', color: theme.colors.danger },
+    ].forEach(function(style) {
+      rules.push(SpreadsheetApp.newConditionalFormatRule()[style.condition](style.value)
+        .setBackground(style.background).setFontColor(style.color).setBold(true)
+        .setRanges([unitTotals]).build());
+    });
+    const finalWeights = sheet.getRange(firstEvaluationRow, 34, evaluationCount, 2);
+    const finalRange = '$AH$' + firstEvaluationRow + ':$AH$' + lastEvaluationRow;
+    [
+      { formula: '=$AH' + firstEvaluationRow + '=""',
+        background: '#FEF3C7', color: '#1F2937' },
+      { formula: '=AND(ISNUMBER($AH' + firstEvaluationRow + ')' + separator +
+          'COUNTBLANK(' + finalRange + ')=0' + separator +
+          'SUM(' + finalRange + ')=100)',
+        background: '#DCFCE7', color: theme.colors.success },
+      { formula: '=AND(ISNUMBER($AH' + firstEvaluationRow + ')' + separator +
+          'OR(COUNTBLANK(' + finalRange + ')>0' + separator +
+          'SUM(' + finalRange + ')<>100))',
+        background: '#FEE2E2', color: theme.colors.danger },
+    ].forEach(function(style) {
+      rules.push(SpreadsheetApp.newConditionalFormatRule()
+        .whenFormulaSatisfied(style.formula).setBackground(style.background)
+        .setFontColor(style.color).setBold(true).setRanges([finalWeights]).build());
+    });
+    const finalTotal = sheet.getRange(totalRow, 34, 1, 2);
+    [
+      { formula: '=COUNTBLANK(' + finalRange + ')>0',
+        background: '#FEF3C7', color: '#1F2937' },
+      { formula: '=AND(COUNTBLANK(' + finalRange + ')=0' + separator +
+          '$AH' + totalRow + '=100)',
+        background: '#DCFCE7', color: theme.colors.success },
+      { formula: '=AND(COUNTBLANK(' + finalRange + ')=0' + separator +
+          '$AH' + totalRow + '<>100)',
+        background: '#FEE2E2', color: theme.colors.danger },
+    ].forEach(function(style) {
+      rules.push(SpreadsheetApp.newConditionalFormatRule()
+        .whenFormulaSatisfied(style.formula).setBackground(style.background)
+        .setFontColor(style.color).setBold(true).setRanges([finalTotal]).build());
+    });
+    const statuses = sheet.getRange(firstEvaluationRow, 36, evaluationCount + 1, 4);
+    [
+      { text: '✓', background: '#DCFCE7', color: theme.colors.success },
+      { text: '⚠', background: '#FEF3C7', color: '#1F2937' },
+      { text: '❌', background: '#FEE2E2', color: theme.colors.danger },
+    ].forEach(function(style) {
+      rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextContains(style.text)
+        .setBackground(style.background).setFontColor(style.color).setBold(true)
+        .setRanges([statuses]).build());
     });
   }
   sheet.setConditionalFormatRules(rules);
@@ -659,7 +739,7 @@ function installModuleEvaluationFormulas_(sheet, activity, context) {
   const formulas = [];
   const idFormulas = [];
   for (let row = first; row < first + count; row += 1) {
-    const total = 'SUM($I$' + first + ':I' + row + ')';
+    const total = 'SUM($K$' + first + ':K' + row + ')';
     let result = '"' + periods[periods.length - 1].name.replace(/"/g, '""') + '"';
     let idResult = '"' + periods[periods.length - 1].id.replace(/"/g, '""') + '"';
     for (let index = periods.length - 1; index >= 0; index -= 1) {
@@ -669,10 +749,10 @@ function installModuleEvaluationFormulas_(sheet, activity, context) {
       idResult = 'IF(' + total + '<=' + cutoffs[index] + separator +
         '"' + periods[index].id.replace(/"/g, '""') + '"' + separator + idResult + ')';
     }
-    formulas.push(['=IF(I' + row + '=0' + separator + '""' + separator + result + ')']);
-    idFormulas.push(['=IF(I' + row + '=0' + separator + '""' + separator + idResult + ')']);
+    formulas.push(['=IF(K' + row + '=0' + separator + '""' + separator + result + ')']);
+    idFormulas.push(['=IF(K' + row + '=0' + separator + '""' + separator + idResult + ')']);
   }
-  sheet.getRange(first, 16, count, 1).setFormulas(formulas);
+  sheet.getRange(first, CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS[5], count, 1).setFormulas(formulas);
   sheet.getRange(first, CP_MODULE_CONFIG_LAYOUT.EVALUATION_ID_COLUMN, count, 1)
     .setFormulas(idFormulas);
 }
@@ -692,45 +772,10 @@ function renderModuleConfigUtArea_(sheet) {
     .setBackground(theme.colors.surface)
     .setFontColor(theme.colors.mutedText)
     .setHorizontalAlignment('left');
-  sheet.getRange(CP_MODULE_CONFIG_LAYOUT.UT_HEADER_ROW, 1, 1, 5)
-    .setValues([['UT', 'Nombre', 'Horas', 'Color', 'Evaluacion']])
-    .setBackground(theme.colors.secondary)
-    .setFontColor(theme.colors.onSecondary)
-    .setFontWeight('bold')
-    .setHorizontalAlignment('center');
-  sheet.getRange(firstRow, 1, rowCount, 5)
-    .setBackground(theme.colors.surface)
-    .setFontColor(theme.colors.text)
-    .setVerticalAlignment('middle')
-    .setWrap(true)
-    .setBorder(true, true, true, true, true, true, theme.colors.border, SpreadsheetApp.BorderStyle.SOLID);
   applyModuleConfigDimensions_(sheet);
   sheet.setRowHeights(firstRow, rowCount, 34);
-  sheet.getRange(firstRow, 3, rowCount, 1).setNumberFormat('0');
-  sheet.getRange(firstRow, 4, rowCount, 1).setNumberFormat('@');
-  sheet.getRange(firstRow, 5, rowCount, 1)
-    .setBackground(theme.colors.muted)
-    .setFontColor(theme.colors.mutedText)
-    .setFontStyle('italic');
   sheet.getRange(firstRow, CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN, rowCount, 2)
     .setNumberFormat('@');
-
-  sheet.getRange(firstRow, 5, rowCount, 1).clearDataValidations();
-  sheet.getRange(firstRow, 4, rowCount, 1).setDataValidation(
-    SpreadsheetApp.newDataValidation().requireValueInList(CP_MODULE_UT_COLORS, true).setAllowInvalid(true).build()
-  );
-  sheet.getRange(firstRow, 3, rowCount, 1).setDataValidation(
-    SpreadsheetApp.newDataValidation().requireNumberGreaterThanOrEqualTo(0).setAllowInvalid(false).build()
-  );
-  const rules = CP_MODULE_UT_COLORS.map(function(color) {
-    return SpreadsheetApp.newConditionalFormatRule()
-      .whenTextEqualTo(color)
-      .setBackground(color)
-      .setFontColor(getAccessibleTextColor_(color))
-      .setRanges([sheet.getRange(firstRow, 4, rowCount, 1)])
-      .build();
-  });
-  sheet.setConditionalFormatRules(rules);
 
   sheet.getRange(1, CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN).setValue('ut_id');
   sheet.getRange(1, CP_MODULE_CONFIG_LAYOUT.EVALUATION_ID_COLUMN).setValue('evaluation_id');
@@ -742,7 +787,22 @@ function renderModuleConfigUtArea_(sheet) {
 
 }
 
-function renderModuleHoursSummary_(sheet, activity, context, startRow) {
+function getModuleUnitWeightExpressions_(evaluationCriterion, separator) {
+  const first = CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW;
+  const last = first + CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS - 1;
+  const conditions = ['$AO$' + first + ':$AO$' + last, evaluationCriterion,
+    '$C$' + first + ':$C$' + last, '"<>"',
+    '$K$' + first + ':$K$' + last, '">0"'];
+  const criteria = conditions.join(separator);
+  return {
+    count: 'COUNTIFS(' + criteria + ')',
+    missing: 'COUNTIFS(' + criteria + separator + '$M$' + first + ':$M$' + last +
+      separator + '""' + ')',
+    sum: 'SUMIFS($M$' + first + ':$M$' + last + separator + criteria + ')',
+  };
+}
+
+function renderModuleHoursSummary_(sheet, activity, context, startRow, finalWeights) {
   const theme = getActiveTheme_(sheet.getParent());
   const spreadsheet = sheet.getParent();
   const timeZone = spreadsheet.getSpreadsheetTimeZone();
@@ -750,52 +810,101 @@ function renderModuleHoursSummary_(sheet, activity, context, startRow) {
   const periods = getEvaluationPeriodsForType_(context.type, timeZone);
   const first = CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW;
   const last = first + CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS - 1;
-  const hours = 'I' + first + ':I' + last;
+  const hours = 'K' + first + ':K' + last;
   const separator = getModuleFormulaSeparator_(spreadsheet);
+  const columns = CP_MODULE_CONFIG_LAYOUT.SUMMARY_COLUMNS;
   const title = sheet.getRange(startRow, 23, 1, 17).merge().setValue('RESUMEN DE HORAS');
   title.setBackground(theme.colors.secondary).setFontColor(theme.colors.onSecondary)
     .setFontWeight('bold').setHorizontalAlignment('center');
   const headerRow = startRow + 1;
   [
-    { column: 23, width: 9, text: 'Evaluación' },
-    { column: 32, width: 4, text: 'Pendientes' },
-    { column: 36, width: 4, text: 'Disponibles' },
+    { column: 23, width: 5, text: 'Evaluación' },
+    { column: 28, width: 2, text: 'Pendientes' },
+    { column: 30, width: 2, text: 'Disponibles' },
+    { column: 32, width: 2, text: 'Peso UTs' },
+    { column: 34, width: 2, text: 'Peso final' },
+    { column: 36, width: 4, text: 'Estado' },
   ].forEach(function(header) {
     sheet.getRange(headerRow, header.column, 1, header.width).merge()
       .setValue(header.text).setBackground(theme.colors.muted)
       .setFontColor(theme.colors.text).setFontWeight('bold')
-      .setHorizontalAlignment('center');
+      .setHorizontalAlignment('center').setWrap(true);
   });
   let row = headerRow + 1;
   const firstEvaluationRow = row;
+  sheet.setRowHeight(headerRow, 38);
+  sheet.setRowHeights(firstEvaluationRow, context.evaluations.length + 1, 38);
   context.evaluations.forEach(function(evaluation, index) {
     const period = periods.find(function(item) { return item.id === evaluation.id; });
     const available = sessions.filter(function(session) {
       return period && compareCalendarDates_(session.date, period.startDate, timeZone) >= 0 &&
         compareCalendarDates_(session.date, period.endDate, timeZone) <= 0;
     }).length;
-    sheet.getRange(row, 23, 1, 9).merge().setValue(evaluation.name);
+    sheet.getRange(row, columns.EVALUATION, 1, 5).merge().setValue(evaluation.name);
     const remaining = index === 0 ? 'SUM(' + hours + ')' :
-      'MAX(SUM(' + hours + ')-SUM($AJ$' + firstEvaluationRow + ':AJ' +
+      'MAX(SUM(' + hours + ')-SUM($AD$' + firstEvaluationRow + ':AD' +
       (row - 1) + ')' + separator + '0)';
     const assigned = index === context.evaluations.length - 1 ? remaining :
-      'MIN(AJ' + row + separator + remaining + ')';
-    sheet.getRange(row, 32, 1, 4).merge()
-      .setFormula('=AJ' + row + '-' + assigned)
+      'MIN(AD' + row + separator + remaining + ')';
+    sheet.getRange(row, columns.PENDING, 1, 2).merge()
+      .setFormula('=AD' + row + '-' + assigned)
       .setNumberFormat('0').setHorizontalAlignment('center');
-    sheet.getRange(row, 36, 1, 4).merge().setValue(available)
+    sheet.getRange(row, columns.AVAILABLE, 1, 2).merge().setValue(available)
       .setNumberFormat('0').setHorizontalAlignment('center');
+    const weight = getModuleUnitWeightExpressions_(
+      '"' + evaluation.id.replace(/"/g, '""') + '"', separator);
+    sheet.getRange(row, columns.UNIT_WEIGHT, 1, 2).merge()
+      .setFormula('=IF(' + weight.count + '=0' + separator + '"—"' + separator +
+        weight.sum + ')').setNumberFormat('0.##"%"').setHorizontalAlignment('center');
+    sheet.getRange(row, columns.FINAL_WEIGHT, 1, 2).merge()
+      .setValue(finalWeights && finalWeights[index] !== undefined ? finalWeights[index] : '')
+      .setNumberFormat('0.##"%"').setHorizontalAlignment('center')
+      .setDataValidation(SpreadsheetApp.newDataValidation()
+        .requireNumberBetween(0, 100).setAllowInvalid(false).build());
+    const finalTotal = 'AH' + (firstEvaluationRow + context.evaluations.length);
+    const weightStatus = 'IF(' + weight.sum + '>100' + separator +
+      '"❌ Sobran "&(' + weight.sum + '-100)&" % UT"' + separator +
+      'IF(' + weight.missing + '>0' + separator + '"⚠ Falta peso UT"' + separator +
+      'IF(' + weight.sum + '<100' + separator +
+      '"⚠ Faltan "&(100-' + weight.sum + ')&" % UT"' + separator +
+      'IF(AH' + row + '=""' + separator + '"⚠ Falta peso final"' + separator +
+      'IF(COUNTBLANK($AH$' + firstEvaluationRow + ':$AH$' +
+      (firstEvaluationRow + context.evaluations.length - 1) + ')>0' + separator +
+      '"⚠ Peso final pendiente"' + separator +
+      'IF(' + finalTotal + '<>100' + separator + '"❌ Peso final incorrecto"' +
+      separator + '"✓ Correcto"))))))';
+    sheet.getRange(row, columns.STATUS, 1, 4).merge()
+      .setFormula('=IF(' + weight.count + '=0' + separator + '"Sin UT"' +
+        separator + weightStatus + ')').setWrap(true).setHorizontalAlignment('center');
     row += 1;
   });
   const totalRow = row;
-  sheet.getRange(row, 23, 1, 9).merge().setValue('TOTAL').setFontWeight('bold');
-  sheet.getRange(row, 32, 1, 4).merge().setFormula('=AJ' + row + '-SUM(' + hours + ')')
+  sheet.getRange(row, columns.EVALUATION, 1, 5).merge().setValue('TOTAL').setFontWeight('bold');
+  sheet.getRange(row, columns.PENDING, 1, 2).merge()
+    .setFormula('=AD' + row + '-SUM(' + hours + ')')
     .setNumberFormat('0').setFontWeight('bold').setHorizontalAlignment('center');
-  sheet.getRange(row, 36, 1, 4).merge()
-    .setFormula('=SUM(AJ' + firstEvaluationRow + ':AJ' + (row - 1) + ')')
+  sheet.getRange(row, columns.AVAILABLE, 1, 2).merge()
+    .setFormula('=SUM(AD' + firstEvaluationRow + ':AD' + (row - 1) + ')')
     .setNumberFormat('0').setFontWeight('bold').setHorizontalAlignment('center');
+  sheet.getRange(row, columns.UNIT_WEIGHT, 1, 2).merge().setValue('—')
+    .setHorizontalAlignment('center');
+  sheet.getRange(row, columns.FINAL_WEIGHT, 1, 2).merge()
+    .setFormula('=SUM(AH' + firstEvaluationRow + ':AH' + (row - 1) + ')')
+    .setNumberFormat('0.##"%"').setFontWeight('bold').setHorizontalAlignment('center');
+  const statusRange = 'AJ' + firstEvaluationRow + ':AJ' + (row - 1);
+  const finalRange = 'AH' + firstEvaluationRow + ':AH' + (row - 1);
+  const totalStatus = '=IF(COUNTIF(' + statusRange + separator + '"❌*")>0' + separator +
+    '"❌ Revisar ponderaciones"' + separator +
+    'IF(COUNTIF(' + statusRange + separator + '"⚠*")>0' + separator +
+    '"⚠ Ponderaciones pendientes"' + separator +
+    'IF(COUNTBLANK(' + finalRange + ')>0' + separator +
+    '"⚠ Falta peso final"' + separator +
+    'IF(AH' + row + '=100' + separator + '"✓ Ponderaciones completas"' + separator +
+    '"❌ Peso final incorrecto"))))';
+  sheet.getRange(row, columns.STATUS, 1, 4).merge().setFormula(totalStatus)
+    .setFontWeight('bold').setWrap(true).setHorizontalAlignment('center');
   row += 1;
-  const pending = 'AF' + totalRow;
+  const pending = 'AB' + totalRow;
   const statusFormula = '=IF(' + pending + '<0' + separator +
     '"⚠ Exceso de "&(-' + pending + ')&" sesiones"' + separator +
     'IF(' + pending + '=0' + separator + '"✓ Planificación completa"' + separator +
@@ -956,7 +1065,7 @@ function readAndNormalizeModuleUnits_(sheet, evaluations, options) {
   const rowCount = CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS;
   const columns = getModuleUnitColumns_(sheet);
   const visible = sheet.getRange(firstRow, 1, rowCount, 21).getValues()
-    .map(function(row) { return columns.map(function(column) { return row[column - 1]; }); });
+    .map(function(row) { return columns.map(function(column) { return column ? row[column - 1] : ''; }); });
   const ids = sheet.getRange(firstRow, CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN, rowCount, 2).getValues();
   const usedCodes = {};
   const usedIds = {};
@@ -967,8 +1076,8 @@ function readAndNormalizeModuleUnits_(sheet, evaluations, options) {
     const codeValue = normalizeScheduleText_(row[0]);
     const name = normalizeScheduleText_(row[1]);
     const hoursValue = row[2];
-    const colorValue = normalizeScheduleText_(row[3]).toUpperCase();
-    const evaluationName = normalizeScheduleText_(row[4]);
+    const colorValue = normalizeScheduleText_(row[4]).toUpperCase();
+    const evaluationName = normalizeScheduleText_(row[5]);
     const active = Boolean(codeValue || name || colorValue || evaluationName ||
       hoursValue !== '' && hoursValue !== null);
     if (!active) {
@@ -1014,7 +1123,7 @@ function readAndNormalizeModuleUnits_(sheet, evaluations, options) {
     const colors = getActiveTheme_(sheet.getParent()).colors;
     inactiveRowsWithMetadata.forEach(function(row) {
       sheet.getRange(row, CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN, 1, 2).clearContent();
-      sheet.getRange(row, getModuleUnitColumns_(sheet)[3]).setBackground(colors.surface).setFontColor(colors.text);
+      sheet.getRange(row, getModuleUnitColumns_(sheet)[4]).setBackground(colors.surface).setFontColor(colors.text);
     });
   }
   return units;
@@ -1033,7 +1142,7 @@ function writeNormalizedModuleUnits_(sheet, units) {
   units.forEach(function(unit) {
     sheet.getRange(unit.sourceRow, columns[0]).setValue(unit.code);
     sheet.getRange(unit.sourceRow, columns[2]).setValue(unit.hours);
-    sheet.getRange(unit.sourceRow, columns[3]).setValue(unit.color)
+    sheet.getRange(unit.sourceRow, columns[4]).setValue(unit.color)
       .setBackground(unit.color).setFontColor(getAccessibleTextColor_(unit.color));
     sheet.getRange(unit.sourceRow, CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN).setValue(unit.id);
     sheet.getRange(unit.sourceRow, CP_MODULE_CONFIG_LAYOUT.EVALUATION_ID_COLUMN)
@@ -1114,14 +1223,19 @@ function updateModuleRecalculationSummary_(sheet, context, available, assigned, 
 
 function refreshModuleConfigUtSupport_(sheet, activity, context) {
   const theme = getActiveTheme_(sheet.getParent());
+  ensureSheetSize_(sheet, Math.max(sheet.getMaxRows(), 38 + context.evaluations.length),
+    CP_MODULE_CONFIG_LAYOUT.COLUMNS);
+  const finalWeights = sheet.getRange(29, CP_MODULE_CONFIG_LAYOUT.SUMMARY_COLUMNS.FINAL_WEIGHT,
+    context.evaluations.length, 1).getValues().map(function(row) { return row[0]; });
   sheet.setRowHeights(CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW,
     CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS, 34);
-  sheet.getRange(27, 23, Math.min(20, sheet.getMaxRows() - 26), 17)
+  sheet.getRange(27, 23, Math.min(Math.max(20, context.evaluations.length + 12),
+    sheet.getMaxRows() - 26), 17)
     .breakApart().clearContent().clearFormat();
-  renderModuleHoursSummary_(sheet, activity, context, 27);
+  renderModuleHoursSummary_(sheet, activity, context, 27, finalWeights);
   installModuleEvaluationFormulas_(sheet, activity, context);
-  sheet.getRange(CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW, 16,
-    CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS, 6)
+  sheet.getRange(CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW,
+    CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS[5], CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS, 3)
     .clearDataValidations().setBackground(theme.colors.muted)
     .setFontColor(theme.colors.mutedText).setFontStyle('italic');
 }
@@ -1196,7 +1310,9 @@ function readModuleSignatureRows_(sheet) {
   const rowCount = CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS;
   const columns = getModuleUnitColumns_(sheet);
   const visible = sheet.getRange(firstRow, 1, rowCount, 21).getDisplayValues()
-    .map(function(row) { return columns.map(function(column) { return row[column - 1]; }); });
+    .map(function(row) { return [0, 1, 2, 4, 5].map(function(index) {
+      return row[columns[index] - 1];
+    }); });
   const technical = sheet.getRange(
     firstRow,
     CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN,
@@ -1231,7 +1347,9 @@ function normalizeModuleSignatureValue_(value) {
 }
 
 function buildModuleRowSignatureFormula_(rowNumber, columns) {
-  const letters = columns.map(function(column) { return columnToLetter_(column); });
+  const letters = [0, 1, 2, 4, 5].map(function(index) {
+    return columnToLetter_(columns[index]);
+  });
   return '=ROW()&"¦"&AN' + rowNumber + letters.map(function(letter) {
     return '&"¦"&' + letter + rowNumber;
   }).join('') + '&"¦"&AO' + rowNumber;

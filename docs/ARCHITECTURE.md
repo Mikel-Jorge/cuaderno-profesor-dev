@@ -2,7 +2,7 @@
 
 **Estado:** vigente
 **Última revisión:** 2026-10-04
-**Versión:** `1.4.9` / esquema `9`
+**Versión:** `1.5.0` / esquema `9`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -21,7 +21,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.4.9` y esquema `9`.
+- `Config.gs`: constantes, nombres de hojas, versión `1.5.0` y esquema `9`.
 - `Theme.gs`: tema global, presets y colores semánticos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -172,23 +172,25 @@ Config debe existir y cumplir sus validaciones antes de generar consumidores. No
 
 Cruza la actividad con `_HOR_SESIONES`, `_HOR_TRAMOS` y el modelo de Calendario para obtener sesiones reales cronológicas. Su calendario visual parte de la misma estructura base de `1 Calendario`, pero es una representación propia de esa impartición y conserva combinadas las notas escolares y de planificación.
 
-La tabla editable de UT contiene código, nombre, horas manuales, color explícito y evaluación calculada. Sus IDs estables y `evaluation_id` viven en columnas técnicas ocultas de la misma hoja; no existe `_UT`. Las evaluaciones se derivan del último día real asignado a cada UT y proceden de `tipo_ensenanza_id` y `_CAL_EVALUACIONES`. Los totales de horas y la diferencia frente a sesiones disponibles se derivan mediante fórmulas de Sheets. La evaluación visible también usa fórmulas construidas con los cortes acumulados de sesiones reales por evaluación y el separador del locale del libro. El número de sesiones disponibles se escribe como valor estable al crear o recalcular la hoja. Los pesos quedan para la fase siguiente.
+La tabla editable de UT contiene código, nombre, horas manuales, Peso (%), color explícito y evaluación calculada. Sus IDs estables y `evaluation_id` viven en columnas técnicas ocultas de la misma hoja; no existe `_UT`. Las evaluaciones se derivan del último día real asignado a cada UT y proceden de `tipo_ensenanza_id` y `_CAL_EVALUACIONES`. Los totales de horas y la diferencia frente a sesiones disponibles se derivan mediante fórmulas de Sheets. La evaluación visible también usa fórmulas construidas con los cortes acumulados de sesiones reales por evaluación y el separador del locale del libro. El número de sesiones disponibles se escribe como valor estable al crear o recalcular la hoja.
 
 Config almacena la autoridad sobre:
 
 - definición y orden de UT;
 - horas/sesiones previstas;
 - asignación UT → evaluación;
-- en una fase posterior, peso UT dentro de evaluación;
-- en una fase posterior, peso evaluación dentro del curso.
+- peso UT dentro de su evaluación final;
+- peso de cada evaluación en la nota final.
 
 `_MOD_CONFIG` contiene `actividad_id`, `sheet_id`, curso, fecha de creación y firma aplicada. `_MOD_PLAN` contiene una fila por sesión asignada con actividad, curso, fecha, tramo y `ut_id`. Ninguna planificación se deduce de colores.
 
-El recálculo explícito, protegido con bloqueo de documento, valida primero que las horas previstas no superen las sesiones reales disponibles; si hay exceso, aborta sin sustituir plan ni redibujar calendario. Las sesiones reales cruzan Horario y Calendario, excluyen días no lectivos y el periodo de prácticas del tipo de enseñanza. Después distribuye las UT secuencialmente, calcula la evaluación por último día asignado, sustituye solo el plan de la actividad activa y regenera su calendario. Backend y hoja comparten una firma canónica por fila compuesta por posición, `ut_id`, código, nombre, color, horas, evaluación visible y `evaluation_id`. El backend calcula y persiste la firma aplicada desde las celdas tras vaciar la cola de escrituras de fórmulas, incluida la tabla vacía. Fórmulas auxiliares por fila comparan el valor actual con la referencia aplicada y una suma de indicadores alimenta el aviso visible, sin `onEdit`; las fórmulas con varios argumentos usan el separador del locale. Solo los días con varias UT reales reciben el token semántico `theme.colors.mixedDay` y una nota con el desglose de horas; dos sesiones de la misma UT no generan nota de planificación. El defecto deja sesiones sin UT y produce warning.
+El recálculo explícito, protegido con bloqueo de documento, valida primero que las horas previstas no superen las sesiones reales disponibles; si hay exceso, aborta sin sustituir plan ni redibujar calendario. Las sesiones reales cruzan Horario y Calendario, excluyen días no lectivos y el periodo de prácticas del tipo de enseñanza. Después distribuye las UT secuencialmente, calcula la evaluación por último día asignado, sustituye solo el plan de la actividad activa y regenera su calendario. Backend y hoja comparten una firma canónica por fila compuesta por posición, `ut_id`, código, nombre, color, horas, evaluación visible y `evaluation_id`; excluye Peso (%) y los pesos finales porque no cambian el calendario. El backend calcula y persiste la firma aplicada desde las celdas tras vaciar la cola de escrituras de fórmulas, incluida la tabla vacía. Fórmulas auxiliares por fila comparan el valor actual con la referencia aplicada y una suma de indicadores alimenta el aviso visible, sin `onEdit`; las fórmulas con varios argumentos usan el separador del locale. Solo los días con varias UT reales reciben el token semántico `theme.colors.mixedDay` y una nota con el desglose de horas; dos sesiones de la misma UT no generan nota de planificación. El defecto deja sesiones sin UT y produce warning.
 
 La hoja `4 Config` es la fuente de verdad de las UT; `_MOD_CONFIG` relaciona `actividad_id`, curso y `sheet_id`, pero no es un backup del contenido editable. Un registro es huérfano solo cuando su `sheet_id` ya no existe, con independencia del nombre actual de la hoja. `cleanupOrphanModuleConfigs_()` se ejecuta al abrir Crear configuración, dentro del backend de creación y como paso del proceso visible de Reparar. Elimina únicamente las filas huérfanas del registro y las del plan con el mismo `actividad_id` y curso, en bloques contiguos; conserva las cabeceras y los demás datos, y refresca el índice de Portada. Usa bloqueo de documento y snapshots para intentar restaurar ambas tablas si falla la operación. Es idempotente y no forma parte de la limpieza anual. Las UT perdidas con la hoja no se reconstruyen.
 
-`buildRealModuleSessions_()` termina en `fecha_fin` de la última evaluación ordenada del tipo, inclusive, y sigue excluyendo prácticas y días no lectivos. El recálculo valida el exceso de horas antes de escribir la hoja, el plan o la firma aplicada. La tabla inferior combina A:B, C:H, I:J, K:O y P:U; la migración de la combinación anterior conserva los datos al recalcular. El resumen ocupa W:AM, con `Pendientes` en AF:AI y `Disponibles` en AJ:AM. Agrupa las sesiones reales por intervalo de evaluación para escribir los disponibles estables. Sus fórmulas consumen la suma de horas de UT sobre esas capacidades en orden cronológico, igual que el backend asigna las sesiones: limitan el consumo en cada evaluación intermedia y cargan todo el remanente en la última. La evaluación visible y el `evaluation_id` usan el fin acumulado de cada UT y cortes numéricos de sesiones reales embebidos en la hoja; el exceso conserva la última evaluación configurada. Estas fórmulas se regeneran cuando cambian las sesiones reales. El total pendiente resta todas las horas previstas al total disponible, sin nueva tabla técnica ni cambio de esquema.
+`buildRealModuleSessions_()` termina en `fecha_fin` de la última evaluación ordenada del tipo, inclusive, y sigue excluyendo prácticas y días no lectivos. El recálculo valida el exceso de horas antes de escribir la hoja, el plan o la firma aplicada. La tabla inferior combina A:B (UT), C:J (Nombre), K:L (Horas), M:N (Peso %), O:Q (Color) y R:T (Evaluación); U queda como separación. La migración conserva los datos de los layouts anteriores al recalcular. El resumen ocupa W:AM: W:AA Evaluación, AB:AC Pendientes, AD:AE Disponibles, AF:AG Peso UTs, AH:AI Peso final y AJ:AM Estado. Agrupa las sesiones reales por intervalo de evaluación para escribir los disponibles estables. Sus fórmulas consumen la suma de horas de UT sobre esas capacidades en orden cronológico, igual que el backend asigna las sesiones: limitan el consumo en cada evaluación intermedia y cargan todo el remanente en la última. La evaluación visible y el `evaluation_id` usan el fin acumulado de cada UT y cortes numéricos de sesiones reales embebidos en la hoja; el exceso conserva la última evaluación configurada. Estas fórmulas se regeneran cuando cambian las sesiones reales. El total pendiente resta todas las horas previstas al total disponible, sin nueva tabla técnica ni cambio de esquema.
+
+M28:M42 guarda los pesos editables de UT y AH29:AH(28+n) los pesos finales editables de las `n` evaluaciones configuradas. `Peso UTs` usa `SUMIFS` por `evaluation_id` oculto en AO y por UT activa (Nombre y Horas positivas); a diferencia del reparto horario, el peso íntegro corresponde a la evaluación final. `COUNTIFS`, `SUMIFS` y fórmulas de Estado calculan los requisitos de 100 %, los vacíos y el estado global. El formato condicional aplica ámbar, verde o rojo sin convertir el color en dato. Recalcular conserva ambos tipos de peso; antes de regenerar el resumen guarda los pesos finales y después los restaura en su mismo rango. La futura `6 Eval` referenciará directamente M28:M42 y AH29:AH(28+n) de la `4 Config` vigente, sin copiar sus valores a `_MOD_CONFIG`.
 
 ## 11.3. `5 Seg`
 

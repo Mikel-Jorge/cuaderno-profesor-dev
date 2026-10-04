@@ -3,7 +3,9 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const code = fs.readFileSync('ModuleConfig.gs', 'utf8');
-const context = vm.createContext({});
+const context = vm.createContext({ SpreadsheetApp: {
+  newDataValidation: () => ({ requireNumberBetween() { return this; }, setAllowInvalid() { return this; }, build() { return {}; } }),
+} });
 vm.runInContext(code, context);
 vm.runInContext(`
   getActiveTheme_ = () => ({ colors: { secondary: '', onSecondary: '', muted: '', text: '', surface: '', warning: '', mutedText: '' } });
@@ -18,6 +20,8 @@ function sheetFor(capacities, locale) {
   const spreadsheet = { getSpreadsheetTimeZone: () => 'Europe/Madrid', getSpreadsheetLocale: () => locale };
   const sheet = {
     getParent: () => spreadsheet,
+    setRowHeight() {},
+    setRowHeights() {},
     getRange(row, column) {
       const cell = {
         merge: () => cell,
@@ -28,7 +32,7 @@ function sheetFor(capacities, locale) {
           return cell;
         },
       };
-      for (const method of ['setBackground', 'setFontColor', 'setFontWeight', 'setHorizontalAlignment', 'setNumberFormat', 'setWrap', 'setVerticalAlignment']) {
+      for (const method of ['setBackground', 'setFontColor', 'setFontWeight', 'setHorizontalAlignment', 'setNumberFormat', 'setWrap', 'setVerticalAlignment', 'setDataValidation']) {
         cell[method] = () => cell;
       }
       return cell;
@@ -47,13 +51,13 @@ function calculate(formula, hours, capacities) {
   const sum = range => {
     const match = range.match(/\$?([A-Z]+)\$?(\d+):\$?[A-Z]+\$?(\d+)/);
     assert.ok(match, range);
-    if (match[1] === 'I') return hours.slice(Number(match[2]) - 28, Number(match[3]) - 27).reduce((a, b) => a + b, 0);
-    if (match[1] === 'AJ') return capacities.slice(Number(match[2]) - 29, Number(match[3]) - 28).reduce((a, b) => a + b, 0);
+    if (match[1] === 'K') return hours.slice(Number(match[2]) - 28, Number(match[3]) - 27).reduce((a, b) => a + b, 0);
+    if (match[1] === 'AD') return capacities.slice(Number(match[2]) - 29, Number(match[3]) - 28).reduce((a, b) => a + b, 0);
     throw new Error(range);
   };
   const expression = formula.slice(1)
     .replace(/SUM\((\$?[A-Z]+\$?\d+:\$?[A-Z]+\$?\d+)\)/g, (_, range) => String(sum(range)))
-    .replace(/\bAJ(\d+)\b/g, (_, row) => String(Number(row) === 29 + capacities.length
+    .replace(/\bAD(\d+)\b/g, (_, row) => String(Number(row) === 29 + capacities.length
       ? capacities.reduce((a, b) => a + b, 0) : capacities[Number(row) - 29]))
     .replace(/;/g, ',');
   return Function('MIN', 'MAX', 'IF', `return ${expression}`)(
@@ -64,9 +68,9 @@ function calculate(formula, hours, capacities) {
 function check(name, capacities, hours, expectedEvaluations, expectedPending) {
   for (const locale of ['es_ES', 'en_US']) {
     const { cells, sessions } = sheetFor(capacities, locale);
-    const pending = capacities.map((_, index) => calculate(cells.get(`${29 + index}:32`), hours, capacities));
-    const total = calculate(cells.get(`${29 + capacities.length}:32`), hours, capacities);
-    const evaluations = hours.map((_, index) => calculate(cells.get(`${28 + index}:16`), hours, capacities));
+    const pending = capacities.map((_, index) => calculate(cells.get(`${29 + index}:28`), hours, capacities));
+    const total = calculate(cells.get(`${29 + capacities.length}:28`), hours, capacities);
+    const evaluations = hours.map((_, index) => calculate(cells.get(`${28 + index}:18`), hours, capacities));
     const evaluationIds = hours.map((_, index) => calculate(cells.get(`${28 + index}:41`), hours, capacities));
     assert.deepEqual(pending, expectedPending, `${name} (${locale})`);
     assert.equal(total, expectedPending.reduce((a, b) => a + b, 0), `${name} total (${locale})`);

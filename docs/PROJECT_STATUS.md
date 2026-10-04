@@ -1,8 +1,8 @@
 # Estado del proyecto
 
 **Última actualización:** 2026-10-04
-**Estado general:** Portada, Calendario, Horario, Alumnado y primera fase de `4 Config` operativos
-**Versión vigente:** `1.4.9`
+**Estado general:** Portada, Calendario, Horario, Alumnado y `4 Config` con ponderaciones operativos
+**Versión vigente:** `1.5.0`
 **Esquema vigente:** `9`
 
 # Completado
@@ -55,7 +55,7 @@ Pendiente de cierre del bloque:
 - validación manual en `CP_DEV` de creación, pegado, estado, reparación y limpieza anual;
 - confirmación visual del tema y de la posición tras `2 Horario`.
 
-# Configuración de módulo — PRIMERA FASE IMPLEMENTADA
+# Configuración de módulo — PONDERACIONES IMPLEMENTADAS
 
 - Menú `Módulos` con creación y recálculo desde la hoja activa.
 - Selector tematizado, limitado a actividades `MODULO` sin `4 Config` ya creada; al abrir sanea referencias huérfanas.
@@ -74,6 +74,13 @@ Pendiente de cierre del bloque:
 - La firma inicial y la aplicada se calculan en backend sin depender del recálculo inmediato de Sheets; la tabla UT vacía es válida.
 - El rollback de creación limpia hoja, `_MOD_CONFIG` y `_MOD_PLAN` del módulo fallido y conserva los demás.
 - El recálculo muestra modal tematizado de carga y resultado `success`, `warning` o `error`; el exceso de horas aborta antes de modificar calendario o plan.
+
+## Funcionalidad 1.5.0
+
+- Peso (%) editable por UT y Peso final editable por evaluación, dentro de la tabla y el resumen existentes.
+- Sumas, estados y colores dinámicos de ponderación por evaluación y global; las filas sin UT no exigen peso.
+- Migración de las combinaciones anteriores al recalcular, conservando datos y pesos existentes; las ponderaciones no forman parte de la firma temporal del calendario.
+- `4 Config` conserva la autoridad para la futura referencia directa desde `6 Eval`; esquema `9` sin nuevas tablas técnicas.
 
 ## Correctivo 1.4.6
 
@@ -107,7 +114,6 @@ Pendiente de cierre del bloque:
 
 Pendiente de cierre del bloque:
 
-- ponderaciones UT → evaluación y evaluación → curso;
 - validación visual y funcional completa en `CP_DEV`.
 
 # Futuro
