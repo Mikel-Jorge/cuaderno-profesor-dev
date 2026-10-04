@@ -630,7 +630,7 @@ function formatModuleUtInputArea_(sheet) {
   sheet.getRange(first, 15, count, 1).setNumberFormat('@')
     .setDataValidation(SpreadsheetApp.newDataValidation()
       .requireValueInList(CP_MODULE_UT_COLORS, true).setAllowInvalid(true).build());
-  sheet.getRange(first, CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS[5], count, 3)
+  sheet.getRange(first, CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS[4], count, 7)
     .setBackground(theme.colors.muted)
     .setFontColor(theme.colors.mutedText).setFontStyle('italic');
 }
@@ -680,11 +680,7 @@ function installModuleConfigFormatRules_(sheet, evaluationCount) {
   const first = CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW;
   const count = CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS;
   const separator = getModuleFormulaSeparator_(sheet.getParent());
-  const rules = CP_MODULE_UT_COLORS.map(function(color) {
-    return SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo(color)
-      .setBackground(color).setFontColor(getAccessibleTextColor_(color))
-      .setRanges([sheet.getRange(first, 15, count, 4)]).build();
-  });
+  const rules = [];
   const weightRange = sheet.getRange(first, 13, count, 2);
   const weight = getModuleUnitWeightExpressions_('$AO' + first, separator);
   const active = '$C' + first + '<>""' + separator + '$K' + first + '>0';
@@ -1180,7 +1176,8 @@ function readAndNormalizeModuleUnits_(sheet, evaluations, options) {
     const colors = getActiveTheme_(sheet.getParent()).colors;
     inactiveRowsWithMetadata.forEach(function(row) {
       sheet.getRange(row, CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN, 1, 2).clearContent();
-      sheet.getRange(row, getModuleUnitColumns_(sheet)[4]).setBackground(colors.surface).setFontColor(colors.text);
+      sheet.getRange(row, getModuleUnitColumns_(sheet)[4])
+        .setBackground(colors.muted).setFontColor(colors.mutedText);
     });
   }
   return units;
@@ -1196,11 +1193,12 @@ function getModuleEvaluationByIdOrName_(evaluations, evaluationId, evaluationNam
 
 function writeNormalizedModuleUnits_(sheet, units) {
   const columns = getModuleUnitColumns_(sheet);
+  const colors = getActiveTheme_(sheet.getParent()).colors;
   units.forEach(function(unit) {
     sheet.getRange(unit.sourceRow, columns[0]).setValue(unit.code);
     sheet.getRange(unit.sourceRow, columns[2]).setValue(unit.hours);
     sheet.getRange(unit.sourceRow, columns[4]).setValue(unit.color)
-      .setBackground(unit.color).setFontColor(getAccessibleTextColor_(unit.color));
+      .setBackground(colors.muted).setFontColor(colors.mutedText);
     sheet.getRange(unit.sourceRow, CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN).setValue(unit.id);
     sheet.getRange(unit.sourceRow, CP_MODULE_CONFIG_LAYOUT.EVALUATION_ID_COLUMN)
       .setValue(unit.evaluationId || '');
@@ -1293,7 +1291,10 @@ function refreshModuleConfigUtSupport_(sheet, activity, context) {
   installModuleEvaluationFormulas_(sheet, activity, context);
   sheet.getRange(CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW,
     CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS[5], CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS, 3)
-    .clearDataValidations().setBackground(theme.colors.muted)
+    .clearDataValidations();
+  sheet.getRange(CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW,
+    CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS[4], CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS, 7)
+    .setBackground(theme.colors.muted)
     .setFontColor(theme.colors.mutedText).setFontStyle('italic');
 }
 

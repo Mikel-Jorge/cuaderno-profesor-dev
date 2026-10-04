@@ -2,7 +2,7 @@
 
 **Última actualización:** 2026-10-04
 **Estado general:** Portada, Calendario, Horario, Alumnado y `4 Config` con ponderaciones operativos
-**Versión vigente:** `1.5.1`
+**Versión vigente:** `1.5.2`
 **Esquema vigente:** `9`
 
 # Completado
@@ -87,6 +87,10 @@ Pendiente de cierre del bloque:
 - Reparar incluye las `4 Config` válidas por identidad y migra su tabla inferior sin redistribuir UT ni alterar `_MOD_PLAN`.
 - Color ocupa O:R, Evaluación S:U; el encabezado de Peso (%) tiene nota y el resumen se titula `RESUMEN DE HORAS Y PONDERACIONES`.
 - Encabezados del resumen sin ajuste de línea y contenido de la tabla alineado a la izquierda. `4 Config` sigue en validación final.
+
+## Correctivo 1.5.2
+
+- Color comparte el fondo gris y el texto secundario de Evaluación en las 15 UT, tanto al crear como al reparar y recalcular; conserva su selector y valor.
 
 ## Correctivo 1.4.6
 

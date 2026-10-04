@@ -26,8 +26,8 @@ function formatRule() {
 }
 vm.runInContext(fs.readFileSync('ModuleConfig.gs', 'utf8'), context);
 vm.runInContext(`
-  getActiveTheme_ = () => ({ colors: { secondary: '', onSecondary: '', muted: '', text: '',
-    surface: '', warning: '', mutedText: '', danger: '', success: '', border: '' } });
+  getActiveTheme_ = () => ({ colors: { secondary: '', onSecondary: '', muted: 'MUTED', text: '',
+    surface: 'SURFACE', warning: '', mutedText: 'MUTED_TEXT', danger: '', success: '', border: '' } });
   getAccessibleTextColor_ = () => '';
   getEvaluationPeriodsForType_ = type => type.periods;
   buildRealModuleSessions_ = (_, type) => type.sessions;
@@ -42,6 +42,9 @@ const validations = [];
 const notes = new Map();
 const alignments = new Map();
 const wraps = new Map();
+const backgrounds = new Map();
+const fontColors = new Map();
+const clearedValidations = [];
 const spreadsheet = { getSpreadsheetTimeZone: () => 'Europe/Madrid',
   getSpreadsheetLocale: () => 'es_ES', getSheets: () => [sheet] };
 const sheet = {
@@ -61,6 +64,19 @@ const sheet = {
       setFormulas(items) { items.forEach((item, index) => formulas.set(`${row + index}:${column}`, item[0])); return range; },
       setDataValidation() { validations.push([row, column]); return range; },
       setNote(value) { notes.set(`${row}:${column}`, value); return range; },
+      setBackground(value) {
+        for (let r = row; r < row + height; r += 1) {
+          for (let c = column; c < column + width; c += 1) backgrounds.set(`${r}:${c}`, value);
+        }
+        return range;
+      },
+      setFontColor(value) {
+        for (let r = row; r < row + height; r += 1) {
+          for (let c = column; c < column + width; c += 1) fontColors.set(`${r}:${c}`, value);
+        }
+        return range;
+      },
+      clearDataValidations() { clearedValidations.push([row, column, height, width]); return range; },
       setHorizontalAlignment(value) {
         for (let r = row; r < row + height; r += 1) {
           for (let c = column; c < column + width; c += 1) alignments.set(`${r}:${c}`, value);
@@ -83,9 +99,9 @@ const sheet = {
         return range;
       },
     };
-    for (const method of ['setBackground', 'setFontColor', 'setFontWeight',
+    for (const method of ['setFontWeight',
       'setNumberFormat', 'setFontSize', 'setVerticalAlignment',
-      'setBorder', 'setFontStyle', 'clearDataValidations', 'breakApart',
+      'setBorder', 'setFontStyle', 'breakApart',
       'clearFormat']) range[method] = () => range;
     return range;
   },
@@ -100,6 +116,10 @@ values.set('29:34', 30);
 values.set('30:34', 30);
 values.set('31:34', 40);
 context.refreshModuleConfigUtSupport_(sheet, {}, { type, evaluations: periods });
+assert.equal(backgrounds.get('28:15'), 'MUTED');
+assert.equal(backgrounds.get('28:19'), 'MUTED');
+assert.equal(fontColors.get('28:15'), 'MUTED_TEXT');
+assert.ok(clearedValidations.every(([, column]) => column !== 15));
 assert.deepEqual([29, 30, 31].map(row => values.get(`${row}:34`)), [30, 30, 40]);
 assert.equal(formulas.get('32:34'), '=SUM(AH29:AH31)');
 assert.match(formulas.get('29:32'), /SUMIFS\(\$M\$28:\$M\$42;\$AO\$28:\$AO\$42;"e0"/);
@@ -244,11 +264,18 @@ assert.deepEqual(merges.filter(([row, column]) => row === 27 && column <= 21)
   .map(([, column,, width]) => [column, width]),
   [[1, 2], [3, 8], [11, 2], [13, 2], [15, 4], [19, 3]]);
 assert.match(notes.get('27:13'), /100 %/);
+assert.equal(backgrounds.get('28:15'), backgrounds.get('28:19'));
+assert.ok(validations.some(([row, column]) => row === 28 && column === 15));
 
 // Recalcular writes planning fields but never writes the two editable weight ranges.
 const writesBefore = new Map(values);
 context.writeNormalizedModuleUnits_(sheet, [{ sourceRow: 28, code: 'UT1', hours: 10,
   color: '#BFDBFE', id: 'ut1', evaluationId: 'e0' }]);
+assert.equal(backgrounds.get('28:15'), 'MUTED');
+assert.equal(fontColors.get('28:15'), 'MUTED_TEXT');
+context.refreshModuleConfigUtSupport_(sheet, {}, { type, evaluations: periods });
+assert.equal(backgrounds.get('28:15'), backgrounds.get('28:19'));
+assert.equal(values.get('28:15'), '#BFDBFE');
 assert.equal(values.get('28:13'), writesBefore.get('28:13'));
 assert.deepEqual([29, 30, 31].map(row => values.get(`${row}:34`)), [30, 30, 40]);
 const signature = context.buildModuleRowSignatureFormula_(28, [1, 3, 11, 13, 15, 19]);
@@ -291,6 +318,7 @@ vm.runInContext(`
   validateModuleConfigPrerequisites_ = () => ({ type: repairType, evaluations: repairPeriods });
 `, Object.assign(context, { repairType: type, repairPeriods: periods }));
 context.repairExistingModuleConfigSheets_();
+assert.equal(backgrounds.get('28:15'), backgrounds.get('28:19'));
 assert.deepEqual([1, 3, 11, 13, 15, 19].map(column => values.get(`28:${column}`)),
   ['UT1', 'Nombre', 10, 25, '#BFDBFE', 'Eval 1']);
 assert.deepEqual([29, 30, 31].map(row => values.get(`${row}:34`)), [30, 30, 40]);
