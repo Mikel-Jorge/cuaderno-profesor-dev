@@ -6,7 +6,8 @@ function onOpen() {
     .addItem(CP.MENU.SCHEDULE_CONFIG, 'abrirConfiguracionHorario');
   const modulesMenu = ui.createMenu(CP.MENU.MODULES)
     .addItem(CP.MENU.MODULE_CONFIG_CREATE, 'abrirCreacionConfiguracionModulo')
-    .addItem(CP.MENU.MODULE_CONFIG_RECALCULATE, 'recalcularConfiguracionModulo');
+    .addItem(CP.MENU.MODULE_CONFIG_RECALCULATE, 'recalcularConfiguracionModulo')
+    .addItem(CP.MENU.MODULE_TRACKING_CREATE, 'abrirCreacionSeguimientoEvaluacion');
 
   ui
     .createMenu(CP.MENU.NAME)

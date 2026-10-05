@@ -73,6 +73,13 @@ function getSidebarStateItems_(config) {
         status: item.status,
         statusLabel: item.statusLabel,
       });
+      if (item.hasConfig) {
+        items.push({
+          label: 'Seg/Eval · ' + item.label,
+          status: item.consumersComplete ? 'complete' : 'pending',
+          statusLabel: item.consumersComplete ? 'Creados' : 'Pendientes',
+        });
+      }
     });
   }
   return items;
@@ -86,6 +93,7 @@ function getSidebarContextSectionId_(sheet) {
   sectionBySheet[CP.SHEETS.SCHEDULE] = 'schedule';
   sectionBySheet[CP.SHEETS.STUDENTS] = 'students';
   if (getModuleConfigActivityIdForSheet_(sheet)) return 'module-config';
+  if (getModuleConsumerActivityIdForSheet_(sheet)) return 'module-tracking';
   return sectionBySheet[sheetName] || 'first-steps';
 }
 
@@ -127,9 +135,14 @@ function getSidebarHelpSections_(contextSectionId) {
       text: 'Cada módulo y grupo se configura por separado. Define UT, nombre, color, horas manuales y evaluación; después usa Módulos → Recalcular. Horas son sesiones docentes, no minutos. El aviso indica cambios aún no aplicados. Un día mixto contiene varias UT. Compara siempre horas previstas con sesiones reales disponibles.',
     },
     {
+      id: 'module-tracking',
+      title: 'Seguimiento del módulo',
+      text: 'Es un snapshot de la planificación al crearlo. Actualiza UT, Plan previsto, Actividades realizadas, Actual y Mejoras para reflejar lo ocurrido; los cambios posteriores de 4 Config no lo reconstruyen.',
+    },
+    {
       id: 'new-course',
       title: 'Preparar nuevo curso',
-      text: 'Tras verificar el backup, conserva profesor, centro, tema, tramos y actividades; elimina las Config gestionadas del curso anterior y limpia Alumnado, asignaciones y datos anuales del calendario.',
+      text: 'Tras verificar el backup, conserva profesor, centro, tema, tramos y actividades; archiva 5 Seg como OLD, elimina 4 Config y 6 Eval del curso anterior y limpia Alumnado, asignaciones y datos anuales del calendario.',
     },
     {
       id: 'initialize',

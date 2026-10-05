@@ -185,6 +185,11 @@ function getUiProcessDefinition_(processId, processInput) {
           run: repairExistingModuleConfigSheets_,
         },
         {
+          label: 'Reparando seguimiento y evaluación...',
+          completedMessage: 'Seguimientos reparados sin alterar entradas docentes y evaluaciones comprobadas.',
+          run: repairManagedModuleConsumerSheets_,
+        },
+        {
           label: 'Renderizando el calendario visible...',
           completedMessage: 'Calendario visible creado o reparado.',
           run: createOrRepairCalendarSheet_,

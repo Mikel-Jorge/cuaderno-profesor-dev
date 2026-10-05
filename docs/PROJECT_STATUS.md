@@ -1,9 +1,9 @@
 # Estado del proyecto
 
-**Última actualización:** 2026-10-04
-**Estado general:** Portada, Calendario, Horario, Alumnado y `4 Config` con ponderaciones operativos
-**Versión vigente:** `1.5.2`
-**Esquema vigente:** `9`
+**Última actualización:** 2026-10-05
+**Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config` y `5 Seg` operativos; `6 Eval` gestionada vacía
+**Versión vigente:** `1.6.0`
+**Esquema vigente:** `10`
 
 # Completado
 
@@ -22,7 +22,7 @@
 
 - Modelo normalizado en `_CAL_TIPOS`, `_CAL_EVALUACIONES`, `_FECHAS` y `_CAL_FECHA_TIPOS`.
 - Tipos de enseñanza, evaluaciones, periodos, fechas especiales, solapamientos y prioridad visual.
-- Cálculos de lectividad, estadísticas, prácticas y repaso.
+- Cálculos de lectividad, estadísticas, FEOE y repaso.
 - `1 Calendario` septiembre-junio, notas, tema, recorte y regeneración idempotente.
 - Precarga editable de festivos habituales, Navidad 24/12–06/01 y Semana Santa calculada mediante Pascua gregoriana.
 - Regeneración limpia de notas y marcas; meses y propuestas visibles aunque los tipos estén pendientes.
@@ -64,7 +64,7 @@ Pendiente de cierre del bloque:
 - `4 Config <SIGLA> · <GRUPO>` con calendario septiembre-junio homogéneo y tabla de 15 UT editables.
 - UT con ID estable, orden por fila, horas manuales, color explícito y evaluación calculada por último día asignado.
 - Resumen de horas con disponibles reales por evaluación y pendientes dinámicas por evaluación y total; sesiones disponibles escritas al crear o recalcular.
-- Sesiones reales calculadas desde Horario y Calendario, excluyendo días no lectivos y prácticas del tipo de enseñanza.
+- Sesiones reales calculadas desde Horario y Calendario, excluyendo días no lectivos y FEOE del tipo de enseñanza.
 - Distribución cronológica exacta por sesión persistida en `_MOD_PLAN`.
 - Días de una UT, días mixtos solo cuando coinciden UT distintas, notas combinadas y limpieza por regeneración.
 - Firma por fórmula para detectar cambios pendientes sin trigger.
@@ -97,7 +97,7 @@ Pendiente de cierre del bloque:
 - Reparación explícita de registros `_MOD_CONFIG` sin hoja: elimina su registro y plan sin modificar otras Config; la UT perdida con la hoja no se inventa.
 - Tabla inferior de 15 UT con celdas combinadas y resumen ancho, sin alterar la geometría de los meses.
 - Fórmulas inmediatas para evaluación por última sesión, horas previstas por evaluación, total y sesiones pendientes o sobrantes.
-- Sesiones disponibles limitadas a la última evaluación configurada, con prácticas y no lectivos excluidos.
+- Sesiones disponibles limitadas a la última evaluación configurada, con FEOE y no lectivos excluidos.
 - Recálculo con exceso validado antes de escribir, estados verde/ámbar/rojo y aviso de cambios pendientes destacado.
 - Selector semanal de Horario con `SIGLA · GRUPO` para módulos, conservando `actividad_id`.
 - Configuración de módulo continúa en validación manual; ponderaciones, Seguimiento y Evaluación siguen pendientes.
@@ -126,22 +126,18 @@ Pendiente de cierre del bloque:
 
 - validación visual y funcional completa en `CP_DEV`.
 
-# Futuro
+# Seguimiento y Evaluación — BLOQUE 1.6.0 IMPLEMENTADO
 
-## Seguimiento
-
-- `5 Seg <SIGLA> · <GRUPO>`.
-- Generado desde sesiones reales y UT.
-- Sin dependencia de alumnado.
-
-## Evaluación
-
-- `6 Eval <SIGLA> · <GRUPO>`.
-- Alumnado seleccionado inicialmente por Grupo.
-- Fórmulas referenciando `4 Config`, sin duplicar ponderaciones.
-- Notas de UT desde Moodle y columnas manuales Educa por evaluación y final.
-
-Las hojas 5 y 6 no están implementadas. Preparar nuevo curso ya elimina las hojas 4 registradas; la futura eliminación de 6 y el archivado de 5 como `OLD AACC` sin referencias rotas siguen pendientes.
+- Acción única de menú que crea conjuntamente `5 Seg` y `6 Eval`, con selector, spinner, bloqueo, identidad interna y rollback.
+- `_MOD_CONFIG` ampliada con `seg_sheet_id` y `eval_sheet_id`; migración idempotente a esquema 10.
+- `5 Seg` generado como snapshot desde `_MOD_PLAN`, agrupado por fecha + UT y sin dependencia de alumnado.
+- Columnas exactas, campos editables, dropdown UT, Actual no negativo, acumulado independiente por UT y Total inicial autosuficiente.
+- Colores/contraste por UT, exceso solo en texto rojo, Mejoras blanco/amarillo y cabecera congelada.
+- Separadores dinámicos de evaluación, Navidad, Semana Santa y FEOE.
+- Reparación in-place sin reseed ni pérdida de textos o cambios docentes; recreación aislada de `6 Eval` ausente.
+- Preparar nuevo curso materializa y conserva `5 Seg OLD AACC`, elimina `6 Eval` y `4 Config` y limpia el registro activo.
+- Sidebar, orden de familias e índice dinámico integrados.
+- `6 Eval` es por ahora una hoja gestionada vacía. Alumnado, Moodle, Educa, notas, medias, ponderaciones y fórmulas quedan para el siguiente bloque.
 
 # Decisiones vigentes
 

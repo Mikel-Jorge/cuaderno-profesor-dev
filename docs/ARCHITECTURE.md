@@ -2,7 +2,7 @@
 
 **Estado:** vigente
 **Última revisión:** 2026-10-04
-**Versión:** `1.5.2` / esquema `9`
+**Versión:** `1.6.0` / esquema `10`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -21,7 +21,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.5.2` y esquema `9`.
+- `Config.gs`: constantes, nombres de hojas, versión `1.6.0` y esquema `10`.
 - `Theme.gs`: tema global, presets y colores semánticos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -31,6 +31,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 - `ScheduleView.gs`: renderizado de `2 Horario`.
 - `Students.gs`: estructura, tema, estado y limpieza anual de `3 Alumnado`.
 - `ModuleConfig.gs`: registro, creación, calendario, UT y planificación de `4 Config`.
+- `Tracking.gs`: creación conjunta, snapshot, reparación y archivo anual de `5 Seg`/`6 Eval`.
 - `Portada.gs`: estructura, datos e índice dinámico de `0 Portada`.
 - `NewCourse.gs`: backup y pasos de Preparar nuevo curso.
 - `Utils.gs`: acceso, tamaño, recorte y ordenación de hojas.
@@ -48,11 +49,11 @@ No se crean capas o abstracciones sin necesidad real.
 | Versión y esquema | `Config.gs` | `_META` y UI |
 | Calendario escolar | `_CAL_TIPOS`, `_CAL_EVALUACIONES`, `_FECHAS`, `_CAL_FECHA_TIPOS` | `1 Calendario` y calendarios de módulo |
 | Horario | `_HOR_TRAMOS`, `_HOR_ACTIVIDADES`, `_HOR_SESIONES` | `2 Horario` y sesiones reales de módulo |
-| Alumnado | `3 Alumnado` | futura `6 Eval ...` |
+| Alumnado | `3 Alumnado` | futura funcionalidad de `6 Eval ...` |
 | Configuración de impartición | tabla editable de `4 Config <SIGLA> · <GRUPO>` | calendario propio y futuros `5 Seg ...` y `6 Eval ...` |
-| Registro y plan calculado | `_MOD_CONFIG`, `_MOD_PLAN` | identidad de hoja, estado y futuras hojas `5 Seg ...` |
+| Registro y plan calculado | `_MOD_CONFIG`, `_MOD_PLAN` | identidad estable de Config/Seg/Eval, estado y plan inicial |
 | Seguimiento | futura `5 Seg <SIGLA> · <GRUPO>` | uso docente diario |
-| Evaluación | futura `6 Eval <SIGLA> · <GRUPO>` | cálculo y registro Educa |
+| Evaluación | `6 Eval <SIGLA> · <GRUPO>` vacía en 1.6.0 | futuro cálculo y registro Educa |
 
 El nombre de una hoja ayuda a presentar y ordenar, pero no será la única identidad interna de una impartición.
 
@@ -96,7 +97,7 @@ La utilidad mueve solo hojas con nombres gestionados, no borra ni renombra hojas
 
 # 6. Modelo de calendario
 
-`_CAL_TIPOS` mantiene los IDs `FP1`, `FP2`, `ONLINE` y `CE`, su activación y periodos lectivos, de prácticas y de repaso. Se relaciona 1:N con `_CAL_EVALUACIONES`.
+`_CAL_TIPOS` mantiene los IDs `FP1`, `FP2`, `ONLINE` y `CE`, su activación y periodos lectivos, de FEOE y de repaso. Los nombres técnicos históricos de las columnas de FEOE se conservan por compatibilidad. Se relaciona 1:N con `_CAL_EVALUACIONES`.
 
 `_FECHAS` almacena cada evento una sola vez con ID, intervalo, categoría, descripción y prioridad. `_CAL_FECHA_TIPOS` resuelve su relación N:M con tipos: cero relaciones significa evento global. Las categorías admitidas son `FESTIVO`, `REUNION` y `DESTACADO`.
 
@@ -147,15 +148,15 @@ El proceso UI ejecuta pasos independientes. Primero crea y verifica el backup en
 
 Los datos se separan en reutilizables y anuales. `_CONFIG` conserva profesor, centro y tema; `_HOR_TRAMOS` y `_HOR_ACTIVIDADES` conservan estructura, catálogo e IDs. Alumnado, `_HOR_SESIONES` y todos los valores anuales del Calendario se reinician.
 
-Tras actualizar configuración, `prepareNewCourseAnnualData_()` captura snapshots de Alumnado y de las tablas de Horario y Calendario. En una única transición limpia Alumnado, vacía sesiones y apoyos, reinicia el calendario, precarga propuestas y regenera vistas. Como paso destructivo posterior al backup, elimina por `sheet_id` las `4 Config` registradas y vacía `_MOD_CONFIG` y `_MOD_PLAN`; nunca decide por el nombre de pestaña. Si falla, intenta restaurar los snapshots, la configuración, nombre y ubicación, y declara explícitamente cualquier restauración parcial. El backup completo permanece como garantía.
+Tras actualizar configuración, `prepareNewCourseAnnualData_()` captura snapshots de Alumnado y de las tablas de Horario y Calendario. En una única transición limpia Alumnado, vacía sesiones y apoyos, reinicia el calendario, precarga propuestas y regenera vistas. Como paso destructivo posterior al backup, materializa y renombra por identidad cada `5 Seg` como OLD, elimina `6 Eval` y `4 Config`, y vacía `_MOD_CONFIG` y `_MOD_PLAN`; nunca decide la identidad por el nombre de pestaña. El backup completo permanece como garantía de la transición anual.
 
 `Inicializar / reparar estructura` no llama a estas funciones anuales. Por tanto, una reparación conserva datos y no recupera propuestas que el docente haya eliminado.
 
-# 11. Arquitectura de Config y futura de Seg y Eval
+# 11. Arquitectura de Config, Seg y Eval
 
 ## 11.1. Flujo de generación
 
-La creación es independiente por tipo:
+La creación usa dos fases:
 
 ```text
 actividad MODULO
@@ -164,7 +165,7 @@ actividad MODULO
        └─ 6 Eval <SIGLA> · <GRUPO>
 ```
 
-Config debe existir y cumplir sus validaciones antes de generar consumidores. No se crean las tres hojas obligatoriamente a la vez.
+Config debe existir, conservar su firma aplicada y tener filas en `_MOD_PLAN`. Una sola transacción posterior crea Seg y Eval; preserva la que ya exista y solo crea la ausente.
 
 `4 Config` guarda una asociación verificable con `actividad_id`; las hojas futuras aplicarán el mismo principio sin duplicar campos de `_HOR_ACTIVIDADES`.
 
@@ -182,13 +183,13 @@ Config almacena la autoridad sobre:
 - peso UT dentro de su evaluación final;
 - peso de cada evaluación en la nota final.
 
-`_MOD_CONFIG` contiene `actividad_id`, `sheet_id`, curso, fecha de creación y firma aplicada. `_MOD_PLAN` contiene una fila por sesión asignada con actividad, curso, fecha, tramo y `ut_id`. Ninguna planificación se deduce de colores.
+`_MOD_CONFIG` contiene `actividad_id`, `sheet_id`, curso, fecha de creación, firma aplicada, `seg_sheet_id` y `eval_sheet_id`. La migración de esquema 9 a 10 añade idempotentemente las dos últimas columnas. `_MOD_PLAN` contiene una fila por sesión asignada con actividad, curso, fecha, tramo y `ut_id`. Ninguna planificación se deduce de colores.
 
-El recálculo explícito, protegido con bloqueo de documento, valida primero que las horas previstas no superen las sesiones reales disponibles; si hay exceso, aborta sin sustituir plan ni redibujar calendario. Las sesiones reales cruzan Horario y Calendario, excluyen días no lectivos y el periodo de prácticas del tipo de enseñanza. Después distribuye las UT secuencialmente, calcula la evaluación por último día asignado, sustituye solo el plan de la actividad activa y regenera su calendario. Backend y hoja comparten una firma canónica por fila compuesta por posición, `ut_id`, código, nombre, color, horas, evaluación visible y `evaluation_id`; excluye Peso (%) y los pesos finales porque no cambian el calendario. El backend calcula y persiste la firma aplicada desde las celdas tras vaciar la cola de escrituras de fórmulas, incluida la tabla vacía. Fórmulas auxiliares por fila comparan el valor actual con la referencia aplicada y una suma de indicadores alimenta el aviso visible, sin `onEdit`; las fórmulas con varios argumentos usan el separador del locale. Solo los días con varias UT reales reciben el token semántico `theme.colors.mixedDay` y una nota con el desglose de horas; dos sesiones de la misma UT no generan nota de planificación. El defecto deja sesiones sin UT y produce warning.
+El recálculo explícito, protegido con bloqueo de documento, valida primero que las horas previstas no superen las sesiones reales disponibles; si hay exceso, aborta sin sustituir plan ni redibujar calendario. Las sesiones reales cruzan Horario y Calendario, excluyen días no lectivos y el periodo de FEOE del tipo de enseñanza. Después distribuye las UT secuencialmente, calcula la evaluación por último día asignado, sustituye solo el plan de la actividad activa y regenera su calendario. Backend y hoja comparten una firma canónica por fila compuesta por posición, `ut_id`, código, nombre, color, horas, evaluación visible y `evaluation_id`; excluye Peso (%) y los pesos finales porque no cambian el calendario. El backend calcula y persiste la firma aplicada desde las celdas tras vaciar la cola de escrituras de fórmulas, incluida la tabla vacía. Fórmulas auxiliares por fila comparan el valor actual con la referencia aplicada y una suma de indicadores alimenta el aviso visible, sin `onEdit`; las fórmulas con varios argumentos usan el separador del locale. Solo los días con varias UT reales reciben el token semántico `theme.colors.mixedDay` y una nota con el desglose de horas; dos sesiones de la misma UT no generan nota de planificación. El defecto deja sesiones sin UT y produce warning.
 
 La hoja `4 Config` es la fuente de verdad de las UT; `_MOD_CONFIG` relaciona `actividad_id`, curso y `sheet_id`, pero no es un backup del contenido editable. Un registro es huérfano solo cuando su `sheet_id` ya no existe, con independencia del nombre actual de la hoja. `cleanupOrphanModuleConfigs_()` se ejecuta al abrir Crear configuración, dentro del backend de creación y como paso del proceso visible de Reparar. Elimina únicamente las filas huérfanas del registro y las del plan con el mismo `actividad_id` y curso, en bloques contiguos; conserva las cabeceras y los demás datos, y refresca el índice de Portada. Usa bloqueo de documento y snapshots para intentar restaurar ambas tablas si falla la operación. Es idempotente y no forma parte de la limpieza anual. Las UT perdidas con la hoja no se reconstruyen.
 
-`buildRealModuleSessions_()` termina en `fecha_fin` de la última evaluación ordenada del tipo, inclusive, y sigue excluyendo prácticas y días no lectivos. El recálculo valida el exceso de horas antes de escribir la hoja, el plan o la firma aplicada. La tabla inferior combina A:B (UT), C:J (Nombre), K:L (Horas), M:N (Peso %), O:R (Color) y S:U (Evaluación). La migración conserva los datos de los layouts anteriores al recalcular o reparar. El resumen ocupa W:AM: W:AA Evaluación, AB:AC Pendientes, AD:AE Disponibles, AF:AG Peso UTs, AH:AI Peso final y AJ:AM Estado. Agrupa las sesiones reales por intervalo de evaluación para escribir los disponibles estables. Sus fórmulas consumen la suma de horas de UT sobre esas capacidades en orden cronológico, igual que el backend asigna las sesiones: limitan el consumo en cada evaluación intermedia y cargan todo el remanente en la última. La evaluación visible y el `evaluation_id` usan el fin acumulado de cada UT y cortes numéricos de sesiones reales embebidos en la hoja; el exceso conserva la última evaluación configurada. Estas fórmulas se regeneran cuando cambian las sesiones reales. El total pendiente resta todas las horas previstas al total disponible, sin nueva tabla técnica ni cambio de esquema.
+`buildRealModuleSessions_()` termina en `fecha_fin` de la última evaluación ordenada del tipo, inclusive, y sigue excluyendo FEOE y días no lectivos. El recálculo valida el exceso de horas antes de escribir la hoja, el plan o la firma aplicada. La tabla inferior combina A:B (UT), C:J (Nombre), K:L (Horas), M:N (Peso %), O:R (Color) y S:U (Evaluación). La migración conserva los datos de los layouts anteriores al recalcular o reparar. El resumen ocupa W:AM: W:AA Evaluación, AB:AC Pendientes, AD:AE Disponibles, AF:AG Peso UTs, AH:AI Peso final y AJ:AM Estado. Agrupa las sesiones reales por intervalo de evaluación para escribir los disponibles estables. Sus fórmulas consumen la suma de horas de UT sobre esas capacidades en orden cronológico, igual que el backend asigna las sesiones: limitan el consumo en cada evaluación intermedia y cargan todo el remanente en la última. La evaluación visible y el `evaluation_id` usan el fin acumulado de cada UT y cortes numéricos de sesiones reales embebidos en la hoja; el exceso conserva la última evaluación configurada. Estas fórmulas se regeneran cuando cambian las sesiones reales. El total pendiente resta todas las horas previstas al total disponible, sin nueva tabla técnica ni cambio de esquema.
 
 Después del saneamiento de huérfanas, Reparar recorre `_MOD_CONFIG` por `sheet_id` y `actividad_id` y actualiza cada hoja existente in-place. Conserva los campos editables y `_MOD_PLAN`; migra las combinaciones, reinstala fórmulas, validaciones, notas, formato condicional y resumen. Solo renueva AP y AR para apuntar al nuevo layout: AQ y la firma aplicada del registro permanecen intactas. La segunda reparación sustituye las mismas fórmulas, notas y reglas, sin duplicarlas ni recalcular la planificación temporal.
 
@@ -196,15 +197,17 @@ M28:M42 guarda los pesos editables de UT y AH29:AH(28+n) los pesos finales edita
 
 ## 11.3. `5 Seg`
 
-Se genera desde sesiones reales y distribución de UT. No depende de `3 Alumnado`. Mantiene datos de propuesta, realizado, horas actuales, acumulado, total y mejoras. Los colores de UT son presentación.
+`Tracking.gs` cruza las filas vigentes de `_MOD_PLAN` con los `ut_id` de Config y las agrupa por `fecha + UT` conservando la primera aparición diaria. El resultado es un snapshot: las columnas ocultas J:L almacenan código UT, total inicial y color. No hay una hoja técnica de seguimiento ni dependencia de Alumnado.
 
-En el cambio de curso, las `4 Config` ya se eliminan del activo después del backup. Las futuras `6 Eval` aplicarán la misma política. Las `5 Seg` se convertirán en archivos `OLD AACC`, conservarán contenido, notas y aspecto, y materializarán previamente las fórmulas que quedarían rotas. Esta parte continúa pendiente hasta que exista Seguimiento.
+La hoja visible usa A:H. UT y Actual son entradas, junto con Plan previsto, Actividades realizadas y Mejoras; Fecha, Acum. y Total son derivados. Acum. usa `SUMIF` desde la primera fila hasta la actual por el código seleccionado, por lo que soporta UT intercaladas. Total usa `VLOOKUP` contra el snapshot interno. Las reglas condicionales resuelven color/contraste por UT, exceso en rojo y Mejoras en amarillo sin triggers.
+
+Evaluaciones, Navidad, Semana Santa y FEOE se modelan como filas separadoras combinadas independientes. Reparar identifica filas de datos por fecha real y UT, reinstala solo derivados/presentación y nunca vuelve a leer `_MOD_PLAN` para reseedear.
+
+En el cambio de curso se capturan los valores calculados de Acum./Total, se materializan, se eliminan validaciones y reglas dependientes conservando sus formatos efectivos, y la hoja se renombra `OLD AACC` antes de borrar Config. Los OLD quedan fuera del registro activo.
 
 ## 11.4. `6 Eval`
 
-Selecciona inicialmente alumnos por igualdad entre `3 Alumnado.Grupo` y el grupo de la actividad. Sus fórmulas referencian la configuración vigente de `4 Config`; no copian ponderaciones como valores congelados.
-
-Incluye entradas manuales para nota Educa de cada evaluación y nota Educa final, independientes de los valores calculados.
+En 1.6.0 solo existe el contenedor gestionado: hoja vacía, `sheet_id` estable, gridlines ocultas y posición de familia 6. No implementa alumnado, calificaciones ni fórmulas. Reparar puede recrearla si falta y Seguimiento existe, sin modificar este último; Preparar nuevo curso la elimina tras el backup.
 
 # 12. Sidebar y estados
 
@@ -215,6 +218,7 @@ El Sidebar deriva estados desde las fuentes actuales:
 - Horario: tramos, al menos una asignación semanal y vista disponibles.
 - Alumnado: al menos una fila válida.
 - Configuración de módulos: por actividad, sin configurar, configurada o con cambios pendientes según registro, hoja y firmas.
+- Seguimiento/Evaluación: pendientes o creados según sus `sheet_id` registrados.
 
 No existe una hoja visible de estados. El registro técnico se usa para identidad y el estado se deriva sin polling ni triggers.
 

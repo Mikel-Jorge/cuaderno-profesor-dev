@@ -1,5 +1,9 @@
 const CP_MODULE_CONFIG_HEADERS = Object.freeze([
   'actividad_id', 'sheet_id', 'curso_academico', 'created_at', 'applied_signature',
+  'seg_sheet_id', 'eval_sheet_id',
+]);
+const CP_MODULE_CONFIG_LEGACY_HEADERS = Object.freeze([
+  'actividad_id', 'sheet_id', 'curso_academico', 'created_at', 'applied_signature',
 ]);
 const CP_MODULE_PLAN_HEADERS = Object.freeze([
   'plan_id', 'actividad_id', 'curso_academico', 'fecha', 'tramo_id', 'ut_id',
@@ -46,16 +50,23 @@ function ensureModuleConfigTechnicalStructure_() {
 }
 
 function ensureModuleTechnicalTable_(sheet, headers) {
+  ensureSheetSize_(sheet, 2, headers.length);
   const existing = sheet.getRange(1, 1, 1, headers.length).getValues()[0]
     .map(normalizeScheduleText_);
   const hasContent = existing.some(Boolean) || sheet.getLastRow() > 1;
-  if (hasContent && existing.some(function(header, index) { return header !== headers[index]; })) {
+  const exact = headers.every(function(header, index) { return existing[index] === header; });
+  const legacyModuleConfig = sheet.getName() === CP.SHEETS.MODULE_CONFIG &&
+    CP_MODULE_CONFIG_LEGACY_HEADERS.every(function(header, index) {
+      return existing[index] === header;
+    }) && existing.slice(CP_MODULE_CONFIG_LEGACY_HEADERS.length).every(function(value) {
+      return !value;
+    });
+  if (hasContent && !exact && !legacyModuleConfig) {
     throw new Error(
       'La hoja técnica ' + sheet.getName() +
       ' tiene un esquema incompatible. No se han modificado sus datos.'
     );
   }
-  ensureSheetSize_(sheet, 2, headers.length);
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
   sheet.getRange(2, 1, Math.max(1, sheet.getMaxRows() - 1), headers.length)
     .setNumberFormat('@');
@@ -1310,6 +1321,8 @@ function readModuleConfigRegistry_(spreadsheet) {
         academicYear: normalizeScheduleText_(row[2]),
         createdAt: row[3],
         appliedSignature: normalizeScheduleText_(row[4]),
+        trackingSheetId: Number(row[5]) || 0,
+        evaluationSheetId: Number(row[6]) || 0,
       };
     });
 }
@@ -1451,12 +1464,27 @@ function cleanupOrphanModuleConfigsWithLock_() {
 function cleanupOrphanModuleConfigs_(spreadsheet) {
   const configSheet = spreadsheet.getSheetByName(CP.SHEETS.MODULE_CONFIG);
   if (!configSheet || configSheet.getLastRow() < 2) return 0;
+  ensureSheetSize_(configSheet, Math.max(2, configSheet.getMaxRows()),
+    CP_MODULE_CONFIG_HEADERS.length);
   const configRows = configSheet.getRange(2, 1, configSheet.getLastRow() - 1,
     CP_MODULE_CONFIG_HEADERS.length).getValues();
   const existingIds = spreadsheet.getSheets().reduce(function(ids, sheet) {
     ids[sheet.getSheetId()] = true;
     return ids;
   }, {});
+  let consumerReferencesChanged = false;
+  configRows.forEach(function(row) {
+    [5, 6].forEach(function(index) {
+      const sheetId = Number(row[index]);
+      if (sheetId && !existingIds[sheetId]) {
+        row[index] = '';
+        consumerReferencesChanged = true;
+      }
+    });
+  });
+  if (consumerReferencesChanged) {
+    writeModuleTable_(configSheet, CP_MODULE_CONFIG_HEADERS, configRows);
+  }
   const orphanRows = [];
   const validKeys = {};
   configRows.forEach(function(row, index) {
@@ -1466,7 +1494,10 @@ function cleanupOrphanModuleConfigs_(spreadsheet) {
     if (existingIds[Number(row[1])]) validKeys[key] = true;
     else orphanRows.push({ rowNumber: index + 2, key: key });
   });
-  if (!orphanRows.length) return 0;
+  if (!orphanRows.length) {
+    if (consumerReferencesChanged) actualizarIndicePortada();
+    return 0;
+  }
 
   const planSheet = spreadsheet.getSheetByName(CP.SHEETS.MODULE_PLAN);
   const planSnapshot = planSheet && planSheet.getLastRow() > 1
@@ -1569,7 +1600,9 @@ function updateModuleConfigRecordSignature_(spreadsheet, activityId, signature) 
 
 function moduleConfigRecordToRow_(record) {
   return [record.activityId, String(record.sheetId), record.academicYear,
-    record.createdAt, record.appliedSignature];
+    record.createdAt, record.appliedSignature,
+    record.trackingSheetId ? String(record.trackingSheetId) : '',
+    record.evaluationSheetId ? String(record.evaluationSheetId) : ''];
 }
 
 function readModulePlanRows_(spreadsheet) {
@@ -1654,13 +1687,22 @@ function getModuleConfigurationStatuses_() {
     const record = registry.find(function(item) { return item.activityId === activity.id; });
     const sheet = record ? getSheetById_(spreadsheet, record.sheetId) : null;
     if (!sheet) {
-      return { label: getModuleDisplayName_(activity), status: 'pending', statusLabel: 'Sin configurar' };
+      return {
+        label: getModuleDisplayName_(activity), status: 'pending',
+        statusLabel: 'Sin configurar', hasConfig: false, consumersComplete: false,
+      };
     }
     const pending = record.appliedSignature !== buildModuleCanonicalSignature_(sheet);
+    const trackingSheet = record.trackingSheetId
+      ? getSheetById_(spreadsheet, record.trackingSheetId) : null;
+    const evaluationSheet = record.evaluationSheetId
+      ? getSheetById_(spreadsheet, record.evaluationSheetId) : null;
     return {
       label: getModuleDisplayName_(activity),
       status: pending ? 'pending' : 'complete',
       statusLabel: pending ? 'Cambios pendientes' : 'Configurado',
+      hasConfig: true,
+      consumersComplete: isRegisteredModuleTrackingSheet_(trackingSheet) && Boolean(evaluationSheet),
     };
   });
 }

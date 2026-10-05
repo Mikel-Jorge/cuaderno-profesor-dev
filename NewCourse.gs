@@ -283,7 +283,7 @@ function prepareNewCourseAnnualData_(processInput) {
       initializeCoverStructure_();
       initializeMetaStructure_();
       hideTechnicalSheets_(spreadsheet);
-      deleteManagedModuleConfigsForNewCourse_(spreadsheet);
+      archiveTrackingAndDeleteModuleSheetsForNewCourse_(spreadsheet);
       reorderManagedVisibleSheets_(spreadsheet);
       actualizarIndicePortada();
       spreadsheet.toast('Nuevo curso preparado.', CP.PROJECT_NAME, 5);

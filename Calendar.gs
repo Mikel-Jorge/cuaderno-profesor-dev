@@ -580,9 +580,9 @@ function normalizeCalendarType_(input, definition, timeZone) {
     startDate: parseCalendarDate_(input.startDate, timeZone, 'la fecha de inicio', false),
     endDate: parseCalendarDate_(input.endDate, timeZone, 'la fecha de fin', false),
     practicesStart: configurePractices
-      ? parseCalendarDate_(input.practicesStart, timeZone, 'el inicio de prácticas', false) : null,
+      ? parseCalendarDate_(input.practicesStart, timeZone, 'el inicio de FEOE', false) : null,
     practicesEnd: configurePractices
-      ? parseCalendarDate_(input.practicesEnd, timeZone, 'el fin de prácticas', false) : null,
+      ? parseCalendarDate_(input.practicesEnd, timeZone, 'el fin de FEOE', false) : null,
     configurePractices: configurePractices,
     reviewStart: configureReview
       ? parseCalendarDate_(input.reviewStart, timeZone, 'el inicio de repaso', false) : null,
@@ -623,7 +623,7 @@ function validateCalendarType_(type, academicBounds, timeZone) {
     'El inicio de ' + type.name + ' queda fuera del curso académico.', timeZone);
   validateDateWithinRange_(type.endDate, type.startDate, academicBounds.end,
     'El periodo de ' + type.name + ' no es válido.', timeZone);
-  validateOptionalCalendarRange_(type.practicesStart, type.practicesEnd, type, 'prácticas', timeZone);
+  validateOptionalCalendarRange_(type.practicesStart, type.practicesEnd, type, 'FEOE', timeZone);
   validateOptionalCalendarRange_(type.reviewStart, type.reviewEnd, type, 'repaso', timeZone);
 
   let previousEnd = null;
@@ -1422,7 +1422,7 @@ function getCalendarSemanticStyles_(theme) {
   };
   styles.reunion = { label: 'Reunión', background: CP_CALENDAR_SEMANTIC_COLORS.REUNION, fontColor: colors.text };
   styles.destacado = { label: 'Destacado', background: '#FEF3C7', fontColor: colors.text };
-  styles.practicas = { label: 'Inicio/fin prácticas', background: '#DBEAFE', fontColor: colors.text };
+  styles.practicas = { label: 'Inicio/fin FEOE', background: '#DBEAFE', fontColor: colors.text };
   styles.repaso = { label: 'Repaso', background: '#FCE7F3', fontColor: colors.text };
   styles.hoy = { label: 'Hoy', background: '#00A6B2', fontColor: getAccessibleTextColor_('#00A6B2') };
   styles.weekend = { label: 'Festivo / no lectivo', background: colors.muted, fontColor: colors.mutedText };
@@ -1705,11 +1705,11 @@ function getPracticeMilestonesForDate_(date, types, timeZone) {
   types.forEach(function(type) {
     if (type.practicesStart instanceof Date &&
         compareCalendarDates_(date, type.practicesStart, timeZone) === 0) {
-      lines.push(type.name + ' - Inicio prácticas');
+      lines.push(type.name + ' - Inicio FEOE');
     }
     if (type.practicesEnd instanceof Date &&
         compareCalendarDates_(date, type.practicesEnd, timeZone) === 0) {
-      lines.push(type.name + ' - Fin prácticas');
+      lines.push(type.name + ' - Fin FEOE');
     }
   });
   return lines;

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <style id="active-theme"><?!= uiThemeCss ?></style>
+    <?!= includeUiFile_('UiStyles'); ?>
+  </head>
+  <body>
+    <main class="app">
+      <header class="brand-header">
+        <img class="brand-logo" src="<?!= branding.icon ?>" alt="">
+        <div class="brand-copy">
+          <p class="brand-name"><?= uiConfig.projectName ?></p>
+          <span class="version-label"><?= uiConfig.versionLabel ?></span>
+        </div>
+      </header>
+
+      <form class="config-form" id="tracking-form">
+        <div class="config-scroll" id="tracking-content">
+          <section class="form-section">
+            <h2>Seguimiento y Evaluación</h2>
+            <p class="form-help">
+              Una sola acción crea 5 Seg desde la planificación aplicada y prepara 6 Eval.
+            </p>
+            <div id="empty-state" class="confirmation confirmation-warning" hidden>
+              <p class="confirmation-message">⚠ No hay módulos pendientes elegibles.</p>
+              <p class="confirmation-helper">
+                Comprueba que 4 Config esté creada, sin cambios pendientes y con su planificación aplicada.
+              </p>
+            </div>
+            <div class="form-field" id="module-field">
+              <label for="module-select">Módulo</label>
+              <select id="module-select" required></select>
+              <p id="selection-help" class="form-help"></p>
+            </div>
+          </section>
+        </div>
+        <div class="save-loading is-hidden" id="creation-loading" role="status" aria-live="polite">
+          <span class="loading-spinner" aria-hidden="true"></span>
+          <span>
+            <span id="loading-title">Creando hojas...</span>
+            <small id="loading-detail">Generando el snapshot de Seguimiento y registrando Evaluación.</small>
+          </span>
+        </div>
+        <div class="config-feedback">
+          <div id="feedback" class="result" role="status"></div>
+          <div class="actions">
+            <button class="button button-secondary" type="button" id="cancel-button">Cancelar</button>
+            <button class="button" type="submit" id="submit-button">Crear</button>
+          </div>
+        </div>
+      </form>
+
+      <footer class="author-footer">
+        &copy; <?= uiConfig.author ?> ·
+        <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a>
+      </footer>
+    </main>
+
+    <script>
+      const trackingData = <?!= JSON.stringify(trackingData) ?>;
+      const form = document.getElementById('tracking-form');
+      const select = document.getElementById('module-select');
+      const submitButton = document.getElementById('submit-button');
+      const cancelButton = document.getElementById('cancel-button');
+      const feedback = document.getElementById('feedback');
+      const emptyState = document.getElementById('empty-state');
+      const moduleField = document.getElementById('module-field');
+      const content = document.getElementById('tracking-content');
+      const loading = document.getElementById('creation-loading');
+      const selectionHelp = document.getElementById('selection-help');
+      let busy = false;
+
+      if (trackingData.errorMessage) {
+        moduleField.hidden = true;
+        submitButton.disabled = true;
+        feedback.className = 'result visible error';
+        feedback.textContent = trackingData.errorMessage;
+      } else if (!trackingData.modules.length) {
+        emptyState.hidden = false;
+        moduleField.hidden = true;
+        submitButton.disabled = true;
+      } else {
+        trackingData.modules.forEach(function(module) {
+          const option = document.createElement('option');
+          option.value = module.id;
+          option.textContent = module.label;
+          option.selected = module.id === trackingData.selectedActivityId;
+          select.appendChild(option);
+        });
+        updateHelp();
+      }
+
+      select.addEventListener('change', updateHelp);
+      cancelButton.addEventListener('click', function() { google.script.host.close(); });
+      form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        if (busy || !select.value) return;
+        setBusy(true);
+        google.script.run
+          .withSuccessHandler(function(result) {
+            if (!result || !result.ok) {
+              setBusy(false);
+              feedback.className = 'result visible error';
+              feedback.style.whiteSpace = 'pre-line';
+              const rollback = result && result.rollbackComplete === false
+                ? '\nLa limpieza automática no se completó; revisa Apps Script → Ejecuciones.'
+                : '';
+              feedback.textContent = (result && result.message
+                ? result.message : 'No se han podido crear las hojas.') + rollback;
+              return;
+            }
+            document.getElementById('loading-title').textContent = '✓ Proceso completado.';
+            document.getElementById('loading-detail').textContent = result.message +
+              ' ' + result.trackingSheetName + ' + ' + result.evaluationSheetName + '.';
+            window.setTimeout(function() { google.script.host.close(); }, 1400);
+          })
+          .withFailureHandler(function(error) {
+            console.error(error);
+            setBusy(false);
+            feedback.className = 'result visible error';
+            feedback.textContent = 'No se ha podido completar la creación.';
+          })
+          .crearSeguimientoEvaluacion(select.value);
+      });
+
+      function updateHelp() {
+        const module = trackingData.modules.find(function(item) { return item.id === select.value; });
+        if (!module) return;
+        if (module.hasTracking) {
+          selectionHelp.textContent = 'Se conservará 5 Seg y se creará únicamente 6 Eval.';
+        } else if (module.hasEvaluation) {
+          selectionHelp.textContent = 'Se conservará 6 Eval y se creará únicamente 5 Seg.';
+        } else {
+          selectionHelp.textContent = 'Se crearán conjuntamente 5 Seg y 6 Eval.';
+        }
+      }
+
+      function setBusy(value) {
+        busy = value;
+        select.disabled = value;
+        submitButton.disabled = value;
+        cancelButton.disabled = value;
+        content.classList.toggle('is-hidden', value);
+        loading.classList.toggle('is-hidden', !value);
+        form.classList.toggle('is-saving', value);
+      }
+    </script>
+  </body>
+</html>

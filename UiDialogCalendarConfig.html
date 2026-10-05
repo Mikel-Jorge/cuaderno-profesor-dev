@@ -110,7 +110,7 @@
           '<div class="calendar-subsection"><div class="section-heading"><h3>Evaluaciones</h3>' +
             '<button class="button button-secondary compact-button" type="button" data-action="add-evaluation" data-type-index="' + typeIndex + '"' + disabledAttribute(!type.active) + '>+ A&ntilde;adir evaluaci&oacute;n</button></div>' +
             '<div class="calendar-list">' + (evaluations || '<p class="calendar-empty">Sin evaluaciones configuradas.</p>') + '</div></div>' +
-          optionalPeriod(type, typeIndex, 'pr\u00e1cticas', 'practicesStart', 'practicesEnd', 'configurePractices') +
+          optionalPeriod(type, typeIndex, 'FEOE', 'practicesStart', 'practicesEnd', 'configurePractices') +
           optionalPeriod(type, typeIndex, 'repaso', 'reviewStart', 'reviewEnd', 'configureReview') +
         '</div></article>';
     }).join('');

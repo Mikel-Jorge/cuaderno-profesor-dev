@@ -10,8 +10,8 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 ## Definición funcional del proyecto
 
 **Estado:** especificación funcional vigente
-**Versión del documento:** 2.7
-**Versión del cuaderno:** `1.5.2`
+**Versión del documento:** 2.8
+**Versión del cuaderno:** `1.6.0`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.5.2
+# 2. Estado funcional de la versión 1.6.0
 
 Están cerrados funcionalmente:
 
@@ -37,7 +37,7 @@ Están cerrados funcionalmente:
 - `1 Calendario`;
 - `2 Horario`.
 
-Alumnado está operativo. `4 Config ...` incluye calendario individual, distribución automática y ponderaciones editables con validación dinámica. `5 Seg ...` y `6 Eval ...` siguen pendientes.
+Alumnado y `4 Config ...` están operativos. `5 Seg ...` implementa el seguimiento como snapshot editable de la planificación inicial. `6 Eval ...` se crea conjuntamente como hoja gestionada vacía; su funcionalidad de calificaciones queda pendiente.
 
 # 3. Estructura del libro
 
@@ -92,8 +92,8 @@ Toda hoja visible generada amplía el lienzo antes de escribir y lo recorta de f
 - Horario: `_HOR_TRAMOS`, `_HOR_ACTIVIDADES` y `_HOR_SESIONES`.
 - Alumnado: `3 Alumnado`.
 - Configuración de cada impartición: su hoja `4 Config <SIGLA> · <GRUPO>`; `_MOD_CONFIG` registra su identidad y `_MOD_PLAN` su distribución calculada por sesión.
-- Seguimiento futuro: su hoja `5 Seg <SIGLA> · <GRUPO>`.
-- Evaluación futura: su hoja `6 Eval <SIGLA> · <GRUPO>`.
+- Seguimiento real: su hoja `5 Seg <SIGLA> · <GRUPO>`.
+- Evaluación: su hoja `6 Eval <SIGLA> · <GRUPO>`; en 1.6.0 permanece vacía.
 
 Los colores son presentación. El nombre de una hoja tampoco debe ser su única identidad.
 
@@ -113,7 +113,7 @@ El cuaderno activo conserva profesor, centro, tema, tramos horarios y catálogo 
 
 - las filas de `3 Alumnado`, conservando hoja y cabecera;
 - `_HOR_SESIONES`, incluidos los apoyos, conservando `_HOR_TRAMOS` y `_HOR_ACTIVIDADES`;
-- activación y fechas lectivas, prácticas y repaso de `_CAL_TIPOS`;
+- activación y fechas lectivas, FEOE y repaso de `_CAL_TIPOS`;
 - fechas finales de `_CAL_EVALUACIONES`, conservando ID, nombre y orden;
 - todos los eventos anuales de `_FECHAS` y sus asociaciones en `_CAL_FECHA_TIPOS`.
 
@@ -121,11 +121,11 @@ La transición anual conserva snapshots en memoria para restaurar Alumnado, Hora
 
 `Inicializar / reparar estructura` nunca aplica esta política anual, no borra datos ni repone festivos eliminados por el docente.
 
-Tras el backup se eliminan las `4 Config ...` gestionadas del curso anterior usando su identidad registrada, junto con sus registros en `_MOD_CONFIG` y `_MOD_PLAN`. Las futuras `6 Eval ...` se eliminarán y las `5 Seg ...` se conservarán como archivo histórico cuando esas familias se implementen.
+Tras el backup se materializan y renombran las `5 Seg ...` activas como `OLD AACC`, se eliminan las `6 Eval ...` y las `4 Config ...` gestionadas del curso anterior y se vacían sus registros en `_MOD_CONFIG` y `_MOD_PLAN`. Los históricos conservan valores, textos, colores, separadores y aspecto sin referencias rotas.
 
 # 7. Calendario escolar
 
-`1 Calendario` representa septiembre-junio desde el modelo técnico. Los tipos de enseñanza estables son `FP1`, `FP2`, `ONLINE` y `CE`, con periodos lectivos, evaluaciones y, cuando proceda, prácticas y repaso.
+`1 Calendario` representa septiembre-junio desde el modelo técnico. Los tipos de enseñanza estables son `FP1`, `FP2`, `ONLINE` y `CE`, con periodos lectivos, evaluaciones y, cuando proceda, FEOE y repaso. Los identificadores técnicos históricos `practicas_inicio` y `practicas_fin` se mantienen por compatibilidad.
 
 Las fechas especiales se almacenan una sola vez y pueden ser globales o aplicarse a tipos concretos. Las categorías vigentes son `FESTIVO`, `REUNION` y `DESTACADO`. Los solapamientos se conservan como datos independientes y la prioridad solo resuelve la presentación. Fines de semana, lectividad, finales de evaluación y estadísticas se derivan sin inspeccionar colores.
 
@@ -246,7 +246,7 @@ El menú `📚 Módulos → 🔄 Recalcular configuración del módulo`:
 2. verificará mediante metadatos internos que es una `4 Config` gestionada;
 3. resolverá su `actividad_id`;
 4. leerá UT y horas;
-5. recorrerá cronológicamente las sesiones reales, excluyendo días no lectivos y el periodo de prácticas del tipo de enseñanza de la impartición;
+5. recorrerá cronológicamente las sesiones reales, excluyendo días no lectivos y el periodo de FEOE del tipo de enseñanza de la impartición;
 6. asignará exactamente las primeras N sesiones a UT1 y continuará con las siguientes;
 7. sustituirá en `_MOD_PLAN` solo las asignaciones de esa impartición;
 8. actualizará colores y notas del calendario.
@@ -257,7 +257,7 @@ No se usa `onEdit`. Una firma interna de orden, ID, código, nombre, color, hora
 
 Los pesos de UT y de evaluación no forman parte de esa firma porque no alteran el calendario. Recalcular conserva todos los pesos exactamente, incluidos los vacíos, y no los distribuye ni los completa.
 
-Las sesiones disponibles se limitan al intervalo desde el inicio lectivo hasta la fecha final inclusiva de la última evaluación configurada para el tipo de enseñanza. Deben ser días lectivos del Horario con tramo `SESION` y `actividad_id` del módulo, sin festivos ni periodo de prácticas. No se asignan UT a repaso, recuperaciones ni fechas posteriores a esa evaluación.
+Las sesiones disponibles se limitan al intervalo desde el inicio lectivo hasta la fecha final inclusiva de la última evaluación configurada para el tipo de enseñanza. Deben ser días lectivos del Horario con tramo `SESION` y `actividad_id` del módulo, sin festivos ni periodo de FEOE. No se asignan UT a repaso, recuperaciones ni fechas posteriores a esa evaluación.
 
 Si una hoja `4 Config` es eliminada manualmente, su configuración se considera perdida. Al abrir Crear configuración, antes de mostrar los módulos, el sistema elimina automáticamente el registro `_MOD_CONFIG` cuyo `sheet_id` ya no existe y solo las filas `_MOD_PLAN` de su `actividad_id` y curso; el módulo queda disponible para crearlo de nuevo sin ejecutar Reparar. El backend repite la comprobación antes de crear y `Inicializar / reparar estructura` usa la misma rutina. Una segunda limpieza no altera el estado. La limpieza no afecta a una hoja existente que se haya renombrado. `_MOD_CONFIG` no recupera UT, nombres, horas ni colores que solo existían en la hoja borrada. Si falla la limpieza técnica, se muestra el error y se detiene la creación.
 
@@ -282,56 +282,49 @@ UT2: 2 h
 
 No se parte la celda, no se desplazan UT y se respetan exactamente las horas planificadas.
 
-# 12. Seguimiento futuro
+# 12. Seguimiento
 
-`5 Seg <SIGLA> · <GRUPO>` se crea independientemente cuando existe configuración suficiente. Se genera desde sesiones reales y distribución de UT. No usa ni cruza `3 Alumnado`.
+La única acción `Crear seguimiento y evaluación` requiere una `4 Config` válida y una planificación aplicada. En el mismo proceso crea `5 Seg <SIGLA> · <GRUPO>` y `6 Eval <SIGLA> · <GRUPO>`. Si solo falta una, conserva la existente y crea la ausente; si existen ambas no duplica. La identidad se resuelve por `actividad_id` y `sheet_id`, nunca solo por el nombre.
 
-Por defecto hay una fila por día del módulo; si cambia la UT dentro del día puede haber varias filas. La definición vigente de columnas es:
+`5 Seg` es un snapshot de la planificación en el momento de crearlo. Se siembra desde `_MOD_PLAN`, `4 Config`, Calendario y Horario, pero no se resincroniza ni reconstruye automáticamente al cambiar después `4 Config`. Las entradas docentes viven en la propia hoja y no existe una hoja técnica duplicada.
 
-| Columna | Contenido |
+Se crea una fila por `fecha + UT`: varias sesiones de la misma UT el mismo día se agrupan en `Actual`; UT distintas generan filas distintas y mantienen el orden de su primera aparición diaria. La fila 1 está congelada y contiene exactamente:
+
+| Columna | Comportamiento |
 |---|---|
-| Fecha / sesión | Día de clase |
-| Plan previsto | Propuesta de trabajo |
-| Actividades realizadas | Registro real |
-| Horas actuales | Sesiones realizadas |
-| Acumuladas | Sesiones acumuladas de la UT |
-| Total | Sesiones previstas de la UT |
-| Mejoras | Propuestas de mejora |
+| Fecha | Fecha real automática, derivada de la planificación |
+| UT | Editable mediante dropdown de las UT iniciales |
+| Plan previsto | Editable, texto libre inicialmente vacío |
+| Actividades realizadas | Editable, texto libre inicialmente vacío |
+| Actual | Editable, número no negativo; inicialmente sesiones agrupadas |
+| Acum. | Automático: suma `Actual` de la misma UT desde el inicio hasta la fila |
+| Total | Automático: horas iniciales de la UT capturadas al crear Seguimiento |
+| Mejoras | Editable; blanco vacío y amarillo fosforito con contenido |
 
-Podrán existir columnas técnicas ocultas como `UT_ID`. Acumuladas se calcula automáticamente; si supera Total se resalta. El color de fila procede de la UT como presentación, nunca como dato. Mejoras vacía se muestra neutra y con contenido se destaca.
+El acumulado usa todas las filas anteriores de la misma UT, aunque sus apariciones no sean contiguas. Cambiar una fila de UT actualiza su color, Total y acumulado sin modificar otras filas históricas. Si `Acum. > Total`, solo el texto de Acum. se muestra rojo y en negrita; conserva el fondo de la UT.
 
-Una futura replanificación solo podrá afectar sesiones futuras, respetará calendario y horario y nunca alterará registros históricos ya realizados.
+Fecha, UT, Plan previsto, Actividades realizadas, Actual, Acum. y Total usan el color inicial de la UT con contraste accesible. Mejoras no hereda ese color. Las horas y colores iniciales se guardan en columnas técnicas ocultas de la propia hoja para mantener el snapshot autosuficiente.
 
-Al preparar otro curso, cada seguimiento gestionado se archivará con una marca interna fiable y un nombre reconocible como `5 Seg PMDM · DAM2A OLD 2526`. No se volverá a archivar una hoja ya histórica ni se sustituirán archivos de otros cursos. Antes de eliminar su antigua `4 Config`, las fórmulas que dependan de ella se convertirán en valores cuando sea necesario para evitar `#REF!`, preservando textos, notas, mejoras y presentación.
+Entre las filas de datos aparecen separadores completos: nombres reales de evaluaciones en rojo y `NAVIDAD`, `SEMANA SANTA` y, cuando proceda, `FEOE` en azul. No se hardcodea el número de evaluaciones ni se crean filas diarias durante vacaciones.
 
-Los seguimientos `OLD` no cuentan como activos, no impiden crear el seguimiento del nuevo curso, no se recalculan ni se vinculan automáticamente a una actividad actual por compartir sigla. Permanecen en Portada y en la familia 5 aunque el módulo ya no se imparta. Esta política es obligatoria para la futura implementación, pero el archivado efectivo no existe todavía porque tampoco existen las hojas 4/5/6.
+`Inicializar / reparar estructura` puede reinstalar cabecera, congelación, notas, formato, validaciones, fórmulas y reglas condicionales a partir de las filas y el snapshot existentes. Nunca reseedá desde `4 Config` ni altera UT, Actual, Plan previsto, Actividades realizadas o Mejoras. Si la hoja fue borrada, limpia su referencia huérfana y una creación posterior parte de nuevo de la planificación disponible, sin afirmar que recupera datos docentes perdidos.
 
-# 13. Evaluación futura
+Al preparar otro curso, cada seguimiento activo se materializa y archiva como `5 Seg <SIGLA> · <GRUPO> OLD AACC` antes de eliminar su `4 Config`. Conserva valores, textos, acumulados, totales, mejoras, colores, separadores y formato sin `#REF!`; deja de tener validaciones dependientes. Los OLD permanecen en Portada y dentro de la familia 5 y no impiden crear el seguimiento del nuevo curso.
 
-`6 Eval <SIGLA> · <GRUPO>` se crea independientemente después de cumplir sus prerrequisitos. Carga inicialmente el alumnado de `3 Alumnado` cuyo Grupo coincide con el de la actividad `MODULO`.
+# 13. Evaluación
 
-Incluye nombre y apellidos, nota final de cada UT recibida de Moodle, cálculos por evaluación y cálculo final. Las fórmulas deben referenciar robustamente la configuración vigente de `4 Config`; no copian ni congelan pesos, asignaciones UT-evaluación o ponderaciones del curso.
+En 1.6.0 `6 Eval <SIGLA> · <GRUPO>` es una hoja gestionada, registrada, ordenada en la familia 6 y funcionalmente vacía. No contiene alumnado, notas, fórmulas, Educa, medias, ponderaciones ni contenido provisional. Si se borra mientras `5 Seg` sigue válida, la reparación o la acción conjunta recrea solo `6 Eval` sin tocar Seguimiento. Al preparar nuevo curso se elimina después del backup.
 
-Además incluye columnas manuales independientes para la nota realmente consignada en Educa:
-
-```text
-Calculada 1ª | Educa 1ª
-Calculada 2ª | Educa 2ª
-Calculada 3ª | Educa 3ª
-Calculada final | Educa final
-```
-
-No se asume que nota calculada y nota Educa coincidan exactamente. Las notas válidas están entre 0 y 10; una UT sin nota se trata como 0. Las recuperaciones continúan en Moodle.
+La selección de alumnado, las notas finales de UT recibidas de Moodle, los cálculos, Educa y las ponderaciones pertenecen al siguiente bloque funcional.
 
 # 14. Generación, estados y ayuda
 
-La creación es independiente por tipo: primero Config y, cuando esté lista, Seg y Eval. Cada acción valida sus prerrequisitos y evita duplicados.
+Primero se crea y aplica Config. Después una única acción genera conjuntamente Seg y Eval, con bloqueo documental, rollback de las hojas nuevas, spinner y resultados controlados.
 
 No hay hoja visible de estados. El Sidebar muestra por impartición:
 
 - Configuración: pendiente, configurada o con cambios pendientes de recalcular.
-- en el futuro, Seguimiento: pendiente o generado;
-- en el futuro, Evaluación: pendiente o generado.
+- Seguimiento/Evaluación: pendientes o creados.
 
 `_MOD_CONFIG` y `_MOD_PLAN` son hojas ocultas y no duplican los valores editables de UT.
 
@@ -341,7 +334,7 @@ También explicará que los festivos y vacaciones precargados son propuestas edi
 
 # 15. Sidebar, estilo y seguridad
 
-El Sidebar muestra estado real de Datos generales, Calendario, Horario y Alumnado, y el estado por impartición de Configuración: sin configurar, configurada o con cambios pendientes. La ayuda contextual prioriza la hoja activa. La actualización es manual, sin polling ni triggers, y no duplica botones del menú.
+El Sidebar muestra estado real de Datos generales, Calendario, Horario y Alumnado, y por impartición los estados de Configuración y del par Seguimiento/Evaluación. La ayuda contextual prioriza la hoja activa. La actualización es manual, sin polling ni triggers, y no duplica botones del menú.
 
 La UI usa tema centralizado, branding común, confirmaciones explícitas y progreso para operaciones largas. Las acciones destructivas se identifican con `danger`.
 
