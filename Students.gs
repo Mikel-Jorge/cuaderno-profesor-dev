@@ -28,7 +28,7 @@ function applyStudentsSheetTheme_(sheet, theme, rowCount) {
   sheet.setHiddenGridlines(false);
   sheet.setFrozenRows(1);
   sheet.setFrozenColumns(0);
-  sheet.setTabColor(colors.accent);
+  sheet.setTabColor(CP.TAB_COLORS.GENERAL);
   sheet.setRowHeight(1, 34);
   sheet.setRowHeights(2, Math.max(1, rowCount - 1), 28);
   columnWidths.forEach(function(width, index) {

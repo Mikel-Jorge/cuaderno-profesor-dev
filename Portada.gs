@@ -135,7 +135,7 @@ function applyCoverTheme_(sheet, theme) {
   sheet.getRange(1, 1, bounds.rows, bounds.columns)
     .setBackground(colors.background)
     .setFontColor(colors.text);
-  sheet.setTabColor(colors.primary);
+  sheet.setTabColor(CP.TAB_COLORS.GENERAL);
 
   sheet.getRange('B2:H3')
     .setBackground(colors.primary)

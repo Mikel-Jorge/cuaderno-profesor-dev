@@ -12,7 +12,6 @@ function reorderManagedVisibleSheets_(spreadsheet) {
   const workbook = spreadsheet || SpreadsheetApp.getActiveSpreadsheet();
   const activeSheet = workbook.getActiveSheet();
   const activeSheetId = activeSheet && activeSheet.getSheetId();
-  const familyPatterns = [/^4 Config\s+.+$/, /^5 Seg\s+.+$/, /^6 Eval\s+.+$/];
   const fixedNames = [
     CP.SHEETS.COVER,
     CP.SHEETS.CALENDAR,
@@ -21,21 +20,36 @@ function reorderManagedVisibleSheets_(spreadsheet) {
   ];
   const sheets = workbook.getSheets();
   const ordered = [];
+  const registeredFamilies = {};
+  readModuleConfigRegistry_(workbook).forEach(function(record) {
+    registeredFamilies[record.sheetId] = 0;
+    if (record.trackingSheetId) registeredFamilies[record.trackingSheetId] = 1;
+    if (record.evaluationSheetId) registeredFamilies[record.evaluationSheetId] = 2;
+  });
 
   fixedNames.forEach(function(sheetName) {
     const sheet = workbook.getSheetByName(sheetName);
-    if (sheet) ordered.push(sheet);
+    if (sheet) {
+      sheet.setTabColor(CP.TAB_COLORS.GENERAL);
+      ordered.push(sheet);
+    }
   });
 
-  familyPatterns.forEach(function(pattern, familyIndex) {
+  [0, 1, 2].forEach(function(familyIndex) {
     sheets.filter(function(sheet) {
-      return pattern.test(sheet.getName());
+      const family = registeredFamilies[sheet.getSheetId()];
+      return family === familyIndex ||
+        familyIndex === 1 && /^5 Seg\s+.+\s+OLD\s+\d{4}$/i.test(sheet.getName()) &&
+        isRegisteredModuleTrackingSheet_(sheet);
     }).sort(function(first, second) {
       if (familyIndex === 1) {
         return compareTrackingSheetNames_(first.getName(), second.getName());
       }
       return first.getName().localeCompare(second.getName(), 'es', { sensitivity: 'base' });
     }).forEach(function(sheet) {
+      sheet.setTabColor([
+        CP.TAB_COLORS.CONFIG, CP.TAB_COLORS.TRACKING, CP.TAB_COLORS.EVALUATION,
+      ][familyIndex]);
       ordered.push(sheet);
     });
   });

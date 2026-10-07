@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const formatRules = [];
-const context = vm.createContext({ SpreadsheetApp: {
+const context = vm.createContext({ CP: { TAB_COLORS: { CONFIG: '#2E7D32' } }, SpreadsheetApp: {
   BorderStyle: { SOLID: 'SOLID' },
   newDataValidation: () => chain(),
   newConditionalFormatRule: () => formatRule(),
@@ -29,6 +29,8 @@ vm.runInContext(`
   getActiveTheme_ = () => ({ colors: { secondary: '', onSecondary: '', muted: 'MUTED', text: '',
     surface: 'SURFACE', warning: '', mutedText: 'MUTED_TEXT', danger: '', success: '', border: '' } });
   getAccessibleTextColor_ = () => '';
+  normalizeThemeColor_ = value => /^#[0-9a-f]{6}$/i.test(String(value || ''))
+    ? String(value).toUpperCase() : '';
   getEvaluationPeriodsForType_ = type => type.periods;
   buildRealModuleSessions_ = (_, type) => type.sessions;
   compareCalendarDates_ = (a, b) => a - b;
@@ -54,6 +56,7 @@ const sheet = {
   getMaxRows: () => 44,
   setRowHeight: () => sheet,
   setRowHeights: () => sheet,
+  setTabColor: () => sheet,
   setConditionalFormatRules: rules => { formatRules.splice(0, formatRules.length, ...rules); return sheet; },
   getRange(row, column, height = 1, width = 1) {
     const range = {
@@ -74,6 +77,16 @@ const sheet = {
         for (let r = row; r < row + height; r += 1) {
           for (let c = column; c < column + width; c += 1) fontColors.set(`${r}:${c}`, value);
         }
+        return range;
+      },
+      setBackgrounds(items) {
+        items.forEach((item, rowIndex) => item.forEach((value, columnIndex) =>
+          backgrounds.set(`${row + rowIndex}:${column + columnIndex}`, value)));
+        return range;
+      },
+      setFontColors(items) {
+        items.forEach((item, rowIndex) => item.forEach((value, columnIndex) =>
+          fontColors.set(`${row + rowIndex}:${column + columnIndex}`, value)));
         return range;
       },
       clearDataValidations() { clearedValidations.push([row, column, height, width]); return range; },
@@ -115,8 +128,17 @@ const type = { periods, sessions: [0, 1, 2].flatMap(index =>
 values.set('29:34', 30);
 values.set('30:34', 30);
 values.set('31:34', 40);
+values.set('27:13', 'Peso (%)');
+values.set('30:15', '#2E7D32');
+values.set('31:15', '#1565C0');
 context.refreshModuleConfigUtSupport_(sheet, {}, { type, evaluations: periods });
 assert.equal(backgrounds.get('28:15'), 'MUTED');
+assert.equal(backgrounds.get('30:15'), '#2E7D32');
+assert.equal(backgrounds.get('30:18'), '#2E7D32');
+assert.equal(backgrounds.get('31:15'), '#1565C0');
+values.delete('27:13');
+values.delete('30:15');
+values.delete('31:15');
 assert.equal(backgrounds.get('28:19'), 'MUTED');
 assert.equal(fontColors.get('28:15'), 'MUTED_TEXT');
 assert.ok(clearedValidations.every(([, column]) => column !== 15));
@@ -271,10 +293,9 @@ assert.ok(validations.some(([row, column]) => row === 28 && column === 15));
 const writesBefore = new Map(values);
 context.writeNormalizedModuleUnits_(sheet, [{ sourceRow: 28, code: 'UT1', hours: 10,
   color: '#BFDBFE', id: 'ut1', evaluationId: 'e0' }]);
-assert.equal(backgrounds.get('28:15'), 'MUTED');
-assert.equal(fontColors.get('28:15'), 'MUTED_TEXT');
+assert.equal(backgrounds.get('28:15'), '#BFDBFE');
 context.refreshModuleConfigUtSupport_(sheet, {}, { type, evaluations: periods });
-assert.equal(backgrounds.get('28:15'), backgrounds.get('28:19'));
+assert.equal(backgrounds.get('28:15'), '#BFDBFE');
 assert.equal(values.get('28:15'), '#BFDBFE');
 assert.equal(values.get('28:13'), writesBefore.get('28:13'));
 assert.deepEqual([29, 30, 31].map(row => values.get(`${row}:34`)), [30, 30, 40]);
@@ -318,7 +339,8 @@ vm.runInContext(`
   validateModuleConfigPrerequisites_ = () => ({ type: repairType, evaluations: repairPeriods });
 `, Object.assign(context, { repairType: type, repairPeriods: periods }));
 context.repairExistingModuleConfigSheets_();
-assert.equal(backgrounds.get('28:15'), backgrounds.get('28:19'));
+assert.equal(backgrounds.get('28:15'), '#BFDBFE');
+assert.equal(backgrounds.get('28:19'), 'MUTED');
 assert.deepEqual([1, 3, 11, 13, 15, 19].map(column => values.get(`28:${column}`)),
   ['UT1', 'Nombre', 10, 25, '#BFDBFE', 'Eval 1']);
 assert.deepEqual([29, 30, 31].map(row => values.get(`${row}:34`)), [30, 30, 40]);

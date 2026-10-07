@@ -55,7 +55,7 @@ assert.strictEqual(total, '=IFERROR(VLOOKUP($B7;$J$2:$K$5;2;FALSE);"")');
 assert.ok(!total.includes('4 Config'));
 
 context.getEvaluationPeriodsForType_ = () => [
-  { name: '1ª EVALUACIÓN', startDate: new Date('2026-09-01T00:00:00Z'),
+  { name: '1ª evaluación', startDate: new Date('2026-09-01T00:00:00Z'),
     endDate: new Date('2026-12-20T00:00:00Z') },
   { name: '2ª EVALUACIÓN', startDate: new Date('2026-12-21T00:00:00Z'),
     endDate: new Date('2027-03-31T00:00:00Z') },
@@ -88,6 +88,52 @@ assert.strictEqual(
   context.buildTrackingArchiveName_('5 Seg PMDM · DAM2A', '2025-2026'),
   '5 Seg PMDM · DAM2A OLD 2526'
 );
+
+assert.strictEqual(context.buildTrackingUtColorFormula_('UT1'),
+  '=INDIRECT("B"&ROW())="UT1"');
+assert.strictEqual(context.buildTrackingUtColorFormula_('UT"2'),
+  '=INDIRECT("B"&ROW())="UT""2"');
+assert.strictEqual(context.buildTrackingOverageFormula_(';'),
+  '=AND(ISNUMBER($F2);ISNUMBER($G2);$F2>$G2)');
+assert.strictEqual(context.buildTrackingOverageFormula_(','),
+  '=AND(ISNUMBER($F2),ISNUMBER($G2),$F2>$G2)');
+
+const borders = [];
+let installedRules = [];
+context.getModuleFormulaSeparator_ = () => ';';
+context.getAccessibleTextColor_ = () => '#172033';
+context.SpreadsheetApp = {
+  BorderStyle: { SOLID: 'SOLID' },
+  newConditionalFormatRule: () => {
+    const rule = { formula: '', ranges: [] };
+    for (const method of ['setBackground', 'setFontColor', 'setBold']) rule[method] = () => rule;
+    rule.whenFormulaSatisfied = formula => { rule.formula = formula; return rule; };
+    rule.setRanges = ranges => { rule.ranges = ranges.map(range => range.position); return rule; };
+    rule.build = () => ({ formula: rule.formula, ranges: rule.ranges });
+    return rule;
+  },
+};
+const styledSheet = {
+  getParent: () => ({}),
+  getRange(row, column, height = 1, width = 1) {
+    const range = { position: [row, column, height, width] };
+    for (const method of ['setFontWeight', 'setBackground', 'setFontColor',
+      'setHorizontalAlignment']) range[method] = () => range;
+    range.setBorder = (...args) => { borders.push({ position: range.position, args }); return range; };
+    range.getDisplayValue = () => row === 4 ? 'NAVIDAD' : '';
+    return range;
+  },
+  setConditionalFormatRules: rules => { installedRules = rules; },
+};
+context.styleTrackingRows_(styledSheet, [2, 3, 5], 5, [
+  { code: 'UT1', color: '#BBF7D0' }, { code: 'UT2', color: '#BFDBFE' },
+]);
+assert.deepStrictEqual(JSON.parse(JSON.stringify(installedRules[1].ranges)),
+  [[2, 1, 2, 7], [5, 1, 1, 7]]);
+assert.strictEqual(installedRules[0].formula,
+  '=AND(ISNUMBER($F2);ISNUMBER($G2);$F2>$G2)');
+assert.ok(borders.some(border => border.position[1] === 3 && border.args[3] === true));
+assert.ok(!borders.some(border => border.position[0] === 4 && border.args[3] === true));
 
 const source = fs.readFileSync('Tracking.gs', 'utf8');
 assert.ok(source.includes("buildManagedModuleSheetName_(spreadsheet, '5 Seg'"));

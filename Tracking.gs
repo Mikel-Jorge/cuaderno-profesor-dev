@@ -246,7 +246,9 @@ function buildTrackingTimeline_(spreadsheet, context, dataRows) {
       return compareCalendarDates_(row.date, period.startDate, timeZone) >= 0 &&
         compareCalendarDates_(row.date, period.endDate, timeZone) <= 0;
     });
-    if (first) items.push(buildTrackingSeparator_(first.dateKey, period.name, 'evaluation', index));
+    if (first) items.push(buildTrackingSeparator_(
+      first.dateKey, String(period.name).toLocaleUpperCase('es'), 'evaluation', index
+    ));
   });
   const applicableEvents = getAllCalendarEvents_().filter(function(event) {
     return !event.typeIds.length || event.typeIds.indexOf(context.type.id) !== -1;
@@ -352,7 +354,7 @@ function formatAndRepairTrackingSheet_(sheet) {
   sheet.setFrozenRows(1);
   sheet.setFrozenColumns(0);
   sheet.setHiddenGridlines(true);
-  sheet.setTabColor(theme.colors.secondary);
+  sheet.setTabColor(CP.TAB_COLORS.TRACKING);
   applyTrackingDimensions_(sheet, lastRow);
 
   const dataRows = getTrackingDataRowNumbers_(sheet);
@@ -388,7 +390,7 @@ function setTrackingHeaderNotes_(sheet) {
 }
 
 function applyTrackingDimensions_(sheet, lastRow) {
-  const widths = [105, 62, 300, 245, 62, 62, 62, 175];
+  const widths = [105, 62, 450, 245, 62, 62, 62, 260];
   widths.forEach(function(width, index) { sheet.setColumnWidth(index + 1, width); });
   sheet.setRowHeight(1, 34);
   if (lastRow > 1) sheet.setRowHeights(2, lastRow - 1, 42);
@@ -396,6 +398,8 @@ function applyTrackingDimensions_(sheet, lastRow) {
   sheet.getRange(2, 3, Math.max(1, lastRow - 1), 2).setWrap(true);
   sheet.getRange(2, 8, Math.max(1, lastRow - 1), 1).setWrap(true);
   sheet.getRange(2, 1, Math.max(1, lastRow - 1), 8).setVerticalAlignment('middle');
+  sheet.getRange(2, 2, Math.max(1, lastRow - 1), 1).setHorizontalAlignment('center');
+  sheet.getRange(2, 5, Math.max(1, lastRow - 1), 3).setHorizontalAlignment('center');
   sheet.getRange(2, 5, Math.max(1, lastRow - 1), 3).setNumberFormat('0.##');
   sheet.hideColumns(9, 4);
 }
@@ -417,7 +421,23 @@ function styleTrackingRows_(sheet, dataRows, lastRow, snapshot) {
   if (lastRow > 1) {
     sheet.getRange(2, 1, lastRow - 1, 7).setFontWeight('normal');
     sheet.getRange(2, 8, lastRow - 1, 1).setBackground('#FFFFFF').setFontColor('#172033');
+    sheet.getRange(2, 1, lastRow - 1, 8)
+      .setBorder(false, false, false, false, false, false);
   }
+  const runs = [];
+  dataRows.forEach(function(row) {
+    const previous = runs[runs.length - 1];
+    if (previous && previous.start + previous.length === row) previous.length += 1;
+    else runs.push({ start: row, length: 1 });
+  });
+  runs.forEach(function(run) {
+    sheet.getRange(run.start, 1, run.length, 8).setBorder(
+      false, false, true, false, false, true, '#DCE3E8', SpreadsheetApp.BorderStyle.SOLID
+    );
+    sheet.getRange(run.start, 3, run.length, 1).setBorder(
+      false, false, null, true, false, false, '#B0BEC5', SpreadsheetApp.BorderStyle.SOLID
+    );
+  });
   for (let row = 2; row <= lastRow; row += 1) {
     if (dataRowMap[row]) continue;
     const label = normalizeScheduleText_(sheet.getRange(row, 1).getDisplayValue());
@@ -428,22 +448,35 @@ function styleTrackingRows_(sheet, dataRows, lastRow, snapshot) {
       .setFontWeight('bold').setHorizontalAlignment('center');
   }
   const rules = [];
-  const colorRange = sheet.getRange(2, 1, Math.max(1, lastRow - 1), 7);
+  const dataRanges = runs.map(function(run) {
+    return sheet.getRange(run.start, 1, run.length, 7);
+  });
   rules.push(SpreadsheetApp.newConditionalFormatRule()
-    .whenFormulaSatisfied('=AND(ISNUMBER($F2),ISNUMBER($G2),$F2>$G2)')
+    .whenFormulaSatisfied(buildTrackingOverageFormula_(getModuleFormulaSeparator_(sheet.getParent())))
     .setFontColor('#DC2626').setBold(true)
     .setRanges([sheet.getRange(2, 6, Math.max(1, lastRow - 1), 1)]).build());
-  snapshot.forEach(function(unit) {
-    rules.push(SpreadsheetApp.newConditionalFormatRule()
-      .whenFormulaSatisfied('=$B2="' + escapeTrackingFormulaText_(unit.code) + '"')
-      .setBackground(unit.color).setFontColor(getAccessibleTextColor_(unit.color))
-      .setRanges([colorRange]).build());
-  });
+  if (dataRanges.length) {
+    snapshot.forEach(function(unit) {
+      rules.push(SpreadsheetApp.newConditionalFormatRule()
+        .whenFormulaSatisfied(buildTrackingUtColorFormula_(unit.code))
+        .setBackground(unit.color).setFontColor(getAccessibleTextColor_(unit.color))
+        .setRanges(dataRanges).build());
+    });
+  }
   rules.push(SpreadsheetApp.newConditionalFormatRule()
     .whenFormulaSatisfied('=LEN(TRIM($H2))>0')
     .setBackground('#FFFF00').setFontColor('#172033')
     .setRanges([sheet.getRange(2, 8, Math.max(1, lastRow - 1), 1)]).build());
   sheet.setConditionalFormatRules(rules);
+}
+
+function buildTrackingOverageFormula_(separator) {
+  return '=AND(ISNUMBER($F2)' + separator + 'ISNUMBER($G2)' +
+    separator + '$F2>$G2)';
+}
+
+function buildTrackingUtColorFormula_(code) {
+  return '=INDIRECT("B"&ROW())="' + escapeTrackingFormulaText_(code) + '"';
 }
 
 function escapeTrackingFormulaText_(value) {
@@ -488,7 +521,7 @@ function prepareEmptyEvaluationSheet_(sheet) {
   sheet.setFrozenRows(0);
   sheet.setFrozenColumns(0);
   sheet.setHiddenGridlines(true);
-  sheet.setTabColor(getActiveTheme_(sheet.getParent()).colors.accent);
+  sheet.setTabColor(CP.TAB_COLORS.EVALUATION);
   trimSheetToBounds_(sheet, 1, 1);
 }
 
@@ -591,6 +624,7 @@ function archiveTrackingAndDeleteModuleSheetsForNewCourse_(spreadsheet) {
     if (operation.trackingSheet) {
       materializeTrackingForArchive_(operation.trackingSheet);
       operation.trackingSheet.setName(operation.archiveName);
+      operation.trackingSheet.setTabColor(CP.TAB_COLORS.TRACKING);
     }
     if (operation.evaluationSheet) spreadsheet.deleteSheet(operation.evaluationSheet);
     if (operation.configSheet) spreadsheet.deleteSheet(operation.configSheet);

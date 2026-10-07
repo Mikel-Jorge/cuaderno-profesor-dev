@@ -10,8 +10,8 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 ## Definición funcional del proyecto
 
 **Estado:** especificación funcional vigente
-**Versión del documento:** 2.8
-**Versión del cuaderno:** `1.6.0`
+**Versión del documento:** 2.9
+**Versión del cuaderno:** `1.6.1`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.6.0
+# 2. Estado funcional de la versión 1.6.1
 
 Están cerrados funcionalmente:
 
@@ -80,6 +80,8 @@ Las hojas gestionadas se agrupan por tipo:
 ```
 
 Dentro de las familias 4 y 6 se usa orden alfabético estable por nombre, equivalente a `SIGLA + GRUPO`. En la familia 5 se agrupa primero por sigla normalizada, sin exigir coincidencia de grupo; los seguimientos activos preceden a los históricos de la misma sigla y los archivos de varios cursos se mantienen ordenados. No se intercalan Config, Seg y Eval por módulo. Las hojas visibles ajenas al sistema no se borran ni renombran y conservan su orden relativo razonablemente. Las hojas técnicas `_...` permanecen ocultas.
+
+Las pestañas gestionadas usan colores fijos por familia: 0–3 azul grisáceo, 4 verde, 5 activa e histórica azul y 6 naranja. La futura familia 7 Tutoría reserva morado sin crear aún ninguna hoja. Las pestañas ajenas conservan su color.
 
 ## 3.3. Dimensiones
 
@@ -224,6 +226,8 @@ Desde `1.4.5` el orden visible es:
 
 La evaluación visible es calculada, no editable por el docente. Se asigna según la evaluación del último día real planificado para esa UT. Las evaluaciones disponibles proceden del `tipo_ensenanza_id` de la actividad y de `_CAL_EVALUACIONES`. No se duplican nombres de evaluaciones dentro de otro modelo.
 
+La celda Color muestra fondo gris si está vacía y el propio color con texto contrastado cuando hay un valor definido; Recalcular y Reparar restablecen esta presentación sin cambiar el valor.
+
 Cada UT mantiene un ID interno estable, un orden por fila, un color explícito y una evaluación calculada. Al recalcular se asignan automáticamente código, color, ID y evaluación cuando proceda. La hoja ofrece 15 filas editables de UT.
 
 Desde `1.5.0`, la tabla contiene `UT | Nombre | Horas | Peso (%) | Color | Evaluación`. Peso (%) es editable, admite números de 0 a 100 con decimales y no recibe valor automático. Una UT con Nombre y Horas positivas requiere peso; las filas vacías no lo requieren. El peso completo de cada UT pertenece a la evaluación donde termina, aunque sus horas se distribuyan entre varias evaluaciones.
@@ -286,6 +290,8 @@ No se parte la celda, no se desplazan UT y se respetan exactamente las horas pla
 
 La única acción `Crear seguimiento y evaluación` requiere una `4 Config` válida y una planificación aplicada. En el mismo proceso crea `5 Seg <SIGLA> · <GRUPO>` y `6 Eval <SIGLA> · <GRUPO>`. Si solo falta una, conserva la existente y crea la ausente; si existen ambas no duplica. La identidad se resuelve por `actividad_id` y `sheet_id`, nunca solo por el nombre.
 
+El diálogo explica junto al selector que solo aparecen módulos con configuración y planificación completas y remite a terminar `4 Config` y recalcular cuando falte uno.
+
 `5 Seg` es un snapshot de la planificación en el momento de crearlo. Se siembra desde `_MOD_PLAN`, `4 Config`, Calendario y Horario, pero no se resincroniza ni reconstruye automáticamente al cambiar después `4 Config`. Las entradas docentes viven en la propia hoja y no existe una hoja técnica duplicada.
 
 Se crea una fila por `fecha + UT`: varias sesiones de la misma UT el mismo día se agrupan en `Actual`; UT distintas generan filas distintas y mantienen el orden de su primera aparición diaria. La fila 1 está congelada y contiene exactamente:
@@ -305,7 +311,9 @@ El acumulado usa todas las filas anteriores de la misma UT, aunque sus aparicion
 
 Fecha, UT, Plan previsto, Actividades realizadas, Actual, Acum. y Total usan el color inicial de la UT con contraste accesible. Mejoras no hereda ese color. Las horas y colores iniciales se guardan en columnas técnicas ocultas de la propia hoja para mantener el snapshot autosuficiente.
 
-Entre las filas de datos aparecen separadores completos: nombres reales de evaluaciones en rojo y `NAVIDAD`, `SEMANA SANTA` y, cuando proceda, `FEOE` en azul. No se hardcodea el número de evaluaciones ni se crean filas diarias durante vacaciones.
+Las filas de datos tienen un borde inferior gris claro y un único separador vertical discreto entre Plan previsto y Actividades realizadas. UT, Actual, Acum. y Total están centrados; los textos largos mantienen su alineación. Plan previsto y Mejoras tienen aproximadamente un 50 % más de ancho que en 1.6.0.
+
+Entre las filas de datos aparecen separadores completos: nombres reales de evaluaciones en mayúsculas y rojo, y `NAVIDAD`, `SEMANA SANTA` y, cuando proceda, `FEOE` en azul. No se hardcodea el número de evaluaciones ni se crean filas diarias durante vacaciones.
 
 `Inicializar / reparar estructura` puede reinstalar cabecera, congelación, notas, formato, validaciones, fórmulas y reglas condicionales a partir de las filas y el snapshot existentes. Nunca reseedá desde `4 Config` ni altera UT, Actual, Plan previsto, Actividades realizadas o Mejoras. Si la hoja fue borrada, limpia su referencia huérfana y una creación posterior parte de nuevo de la planificación disponible, sin afirmar que recupera datos docentes perdidos.
 

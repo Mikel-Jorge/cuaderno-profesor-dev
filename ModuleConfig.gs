@@ -332,7 +332,7 @@ function renderNewModuleConfigSheet_(sheet, activity, context) {
   sheet.setHiddenGridlines(true);
   sheet.setFrozenRows(5);
   sheet.setFrozenColumns(0);
-  sheet.setTabColor(getActiveTheme_(sheet.getParent()).colors.primary);
+  sheet.setTabColor(CP.TAB_COLORS.CONFIG);
   const sessions = buildRealModuleSessions_(sheet.getParent(), context.type, activity);
   renderModuleConfigCalendar_(sheet, activity, context, sessions, []);
   renderModuleConfigUtArea_(sheet);
@@ -646,6 +646,22 @@ function formatModuleUtInputArea_(sheet) {
     .setFontColor(theme.colors.mutedText).setFontStyle('italic');
 }
 
+function applyModuleUtColorCellStyles_(sheet) {
+  const first = CP_MODULE_CONFIG_LAYOUT.UT_FIRST_ROW;
+  const count = CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS;
+  const columns = getModuleUnitColumns_(sheet);
+  const width = columns[5] - columns[4];
+  const range = sheet.getRange(first, columns[4], count, width);
+  const values = sheet.getRange(first, columns[4], count, 1).getValues();
+  const muted = getActiveTheme_(sheet.getParent()).colors;
+  range.setBackgrounds(values.map(function(row) {
+    return Array(width).fill(normalizeThemeColor_(row[0]) || muted.muted);
+  })).setFontColors(values.map(function(row) {
+    const color = normalizeThemeColor_(row[0]);
+    return Array(width).fill(color ? getAccessibleTextColor_(color) : muted.mutedText);
+  }));
+}
+
 function repairExistingModuleConfigSheets_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   readModuleConfigRegistry_(spreadsheet).forEach(function(record) {
@@ -665,6 +681,7 @@ function repairExistingModuleConfigSheets_() {
     migrateModuleUtLayout_(sheet);
     formatModuleUtInputArea_(sheet);
     refreshModuleConfigUtSupport_(sheet, activity, context);
+    sheet.setTabColor(CP.TAB_COLORS.CONFIG);
     if (previousResult) sheet.getRange(resultRow, 23).setValue(previousResult);
     refreshModuleCurrentSignatureFormulas_(sheet);
   });
@@ -1204,12 +1221,11 @@ function getModuleEvaluationByIdOrName_(evaluations, evaluationId, evaluationNam
 
 function writeNormalizedModuleUnits_(sheet, units) {
   const columns = getModuleUnitColumns_(sheet);
-  const colors = getActiveTheme_(sheet.getParent()).colors;
   units.forEach(function(unit) {
     sheet.getRange(unit.sourceRow, columns[0]).setValue(unit.code);
     sheet.getRange(unit.sourceRow, columns[2]).setValue(unit.hours);
     sheet.getRange(unit.sourceRow, columns[4]).setValue(unit.color)
-      .setBackground(colors.muted).setFontColor(colors.mutedText);
+      .setBackground(unit.color).setFontColor(getAccessibleTextColor_(unit.color));
     sheet.getRange(unit.sourceRow, CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN).setValue(unit.id);
     sheet.getRange(unit.sourceRow, CP_MODULE_CONFIG_LAYOUT.EVALUATION_ID_COLUMN)
       .setValue(unit.evaluationId || '');
@@ -1307,6 +1323,7 @@ function refreshModuleConfigUtSupport_(sheet, activity, context) {
     CP_MODULE_CONFIG_LAYOUT.UNIT_COLUMNS[4], CP_MODULE_CONFIG_LAYOUT.INITIAL_UT_ROWS, 7)
     .setBackground(theme.colors.muted)
     .setFontColor(theme.colors.mutedText).setFontStyle('italic');
+  applyModuleUtColorCellStyles_(sheet);
 }
 
 function readModuleConfigRegistry_(spreadsheet) {

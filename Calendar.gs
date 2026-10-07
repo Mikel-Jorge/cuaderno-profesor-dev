@@ -1137,7 +1137,7 @@ function renderCalendarSheet_(sheet, model) {
   sheet.setHiddenGridlines(true);
   sheet.setFrozenRows(0);
   sheet.setFrozenColumns(0);
-  sheet.setTabColor(model.theme.colors.primary);
+  sheet.setTabColor(CP.TAB_COLORS.GENERAL);
   applyCalendarDimensions_(sheet, layout);
   renderCalendarHeader_(sheet, model, layout);
 
@@ -1177,7 +1177,7 @@ function renderCalendarUnavailableSheet_(sheet, spreadsheet, message) {
   sheet.setHiddenGridlines(true);
   sheet.setFrozenRows(0);
   sheet.setFrozenColumns(0);
-  sheet.setTabColor(theme.colors.primary);
+  sheet.setTabColor(CP.TAB_COLORS.GENERAL);
   for (let column = 1; column <= columns; column += 1) {
     sheet.setColumnWidth(column, [8, 16, 24, 32].indexOf(column) !== -1 ? 10 : 31);
   }

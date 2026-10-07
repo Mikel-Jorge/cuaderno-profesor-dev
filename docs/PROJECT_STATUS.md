@@ -1,8 +1,8 @@
 # Estado del proyecto
 
-**Última actualización:** 2026-10-05
+**Última actualización:** 2026-10-07
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config` y `5 Seg` operativos; `6 Eval` gestionada vacía
-**Versión vigente:** `1.6.0`
+**Versión vigente:** `1.6.1`
 **Esquema vigente:** `10`
 
 # Completado
@@ -139,6 +139,13 @@ Pendiente de cierre del bloque:
 - Sidebar, orden de familias e índice dinámico integrados.
 - `6 Eval` es por ahora una hoja gestionada vacía. Alumnado, Moodle, Educa, notas, medias, ponderaciones y fórmulas quedan para el siguiente bloque.
 
+## Correctivo 1.6.1
+
+- El selector explica los requisitos de elegibilidad y el asistente de nuevo curso avisa del destino de Config, Eval y Seg OLD.
+- `5 Seg` incorpora separadores de evaluación en mayúsculas, bordes discretos, alineación numérica y campos de escritura más anchos; sus reglas de color UT y exceso se reinstalan al crear o reparar.
+- `4 Config` muestra el color de cada UT en la celda Color tras Recalcular y Reparar, y conserva gris cuando está vacía.
+- Pestañas por familia con paleta fija; las hojas ajenas conservan su color. Esquema 10 sin cambios y `6 Eval` permanece vacía.
+
 # Decisiones vigentes
 
 - No existe `3 Módulos`.
@@ -153,6 +160,7 @@ Pendiente de cierre del bloque:
 
 - Función global `Cambiar tema del cuaderno` cuando estén construidas las hojas principales.
 - Posible traslado futuro de `Inicializar / reparar estructura` a un área de mantenimiento.
+- Futuro bloque `7 Tutoría` para centralizar las funciones del docente tutor; todavía sin hoja ni estructura técnica.
 
 # Regla de actualización
 

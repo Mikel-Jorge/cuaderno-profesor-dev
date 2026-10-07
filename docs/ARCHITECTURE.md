@@ -1,8 +1,8 @@
 # Arquitectura técnica
 
 **Estado:** vigente
-**Última revisión:** 2026-10-04
-**Versión:** `1.6.0` / esquema `10`
+**Última revisión:** 2026-10-07
+**Versión:** `1.6.1` / esquema `10`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -21,7 +21,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.6.0` y esquema `10`.
+- `Config.gs`: constantes, nombres de hojas, versión `1.6.1`, esquema `10` y paleta fija de pestañas.
 - `Theme.gs`: tema global, presets y colores semánticos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -200,6 +200,10 @@ M28:M42 guarda los pesos editables de UT y AH29:AH(28+n) los pesos finales edita
 `Tracking.gs` cruza las filas vigentes de `_MOD_PLAN` con los `ut_id` de Config y las agrupa por `fecha + UT` conservando la primera aparición diaria. El resultado es un snapshot: las columnas ocultas J:L almacenan código UT, total inicial y color. No hay una hoja técnica de seguimiento ni dependencia de Alumnado.
 
 La hoja visible usa A:H. UT y Actual son entradas, junto con Plan previsto, Actividades realizadas y Mejoras; Fecha, Acum. y Total son derivados. Acum. usa `SUMIF` desde la primera fila hasta la actual por el código seleccionado, por lo que soporta UT intercaladas. Total usa `VLOOKUP` contra el snapshot interno. Las reglas condicionales resuelven color/contraste por UT, exceso en rojo y Mejoras en amarillo sin triggers.
+
+Las reglas de fondo comparan con el código UT real de B y se limitan a tramos de filas de datos, excluyendo separadores combinados. Usan `ROW()` para evaluar cada tramo desde su fila real. La regla de exceso adapta los separadores de argumentos al locale y precede a las reglas de color para conservar el rojo de Acum. Los bordes y alineaciones se reinstalan al crear o reparar.
+
+`reorderManagedVisibleSheets_()` aplica los colores de pestaña al reconocer hojas fijas, registros por `sheet_id` y Seguimientos OLD con estructura reconocible. La política es visual y no modifica hojas ajenas.
 
 Evaluaciones, Navidad, Semana Santa y FEOE se modelan como filas separadoras combinadas independientes. Reparar identifica filas de datos por fecha real y UT, reinstala solo derivados/presentación y nunca vuelve a leer `_MOD_PLAN` para reseedear.
 

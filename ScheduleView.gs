@@ -77,7 +77,7 @@ function prepareScheduleSheet_(sheet, theme, rows) {
   sheet.setHiddenGridlines(true);
   sheet.setFrozenRows(CP_SCHEDULE_VIEW.HEADER_ROWS);
   sheet.setFrozenColumns(1);
-  sheet.setTabColor(theme.colors.secondary);
+  sheet.setTabColor(CP.TAB_COLORS.GENERAL);
   sheet.setColumnWidth(1, 142);
   for (let column = 2; column <= CP_SCHEDULE_VIEW.VISIBLE_COLUMNS; column += 1) sheet.setColumnWidth(column, 132);
   for (let column = 7; column <= CP_SCHEDULE_VIEW.TOTAL_COLUMNS; column += 1) sheet.setColumnWidth(column, 70);

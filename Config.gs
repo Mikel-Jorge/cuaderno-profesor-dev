@@ -1,7 +1,14 @@
 const CP = Object.freeze({
   PROJECT_NAME: 'Cuaderno del Profesor',
-  NOTEBOOK_VERSION: '1.6.0',
+  NOTEBOOK_VERSION: '1.6.1',
   SCHEMA_VERSION: '10',
+  TAB_COLORS: Object.freeze({
+    GENERAL: '#546E7A',
+    CONFIG: '#2E7D32',
+    TRACKING: '#1565C0',
+    EVALUATION: '#E65100',
+    TUTORING: '#6A1B9A', // Reservado para la futura familia 7 Tutoría.
+  }),
   SHEETS: Object.freeze({
     COVER: '0 Portada',
     CALENDAR: '1 Calendario',
