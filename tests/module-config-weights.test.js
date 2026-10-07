@@ -153,9 +153,10 @@ assert.deepEqual(merges.filter(([row]) => row === 28).map(([, column,, width]) =
   [[23, 5], [28, 2], [30, 2], [32, 2], [34, 2], [36, 4]]);
 assert.equal(values.get('27:23'), 'RESUMEN DE HORAS Y PONDERACIONES');
 for (const column of [23, 28, 30, 32, 34, 36]) {
-  assert.equal(alignments.get(`28:${column}`), 'left');
+  const expected = column >= 28 && column <= 34 ? 'center' : 'left';
+  assert.equal(alignments.get(`28:${column}`), expected);
   assert.equal(wraps.get(`28:${column}`), false);
-  assert.equal(alignments.get(`29:${column}`), 'left');
+  assert.equal(alignments.get(`29:${column}`), expected);
 }
 assert.equal(formatRules.filter(rule => rule.range[1] === 13 && rule.formula).length, 3);
 assert.equal(formatRules.filter(rule => rule.range[0] === 29 && rule.range[1] === 34 && rule.formula).length, 3);
@@ -280,6 +281,10 @@ values.set('28:9', 10);
 values.set('28:11', '#BFDBFE');
 values.set('28:16', 'Eval 1');
 context.migrateModuleUtLayout_(sheet);
+for (const column of [1, 11, 13, 15]) {
+  assert.equal(alignments.get(`27:${column}`), 'center');
+  assert.equal(alignments.get(`28:${column}`), 'center');
+}
 assert.deepEqual([1, 3, 11, 13, 15, 19].map(column => values.get(`28:${column}`)),
   ['UT1', 'Nombre', 10, '', '#BFDBFE', 'Eval 1']);
 assert.deepEqual(merges.filter(([row, column]) => row === 27 && column <= 21)

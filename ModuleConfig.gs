@@ -632,6 +632,10 @@ function formatModuleUtInputArea_(sheet) {
     .setFontColor(theme.colors.text).setVerticalAlignment('middle').setWrap(true)
     .setBorder(true, true, true, true, true, true, theme.colors.border,
       SpreadsheetApp.BorderStyle.SOLID);
+  [0, 2, 3, 4].forEach(function(index) {
+    const span = CP_MODULE_CONFIG_LAYOUT.UNIT_SPANS[index];
+    sheet.getRange(first, span[0], count, span[1]).setHorizontalAlignment('center');
+  });
   sheet.getRange(first, 11, count, 1).setNumberFormat('0')
     .setDataValidation(SpreadsheetApp.newDataValidation()
       .requireNumberGreaterThanOrEqualTo(0).setAllowInvalid(false).build());
@@ -906,7 +910,8 @@ function renderModuleHoursSummary_(sheet, activity, context, startRow, finalWeig
     sheet.getRange(headerRow, header.column, 1, header.width).merge()
       .setValue(header.text).setBackground(theme.colors.muted)
       .setFontColor(theme.colors.text).setFontWeight('bold')
-      .setHorizontalAlignment('left').setVerticalAlignment('middle')
+      .setHorizontalAlignment(header.column >= 28 && header.column <= 34 ? 'center' : 'left')
+      .setVerticalAlignment('middle')
       .setWrap(false).setFontSize(8);
   });
   let row = headerRow + 1;
@@ -984,6 +989,11 @@ function renderModuleHoursSummary_(sheet, activity, context, startRow, finalWeig
     .setFontWeight('bold').setWrap(true).setHorizontalAlignment('center');
   sheet.getRange(firstEvaluationRow, 23, context.evaluations.length + 1, 17)
     .setHorizontalAlignment('left').setVerticalAlignment('middle');
+  [columns.PENDING, columns.AVAILABLE, columns.UNIT_WEIGHT, columns.FINAL_WEIGHT]
+    .forEach(function(column) {
+      sheet.getRange(firstEvaluationRow, column, context.evaluations.length + 1, 2)
+        .setHorizontalAlignment('center');
+    });
   row += 1;
   const pending = 'AB' + totalRow;
   const statusFormula = '=IF(' + pending + '<0' + separator +

@@ -93,10 +93,10 @@ assert.strictEqual(context.buildTrackingUtColorFormula_('UT1'),
   '=INDIRECT("B"&ROW())="UT1"');
 assert.strictEqual(context.buildTrackingUtColorFormula_('UT"2'),
   '=INDIRECT("B"&ROW())="UT""2"');
-assert.strictEqual(context.buildTrackingOverageFormula_(';'),
-  '=AND(ISNUMBER($F2);ISNUMBER($G2);$F2>$G2)');
-assert.strictEqual(context.buildTrackingOverageFormula_(','),
-  '=AND(ISNUMBER($F2),ISNUMBER($G2),$F2>$G2)');
+assert.strictEqual(context.buildTrackingUtOverageFormula_('UT1', ';'),
+  '=AND(INDIRECT("B"&ROW())="UT1";ISNUMBER(INDIRECT("F"&ROW()));' +
+  'ISNUMBER(INDIRECT("G"&ROW()));INDIRECT("F"&ROW())>INDIRECT("G"&ROW()))');
+assert.ok(context.buildTrackingUtOverageFormula_('UT2', ',').includes('="UT2",ISNUMBER'));
 
 const borders = [];
 let installedRules = [];
@@ -106,10 +106,13 @@ context.SpreadsheetApp = {
   BorderStyle: { SOLID: 'SOLID' },
   newConditionalFormatRule: () => {
     const rule = { formula: '', ranges: [] };
-    for (const method of ['setBackground', 'setFontColor', 'setBold']) rule[method] = () => rule;
+    rule.setBackground = value => { rule.background = value; return rule; };
+    rule.setFontColor = value => { rule.fontColor = value; return rule; };
+    rule.setBold = value => { rule.bold = value; return rule; };
     rule.whenFormulaSatisfied = formula => { rule.formula = formula; return rule; };
     rule.setRanges = ranges => { rule.ranges = ranges.map(range => range.position); return rule; };
-    rule.build = () => ({ formula: rule.formula, ranges: rule.ranges });
+    rule.build = () => ({ formula: rule.formula, ranges: rule.ranges,
+      background: rule.background, fontColor: rule.fontColor, bold: rule.bold });
     return rule;
   },
 };
@@ -128,12 +131,24 @@ const styledSheet = {
 context.styleTrackingRows_(styledSheet, [2, 3, 5], 5, [
   { code: 'UT1', color: '#BBF7D0' }, { code: 'UT2', color: '#BFDBFE' },
 ]);
-assert.deepStrictEqual(JSON.parse(JSON.stringify(installedRules[1].ranges)),
+assert.deepStrictEqual(JSON.parse(JSON.stringify(installedRules[2].ranges)),
   [[2, 1, 2, 7], [5, 1, 1, 7]]);
-assert.strictEqual(installedRules[0].formula,
-  '=AND(ISNUMBER($F2);ISNUMBER($G2);$F2>$G2)');
+assert.deepStrictEqual(JSON.parse(JSON.stringify(installedRules[0].ranges)),
+  [[2, 6, 2, 1], [5, 6, 1, 1]]);
+assert.strictEqual(installedRules[0].background, '#BBF7D0');
+assert.strictEqual(installedRules[1].background, '#BFDBFE');
+assert.strictEqual(installedRules[0].fontColor, '#DC2626');
+assert.strictEqual(installedRules[0].bold, true);
+assert.ok(installedRules[0].formula.includes('="UT1";ISNUMBER'));
+assert.ok(installedRules[1].formula.includes('="UT2";ISNUMBER'));
 assert.ok(borders.some(border => border.position[1] === 3 && border.args[3] === true));
 assert.ok(!borders.some(border => border.position[0] === 4 && border.args[3] === true));
+assert.ok(borders.some(border => border.args[6] === '#B0B0B0'));
+const firstRules = JSON.stringify(installedRules);
+context.styleTrackingRows_(styledSheet, [2, 3, 5], 5, [
+  { code: 'UT1', color: '#BBF7D0' }, { code: 'UT2', color: '#BFDBFE' },
+]);
+assert.strictEqual(JSON.stringify(installedRules), firstRules);
 
 const source = fs.readFileSync('Tracking.gs', 'utf8');
 assert.ok(source.includes("buildManagedModuleSheetName_(spreadsheet, '5 Seg'"));

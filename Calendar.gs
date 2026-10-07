@@ -282,11 +282,10 @@ function buildDefaultCalendarEventsForAcademicYear_(academicYear, timeZone) {
       createCalendarDate_(endYear, 1, 6, timeZone),
       'Vacaciones de Navidad',
     ],
-    [addCalendarDays_(easterSunday, -3, timeZone), addCalendarDays_(easterSunday, -2, timeZone), 'Semana Santa'],
     [
-      addCalendarDays_(easterSunday, 1, timeZone),
+      addCalendarDays_(easterSunday, -3, timeZone),
       addCalendarDays_(easterSunday, 5, timeZone),
-      'Vacaciones de Semana Santa',
+      'Semana Santa',
     ],
     [createCalendarDate_(endYear, 5, 1, timeZone), null, 'D\u00eda del Trabajo'],
   ];
@@ -474,7 +473,7 @@ function getCalendarConfigForUi_(spreadsheet) {
         }),
       };
     }),
-    events: eventRows.filter(function(row) {
+    events: collapseLegacyHolyWeekEventsForUi_(eventRows.filter(function(row) {
       return isSupportedCalendarCategory_(row[3]);
     }).map(function(row) {
       const dateId = normalizeCalendarText_(row[0]);
@@ -491,9 +490,36 @@ function getCalendarConfigForUi_(spreadsheet) {
         typeIds: typeIds,
         description: normalizeCalendarText_(row[4]),
       };
-    }),
+    })),
     categories: getCalendarCategoriesForUi_(),
   };
+}
+
+function collapseLegacyHolyWeekEventsForUi_(events) {
+  const first = events.find(function(event) {
+    return event.category === 'FESTIVO' && event.description === 'Semana Santa' &&
+      calendarDateGapDays_(event.startDate, event.endDate) === 1;
+  });
+  if (!first) return events;
+  const second = events.find(function(event) {
+    return event.category === 'FESTIVO' && event.description === 'Vacaciones de Semana Santa' &&
+      event.appliesToAll === first.appliesToAll &&
+      JSON.stringify(event.typeIds.slice().sort()) === JSON.stringify(first.typeIds.slice().sort()) &&
+      calendarDateGapDays_(first.endDate, event.startDate) === 3 &&
+      calendarDateGapDays_(event.startDate, event.endDate) === 4;
+  });
+  if (!second) return events;
+  return events.filter(function(event) { return event !== second; }).map(function(event) {
+    return event === first ? Object.assign({}, first, {
+      endDate: second.endDate, isRange: true,
+    }) : event;
+  });
+}
+
+function calendarDateGapDays_(first, second) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(first || '') ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(second || '')) return NaN;
+  return (Date.parse(second + 'T12:00:00Z') - Date.parse(first + 'T12:00:00Z')) / 86400000;
 }
 
 function assertCalendarStructureReady_(spreadsheet) {

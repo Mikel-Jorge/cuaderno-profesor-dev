@@ -251,7 +251,9 @@
     }
     if (action === 'toggle-event') {
       const calendarEvent = calendarData.events[itemIndex];
-      expandedEvents[calendarEvent.__uiKey] = !expandedEvents[calendarEvent.__uiKey];
+      const shouldExpand = !expandedEvents[calendarEvent.__uiKey];
+      expandedEvents = {};
+      if (shouldExpand) expandedEvents[calendarEvent.__uiKey] = true;
       renderEvents(); return;
     }
     if (action === 'add-evaluation') {

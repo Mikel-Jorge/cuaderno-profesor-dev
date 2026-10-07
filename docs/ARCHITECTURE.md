@@ -2,7 +2,7 @@
 
 **Estado:** vigente
 **Última revisión:** 2026-10-07
-**Versión:** `1.6.1` / esquema `10`
+**Versión:** `1.6.2` / esquema `10`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -21,7 +21,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.6.1`, esquema `10` y paleta fija de pestañas.
+- `Config.gs`: constantes, nombres de hojas, versión `1.6.2`, esquema `10` y paleta fija de pestañas.
 - `Theme.gs`: tema global, presets y colores semánticos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -104,6 +104,8 @@ La utilidad mueve solo hojas con nombres gestionados, no borra ni renombra hojas
 El guardado valida el modelo completo, usa bloqueo de documento, conserva snapshots y escribe en bloque con intento de rollback. Fines de semana, lectividad, finales de evaluación y estadísticas se derivan en código.
 
 `resetCalendarForNewCourse_()` conserva los cuatro tipos estables y la estructura de evaluaciones, pero desactiva tipos, vacía todas sus fechas, elimina eventos y relaciones anteriores y genera propuestas globales para el nuevo curso. Navidad se deriva del par de años académicos y Pascua usa el algoritmo gregoriano de Meeus/Jones/Butcher; no hay consultas de red en ejecución. No se generan puentes o días de centro no verificables.
+
+La precarga de Semana Santa es un único evento `FESTIVO` de Jueves Santo al viernes posterior. `getCalendarConfigForUi_()` combina solo en su respuesta los dos eventos heredados con fechas y ámbito equivalentes; la lectura no escribe nada. Si el docente guarda, el modelo ya unificado reemplaza la pareja en `_FECHAS` y sus relaciones.
 
 `1 Calendario` es una vista idempotente septiembre-junio. Antes de regenerarse limpia notas, formato y reglas del área gestionada. Sin tipos activos sigue dibujando los meses y eventos globales, omite estadísticas y muestra configuración pendiente. Calendario queda cerrado funcionalmente.
 
@@ -201,7 +203,7 @@ M28:M42 guarda los pesos editables de UT y AH29:AH(28+n) los pesos finales edita
 
 La hoja visible usa A:H. UT y Actual son entradas, junto con Plan previsto, Actividades realizadas y Mejoras; Fecha, Acum. y Total son derivados. Acum. usa `SUMIF` desde la primera fila hasta la actual por el código seleccionado, por lo que soporta UT intercaladas. Total usa `VLOOKUP` contra el snapshot interno. Las reglas condicionales resuelven color/contraste por UT, exceso en rojo y Mejoras en amarillo sin triggers.
 
-Las reglas de fondo comparan con el código UT real de B y se limitan a tramos de filas de datos, excluyendo separadores combinados. Usan `ROW()` para evaluar cada tramo desde su fila real. La regla de exceso adapta los separadores de argumentos al locale y precede a las reglas de color para conservar el rojo de Acum. Los bordes y alineaciones se reinstalan al crear o reparar.
+Las reglas de fondo comparan con el código UT real de B y se limitan a tramos de filas de datos, excluyendo separadores combinados. Usan `ROW()` para evaluar cada tramo desde su fila real. Sheets prioriza la primera regla coincidente: para Acum. > Total se genera una regla por UT que combina su fondo del snapshot con texto rojo y negrita, antes de la regla ordinaria de esa UT. Los bordes y alineaciones se reinstalan al crear o reparar.
 
 `reorderManagedVisibleSheets_()` aplica los colores de pestaña al reconocer hojas fijas, registros por `sheet_id` y Seguimientos OLD con estructura reconocible. La política es visual y no modifica hojas ajenas.
 

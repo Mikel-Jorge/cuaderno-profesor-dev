@@ -10,8 +10,8 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 ## Definición funcional del proyecto
 
 **Estado:** especificación funcional vigente
-**Versión del documento:** 2.9
-**Versión del cuaderno:** `1.6.1`
+**Versión del documento:** 3.0
+**Versión del cuaderno:** `1.6.2`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.6.1
+# 2. Estado funcional de la versión 1.6.2
 
 Están cerrados funcionalmente:
 
@@ -135,7 +135,7 @@ La hoja visible es una vista idempotente, compacta, temática y recortada. Guard
 
 Al preparar un curso se precargan como propuestas globales y editables el 12 de octubre, Todos los Santos o su traslado dominical propuesto, 3, 6 y 8 de diciembre y 1 de mayo. No se inventan puentes ni días de libre disposición del centro. Navidad se propone del 24 de diciembre al 6 de enero, ambos incluidos.
 
-Semana Santa se calcula localmente mediante el algoritmo gregoriano de Pascua: Jueves y Viernes Santo forman `Semana Santa`, y de Lunes a Viernes de Pascua forman `Vacaciones de Semana Santa`. No requiere Internet ni fechas fijas de un curso concreto.
+Semana Santa se calcula localmente mediante el algoritmo gregoriano de Pascua y aparece como un único bloque editable `Semana Santa`, desde Jueves Santo hasta el viernes siguiente. Incluye Jueves y Viernes Santo y los días posteriores de vacaciones; no requiere Internet ni fechas fijas de un curso concreto. Los dos eventos heredados se muestran unidos cuando conservan el periodo y ámbito originales. Abrir el diálogo no modifica el modelo; al guardar, el bloque se persiste como un solo evento. Las fechas especiales se editan en un acordeón exclusivo: abrir una cierra las demás.
 
 Estas fechas aparecen como eventos `FESTIVO` normales en el configurador: pueden modificarse o eliminarse y no se reconstruyen durante una reparación. El docente debe contrastarlas con el calendario oficial de su centro. Aunque aún no haya tipos activos, la vista muestra septiembre-junio, las propuestas y un aviso discreto de configuración pendiente; no muestra estadísticas anteriores. Cada regeneración limpia notas y formatos del área gestionada antes de dibujar el modelo vigente.
 
@@ -228,6 +228,8 @@ La evaluación visible es calculada, no editable por el docente. Se asigna segú
 
 La celda Color muestra fondo gris si está vacía y el propio color con texto contrastado cuando hay un valor definido; Recalcular y Reparar restablecen esta presentación sin cambiar el valor.
 
+En la tabla UT, cabeceras y valores de UT, Horas, Peso (%) y Color están centrados; Nombre conserva su alineación. En el resumen se centran Pendientes, Disponibles, Peso UTs y Peso final; Evaluación y Estado quedan a la izquierda.
+
 Cada UT mantiene un ID interno estable, un orden por fila, un color explícito y una evaluación calculada. Al recalcular se asignan automáticamente código, color, ID y evaluación cuando proceda. La hoja ofrece 15 filas editables de UT.
 
 Desde `1.5.0`, la tabla contiene `UT | Nombre | Horas | Peso (%) | Color | Evaluación`. Peso (%) es editable, admite números de 0 a 100 con decimales y no recibe valor automático. Una UT con Nombre y Horas positivas requiere peso; las filas vacías no lo requieren. El peso completo de cada UT pertenece a la evaluación donde termina, aunque sus horas se distribuyan entre varias evaluaciones.
@@ -311,7 +313,7 @@ El acumulado usa todas las filas anteriores de la misma UT, aunque sus aparicion
 
 Fecha, UT, Plan previsto, Actividades realizadas, Actual, Acum. y Total usan el color inicial de la UT con contraste accesible. Mejoras no hereda ese color. Las horas y colores iniciales se guardan en columnas técnicas ocultas de la propia hoja para mantener el snapshot autosuficiente.
 
-Las filas de datos tienen un borde inferior gris claro y un único separador vertical discreto entre Plan previsto y Actividades realizadas. UT, Actual, Acum. y Total están centrados; los textos largos mantienen su alineación. Plan previsto y Mejoras tienen aproximadamente un 50 % más de ancho que en 1.6.0.
+Las filas de datos tienen un borde inferior gris medio fino y un único separador vertical discreto entre Plan previsto y Actividades realizadas. UT, Actual, Acum. y Total están centrados; los textos largos mantienen su alineación. Plan previsto y Mejoras tienen aproximadamente un 50 % más de ancho que en 1.6.0.
 
 Entre las filas de datos aparecen separadores completos: nombres reales de evaluaciones en mayúsculas y rojo, y `NAVIDAD`, `SEMANA SANTA` y, cuando proceda, `FEOE` en azul. No se hardcodea el número de evaluaciones ni se crean filas diarias durante vacaciones.
 

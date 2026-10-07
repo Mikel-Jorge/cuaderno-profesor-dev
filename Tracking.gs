@@ -432,7 +432,7 @@ function styleTrackingRows_(sheet, dataRows, lastRow, snapshot) {
   });
   runs.forEach(function(run) {
     sheet.getRange(run.start, 1, run.length, 8).setBorder(
-      false, false, true, false, false, true, '#DCE3E8', SpreadsheetApp.BorderStyle.SOLID
+      false, false, true, false, false, true, '#B0B0B0', SpreadsheetApp.BorderStyle.SOLID
     );
     sheet.getRange(run.start, 3, run.length, 1).setBorder(
       false, false, null, true, false, false, '#B0BEC5', SpreadsheetApp.BorderStyle.SOLID
@@ -451,11 +451,18 @@ function styleTrackingRows_(sheet, dataRows, lastRow, snapshot) {
   const dataRanges = runs.map(function(run) {
     return sheet.getRange(run.start, 1, run.length, 7);
   });
-  rules.push(SpreadsheetApp.newConditionalFormatRule()
-    .whenFormulaSatisfied(buildTrackingOverageFormula_(getModuleFormulaSeparator_(sheet.getParent())))
-    .setFontColor('#DC2626').setBold(true)
-    .setRanges([sheet.getRange(2, 6, Math.max(1, lastRow - 1), 1)]).build());
   if (dataRanges.length) {
+    const accumulatedRanges = runs.map(function(run) {
+      return sheet.getRange(run.start, 6, run.length, 1);
+    });
+    const separator = getModuleFormulaSeparator_(sheet.getParent());
+    // Sheets prioriza la primera regla coincidente: el exceso debe incluir el fondo UT.
+    snapshot.forEach(function(unit) {
+      rules.push(SpreadsheetApp.newConditionalFormatRule()
+        .whenFormulaSatisfied(buildTrackingUtOverageFormula_(unit.code, separator))
+        .setBackground(unit.color).setFontColor('#DC2626').setBold(true)
+        .setRanges(accumulatedRanges).build());
+    });
     snapshot.forEach(function(unit) {
       rules.push(SpreadsheetApp.newConditionalFormatRule()
         .whenFormulaSatisfied(buildTrackingUtColorFormula_(unit.code))
@@ -470,9 +477,13 @@ function styleTrackingRows_(sheet, dataRows, lastRow, snapshot) {
   sheet.setConditionalFormatRules(rules);
 }
 
-function buildTrackingOverageFormula_(separator) {
-  return '=AND(ISNUMBER($F2)' + separator + 'ISNUMBER($G2)' +
-    separator + '$F2>$G2)';
+function buildTrackingUtOverageFormula_(code, separator) {
+  const ut = buildTrackingUtColorFormula_(code).slice(1);
+  const accumulated = 'INDIRECT("F"&ROW())';
+  const total = 'INDIRECT("G"&ROW())';
+  return '=AND(' + ut + separator + 'ISNUMBER(' + accumulated + ')' +
+    separator + 'ISNUMBER(' + total + ')' + separator +
+    accumulated + '>' + total + ')';
 }
 
 function buildTrackingUtColorFormula_(code) {
