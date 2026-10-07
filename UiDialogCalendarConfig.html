@@ -244,10 +244,19 @@
     const typeIndex = Number(button.dataset.typeIndex);
     const itemIndex = Number(button.dataset.itemIndex);
     if (action === 'toggle-type') {
-      expandedTypes[typeIndex] = !expandedTypes[typeIndex]; renderTypes(); return;
+      const shouldExpand = !expandedTypes[typeIndex];
+      calendarData.types.forEach(function(_type, index) { expandedTypes[index] = false; });
+      expandedTypes[typeIndex] = shouldExpand;
+      eventsExpanded = false;
+      expandedEvents = {};
+      renderTypes(); renderEvents(); return;
     }
     if (action === 'toggle-events') {
-      eventsExpanded = !eventsExpanded; renderEvents(); return;
+      const shouldExpand = !eventsExpanded;
+      calendarData.types.forEach(function(_type, index) { expandedTypes[index] = false; });
+      eventsExpanded = shouldExpand;
+      expandedEvents = {};
+      renderTypes(); renderEvents(); return;
     }
     if (action === 'toggle-event') {
       const calendarEvent = calendarData.events[itemIndex];

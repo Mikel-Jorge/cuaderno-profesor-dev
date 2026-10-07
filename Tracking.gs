@@ -434,9 +434,6 @@ function styleTrackingRows_(sheet, dataRows, lastRow, snapshot) {
     sheet.getRange(run.start, 1, run.length, 8).setBorder(
       false, false, true, false, false, true, '#B0B0B0', SpreadsheetApp.BorderStyle.SOLID
     );
-    sheet.getRange(run.start, 3, run.length, 1).setBorder(
-      false, false, null, true, false, false, '#B0BEC5', SpreadsheetApp.BorderStyle.SOLID
-    );
   });
   for (let row = 2; row <= lastRow; row += 1) {
     if (dataRowMap[row]) continue;

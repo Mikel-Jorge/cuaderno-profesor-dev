@@ -2,7 +2,7 @@
 
 **Última actualización:** 2026-10-07
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config` y `5 Seg` operativos; `6 Eval` gestionada vacía
-**Versión vigente:** `1.6.2`
+**Versión vigente:** `1.6.3`
 **Esquema vigente:** `10`
 
 # Completado
@@ -151,6 +151,12 @@ Pendiente de cierre del bloque:
 - Acum. > Total conserva el fondo UT con texto rojo y negrita; el borde horizontal de `5 Seg` usa un gris más visible.
 - La precarga de Semana Santa es un solo periodo y el configurador presenta las parejas heredadas como un bloque; sus fechas especiales tienen apertura exclusiva.
 - UT, Horas, Peso y Color de `4 Config`, y las cuatro columnas numéricas del resumen, se centran al crear y reparar. Se mantiene el esquema 10 y `6 Eval` vacía.
+
+## Correctivo 1.6.3
+
+- `5 Seg` dibuja el borde inferior continuo de A:H y elimina el antiguo separador vertical C/D al crear o reparar.
+- Los apartados principales del configurador de Calendario son exclusivos y reinician la apertura de fechas internas al cambiar de apartado.
+- Versión 1.6.3 con esquema 10; `6 Eval` permanece vacía.
 
 # Decisiones vigentes
 

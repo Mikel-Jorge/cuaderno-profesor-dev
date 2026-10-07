@@ -141,9 +141,12 @@ assert.strictEqual(installedRules[0].fontColor, '#DC2626');
 assert.strictEqual(installedRules[0].bold, true);
 assert.ok(installedRules[0].formula.includes('="UT1";ISNUMBER'));
 assert.ok(installedRules[1].formula.includes('="UT2";ISNUMBER'));
-assert.ok(borders.some(border => border.position[1] === 3 && border.args[3] === true));
-assert.ok(!borders.some(border => border.position[0] === 4 && border.args[3] === true));
-assert.ok(borders.some(border => border.args[6] === '#B0B0B0'));
+assert.deepStrictEqual(borders.filter(border => border.args[6] === '#B0B0B0')
+  .map(border => border.position), [[2, 1, 2, 8], [5, 1, 1, 8]]);
+assert.ok(borders.filter(border => border.args[6] === '#B0B0B0')
+  .every(border => border.args[2] === true && border.args[4] === false &&
+    border.args[5] === true));
+assert.ok(!borders.some(border => border.position[1] === 3 && border.args[3] === true));
 const firstRules = JSON.stringify(installedRules);
 context.styleTrackingRows_(styledSheet, [2, 3, 5], 5, [
   { code: 'UT1', color: '#BBF7D0' }, { code: 'UT2', color: '#BFDBFE' },

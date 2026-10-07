@@ -2,7 +2,7 @@
 
 **Estado:** vigente
 **Última revisión:** 2026-10-07
-**Versión:** `1.6.2` / esquema `10`
+**Versión:** `1.6.3` / esquema `10`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -21,7 +21,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.6.2`, esquema `10` y paleta fija de pestañas.
+- `Config.gs`: constantes, nombres de hojas, versión `1.6.3`, esquema `10` y paleta fija de pestañas.
 - `Theme.gs`: tema global, presets y colores semánticos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
