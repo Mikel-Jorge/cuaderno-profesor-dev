@@ -6,10 +6,10 @@ function inicializarCuaderno() {
   ensureModuleConfigTechnicalStructure_();
   cleanupOrphanModuleConfigsWithLock_();
   repairExistingModuleConfigSheets_();
+  createOrRepairStudentsSheet_();
   repairManagedModuleConsumerSheets_();
   createOrRepairCalendarSheet_();
   createOrRepairScheduleSheet_();
-  createOrRepairStudentsSheet_();
   initializeMetaStructure_();
   finishStructureInitialization_();
 }

@@ -185,6 +185,11 @@ function getUiProcessDefinition_(processId, processInput) {
           run: repairExistingModuleConfigSheets_,
         },
         {
+          label: 'Preparando Alumnado...',
+          completedMessage: 'Alumnado migrado e identidades conservadas.',
+          run: createOrRepairStudentsSheet_,
+        },
+        {
           label: 'Reparando seguimiento y evaluación...',
           completedMessage: 'Seguimientos reparados sin alterar entradas docentes y evaluaciones comprobadas.',
           run: repairManagedModuleConsumerSheets_,
@@ -198,11 +203,6 @@ function getUiProcessDefinition_(processId, processInput) {
           label: 'Renderizando el horario visible...',
           completedMessage: 'Horario visible creado o reparado cuando hay tramos configurados.',
           run: createOrRepairScheduleSheet_,
-        },
-        {
-          label: 'Preparando Alumnado...',
-          completedMessage: 'Hoja de Alumnado creada o reparada sin borrar datos.',
-          run: createOrRepairStudentsSheet_,
         },
         {
           label: 'Actualizando metadatos...',

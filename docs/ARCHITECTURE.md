@@ -1,8 +1,8 @@
 # Arquitectura técnica
 
 **Estado:** vigente
-**Última revisión:** 2026-10-07
-**Versión:** `1.6.3` / esquema `10`
+**Última revisión:** 2026-10-08
+**Versión:** `1.7.0` / esquema `11`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -21,7 +21,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.6.3`, esquema `10` y paleta fija de pestañas.
+- `Config.gs`: constantes, nombres de hojas, versión `1.7.0`, esquema `11` y paleta fija de pestañas.
 - `Theme.gs`: tema global, presets y colores semánticos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -32,6 +32,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 - `Students.gs`: estructura, tema, estado y limpieza anual de `3 Alumnado`.
 - `ModuleConfig.gs`: registro, creación, calendario, UT y planificación de `4 Config`.
 - `Tracking.gs`: creación conjunta, snapshot, reparación y archivo anual de `5 Seg`/`6 Eval`.
+- `Evaluation.gs`: layout, fórmulas y sincronización conservadora de `6 Eval`.
 - `Portada.gs`: estructura, datos e índice dinámico de `0 Portada`.
 - `NewCourse.gs`: backup y pasos de Preparar nuevo curso.
 - `Utils.gs`: acceso, tamaño, recorte y ordenación de hojas.
@@ -49,11 +50,11 @@ No se crean capas o abstracciones sin necesidad real.
 | Versión y esquema | `Config.gs` | `_META` y UI |
 | Calendario escolar | `_CAL_TIPOS`, `_CAL_EVALUACIONES`, `_FECHAS`, `_CAL_FECHA_TIPOS` | `1 Calendario` y calendarios de módulo |
 | Horario | `_HOR_TRAMOS`, `_HOR_ACTIVIDADES`, `_HOR_SESIONES` | `2 Horario` y sesiones reales de módulo |
-| Alumnado | `3 Alumnado` | futura funcionalidad de `6 Eval ...` |
-| Configuración de impartición | tabla editable de `4 Config <SIGLA> · <GRUPO>` | calendario propio y futuros `5 Seg ...` y `6 Eval ...` |
+| Alumnado | `3 Alumnado` | `6 Eval ...` |
+| Configuración de impartición | tabla editable de `4 Config <SIGLA> · <GRUPO>` | calendario propio, `5 Seg ...` y `6 Eval ...` |
 | Registro y plan calculado | `_MOD_CONFIG`, `_MOD_PLAN` | identidad estable de Config/Seg/Eval, estado y plan inicial |
-| Seguimiento | futura `5 Seg <SIGLA> · <GRUPO>` | uso docente diario |
-| Evaluación | `6 Eval <SIGLA> · <GRUPO>` vacía en 1.6.0 | futuro cálculo y registro Educa |
+| Seguimiento | `5 Seg <SIGLA> · <GRUPO>` | uso docente diario |
+| Evaluación | `6 Eval <SIGLA> · <GRUPO>` | calificaciones y Educa |
 
 El nombre de una hoja ayuda a presentar y ordenar, pero no será la única identidad interna de una impartición.
 
@@ -129,7 +130,7 @@ No existe sincronización entre actividades con la misma sigla. Cada grupo manti
 
 # 9. Modelo de Alumnado
 
-`3 Alumnado` es simultáneamente fuente de datos y superficie editable. Sus columnas estructurales son `Apellidos`, `Nombre`, `Grupo`, `Email`.
+`3 Alumnado` es simultáneamente fuente de datos y superficie editable. Sus columnas visibles son `Apellidos`, `Nombre`, `Grupo`, `Email`, `REACA` y `Medidas`; G guarda `alumno_id` (UUID) oculto y estable.
 
 `createOrRepairStudentsSheet_()`:
 
@@ -138,11 +139,11 @@ No existe sincronización entre actividades con la misma sigla. Cada grupo manti
 - restaura cabeceras, formato, anchos y fila congelada;
 - mantiene texto plano para Email;
 - preserva el contenido de las filas existentes;
-- recorta a cuatro columnas y a las filas útiles o al mínimo editable.
+- instala checkbox para REACA, asigna UUID solo a filas con alumno y recorta a siete columnas y a las filas útiles o al mínimo editable.
 
 `isStudentsConfiguredForSidebar_()` realiza una única lectura por bloque y considera válida una fila con Apellidos, Nombre y Grupo. Email no es obligatorio.
 
-No existe matrícula por módulo. La futura Evaluación filtrará por coincidencia de Grupo; Seguimiento no leerá Alumnado.
+No existe matrícula por módulo. Evaluación filtra por coincidencia de Grupo y sincroniza por UUID durante Repair; Seguimiento no lee Alumnado.
 
 # 10. Preparar nuevo curso
 
@@ -195,7 +196,7 @@ La hoja `4 Config` es la fuente de verdad de las UT; `_MOD_CONFIG` relaciona `ac
 
 Después del saneamiento de huérfanas, Reparar recorre `_MOD_CONFIG` por `sheet_id` y `actividad_id` y actualiza cada hoja existente in-place. Conserva los campos editables y `_MOD_PLAN`; migra las combinaciones, reinstala fórmulas, validaciones, notas, formato condicional y resumen. Solo renueva AP y AR para apuntar al nuevo layout: AQ y la firma aplicada del registro permanecen intactas. La segunda reparación sustituye las mismas fórmulas, notas y reglas, sin duplicarlas ni recalcular la planificación temporal.
 
-M28:M42 guarda los pesos editables de UT y AH29:AH(28+n) los pesos finales editables de las `n` evaluaciones configuradas. `Peso UTs` usa `SUMIFS` por `evaluation_id` oculto en AO y por UT activa (Nombre y Horas positivas); a diferencia del reparto horario, el peso íntegro corresponde a la evaluación final. `COUNTIFS`, `SUMIFS` y fórmulas de Estado calculan los requisitos de 100 %, los vacíos y el estado global. El formato condicional aplica ámbar, verde o rojo sin convertir el color en dato. Recalcular conserva ambos tipos de peso; antes de regenerar el resumen guarda los pesos finales y después los restaura en su mismo rango. La futura `6 Eval` referenciará directamente M28:M42 y AH29:AH(28+n) de la `4 Config` vigente, sin copiar sus valores a `_MOD_CONFIG`.
+M28:M42 guarda los pesos editables de UT y AH29:AH(28+n) los pesos finales editables de las `n` evaluaciones configuradas. `Peso UTs` usa `SUMIFS` por `evaluation_id` oculto en AO y por UT activa (Nombre y Horas positivas); a diferencia del reparto horario, el peso íntegro corresponde a la evaluación final. `COUNTIFS`, `SUMIFS` y fórmulas de Estado calculan los requisitos de 100 %, los vacíos y el estado global. El formato condicional aplica ámbar, verde o rojo sin convertir el color en dato. Recalcular conserva ambos tipos de peso; antes de regenerar el resumen guarda los pesos finales y después los restaura en su mismo rango. `6 Eval` referencia directamente M28:M42 y AH29:AH(28+n) de la `4 Config` vigente, sin copiar sus valores a `_MOD_CONFIG`.
 
 ## 11.3. `5 Seg`
 
@@ -213,7 +214,9 @@ En el cambio de curso se capturan los valores calculados de Acum./Total, se mate
 
 ## 11.4. `6 Eval`
 
-En 1.6.0 solo existe el contenedor gestionado: hoja vacía, `sheet_id` estable, gridlines ocultas y posición de familia 6. No implementa alumnado, calificaciones ni fórmulas. Reparar puede recrearla si falta y Seguimiento existe, sin modificar este último; Preparar nuevo curso la elimina tras el backup.
+`Evaluation.gs` construye la hoja visible desde las UT activas y evaluaciones de Config. Las notas UT y Educa viven únicamente en `6 Eval`; una columna técnica oculta vincula cada fila a `alumno_id`. Las fórmulas de Media usan referencias directas a M28:M42 y AH29:AH(28+n) de Config. No existe hoja técnica de notas ni snapshot de pesos.
+
+Repair conserva el `sheet_id` de las hojas vacías 1.6.x y las rellena in-place. En hojas funcionales compara el esquema de columnas antes de escribir; una discrepancia de UT genera aviso y preserva la hoja. Si coincide, restaura fórmulas, validaciones, notes y formato, sincroniza A:C por UUID, agrega alumnos nuevos al final y conserva intactas las entradas de notas y filas históricas. Si Eval fue borrada, puede recrearla sin tocar Seg. Preparar nuevo curso la elimina tras el backup.
 
 # 12. Sidebar y estados
 

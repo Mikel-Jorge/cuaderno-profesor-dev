@@ -3,6 +3,9 @@ const CP_STUDENT_HEADERS = Object.freeze([
   'Nombre',
   'Grupo',
   'Email',
+  'REACA',
+  'Medidas',
+  'alumno_id',
 ]);
 
 const CP_STUDENTS_MIN_DATA_ROWS = 200;
@@ -15,6 +18,18 @@ function createOrRepairStudentsSheet_() {
   sheet.showSheet();
   ensureSheetSize_(sheet, requiredRows, CP_STUDENT_HEADERS.length);
   sheet.getRange(1, 1, 1, CP_STUDENT_HEADERS.length).setValues([CP_STUDENT_HEADERS]);
+  const dataRows = Math.max(0, sheet.getLastRow() - 1);
+  if (dataRows) {
+    const values = sheet.getRange(2, 1, dataRows, CP_STUDENT_HEADERS.length).getValues();
+    let changed = false;
+    values.forEach(function(row) {
+      if (row.slice(0, 3).every(function(value) { return String(value).trim(); }) && !row[6]) {
+        row[6] = Utilities.getUuid();
+        changed = true;
+      }
+    });
+    if (changed) sheet.getRange(2, 7, dataRows, 1).setValues(values.map(function(row) { return [row[6]]; }));
+  }
 
   applyStudentsSheetTheme_(sheet, getActiveTheme_(spreadsheet), requiredRows);
   trimSheetToBounds_(sheet, requiredRows, CP_STUDENT_HEADERS.length);
@@ -23,7 +38,7 @@ function createOrRepairStudentsSheet_() {
 
 function applyStudentsSheetTheme_(sheet, theme, rowCount) {
   const colors = theme.colors;
-  const columnWidths = [190, 150, 120, 250];
+  const columnWidths = [190, 150, 120, 250, 75, 280, 180];
 
   sheet.setHiddenGridlines(false);
   sheet.setFrozenRows(1);
@@ -48,6 +63,11 @@ function applyStudentsSheetTheme_(sheet, theme, rowCount) {
     .setFontColor(colors.text)
     .setFontWeight('normal');
   sheet.getRange(2, 4, Math.max(1, rowCount - 1), 1).setNumberFormat('@');
+  sheet.getRange(2, 5, Math.max(1, rowCount - 1), 1)
+    .setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build())
+    .setHorizontalAlignment('center');
+  sheet.getRange(2, 6, Math.max(1, rowCount - 1), 1).setWrap(true);
+  sheet.hideColumns(7);
 }
 
 function clearStudentsForNewCourse_() {

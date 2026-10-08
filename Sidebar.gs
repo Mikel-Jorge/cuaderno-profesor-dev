@@ -147,7 +147,7 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'initialize',
       title: 'Inicializar / reparar',
-      text: 'Comprueba la estructura base, repara Alumnado sin borrar sus filas, ordena las hojas gestionadas y actualiza el índice.',
+      text: 'Comprueba la estructura base, asigna identidades al alumnado y sincroniza 6 Eval sin borrar notas ni filas históricas; también ordena las hojas e índice.',
     },
     {
       id: 'appearance',

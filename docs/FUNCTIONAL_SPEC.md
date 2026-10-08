@@ -11,7 +11,7 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 
 **Estado:** especificación funcional vigente
 **Versión del documento:** 3.1
-**Versión del cuaderno:** `1.6.3`
+**Versión del cuaderno:** `1.7.0`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.6.3
+# 2. Estado funcional de la versión 1.7.0
 
 Están cerrados funcionalmente:
 
@@ -37,7 +37,7 @@ Están cerrados funcionalmente:
 - `1 Calendario`;
 - `2 Horario`.
 
-Alumnado y `4 Config ...` están operativos. `5 Seg ...` implementa el seguimiento como snapshot editable de la planificación inicial. `6 Eval ...` se crea conjuntamente como hoja gestionada vacía; su funcionalidad de calificaciones queda pendiente.
+Alumnado y `4 Config ...` están operativos. `5 Seg ...` implementa el seguimiento como snapshot editable de la planificación inicial. `6 Eval ...` registra las calificaciones del módulo.
 
 # 3. Estructura del libro
 
@@ -95,7 +95,7 @@ Toda hoja visible generada amplía el lienzo antes de escribir y lo recorta de f
 - Alumnado: `3 Alumnado`.
 - Configuración de cada impartición: su hoja `4 Config <SIGLA> · <GRUPO>`; `_MOD_CONFIG` registra su identidad y `_MOD_PLAN` su distribución calculada por sesión.
 - Seguimiento real: su hoja `5 Seg <SIGLA> · <GRUPO>`.
-- Evaluación: su hoja `6 Eval <SIGLA> · <GRUPO>`; en 1.6.0 permanece vacía.
+- Evaluación: su hoja `6 Eval <SIGLA> · <GRUPO>`, fuente de verdad de las notas.
 
 Los colores son presentación. El nombre de una hoja tampoco debe ser su única identidad.
 
@@ -167,23 +167,23 @@ Dos actividades como `PMDM · DAM2A` y `PMDM · DAM2B` son imparticiones indepen
 
 `3 Alumnado` es una hoja de entrada manual, no una vista derivada. Sus únicas columnas visibles son, en este orden:
 
-| Apellidos | Nombre | Grupo | Email |
-|---|---|---|---|
+| Apellidos | Nombre | Grupo | Email | REACA | Medidas |
+|---|---|---|---|---|---|
 
-Debe ser clara, temática, cómoda para pegar datos y con la cabecera congelada. Email admite texto normal y es opcional. No se añaden en V1 DNI, teléfonos, observaciones, identificadores administrativos, estado de matrícula ni otros datos sensibles innecesarios.
+Debe ser clara, temática, cómoda para pegar datos y con la cabecera congelada. Email es opcional; REACA es un checkbox opcional y Medidas es texto libre opcional. La columna G oculta `alumno_id` guarda un UUID estable, generado solo para filas de alumnos y conservado al reparar. No se añaden DNI, teléfonos ni identificadores administrativos.
 
-`Inicializar / reparar estructura` garantiza la hoja, cabeceras, formato y posición sin borrar filas de alumnado. La operación es idempotente.
+`Inicializar / reparar estructura` garantiza la hoja, cabeceras, checkbox, formato y posición sin borrar filas de alumnado. Migra A:D en su lugar, asigna los UUID ausentes y es idempotente. Preparar nuevo curso limpia también REACA, Medidas y los UUID después del backup.
 
 ## 10.2. Estado en el Sidebar
 
 - `Pendiente`: no existe ninguna fila con Apellidos, Nombre y Grupo informados.
 - `Configurado`: existe al menos una fila con esos tres campos.
 
-Email no interviene en el estado. La ayuda explica que el alumnado se introduce una sola vez y que la futura Evaluación lo seleccionará por grupo.
+Email no interviene en el estado. La ayuda explica que el alumnado se introduce una sola vez y que Evaluación lo selecciona por grupo.
 
 ## 10.3. Relación con módulos
 
-En V1 no existe `_MATRICULAS`. `6 Eval <SIGLA> · <GRUPO>` seleccionará inicialmente las filas cuyo Grupo coincida con el grupo de la actividad `MODULO`. Seguimiento no usa alumnado.
+En V1 no existe `_MATRICULAS`. `6 Eval <SIGLA> · <GRUPO>` selecciona inicialmente las filas cuyo Grupo coincida con el grupo de la actividad `MODULO`, con normalización de espacios y mayúsculas. Seguimiento no usa alumnado.
 
 Si aparecen casos reales de convalidaciones, bajas, matrícula parcial u otras excepciones, se añadirá entonces una capa explícita de matrícula.
 
@@ -325,9 +325,13 @@ Al preparar otro curso, cada seguimiento activo se materializa y archiva como `5
 
 # 13. Evaluación
 
-En 1.6.0 `6 Eval <SIGLA> · <GRUPO>` es una hoja gestionada, registrada, ordenada en la familia 6 y funcionalmente vacía. No contiene alumnado, notas, fórmulas, Educa, medias, ponderaciones ni contenido provisional. Si se borra mientras `5 Seg` sigue válida, la reparación o la acción conjunta recrea solo `6 Eval` sin tocar Seguimiento. Al preparar nuevo curso se elimina después del backup.
+`6 Eval <SIGLA> · <GRUPO>` usa dos filas de cabecera, congela A:C y las dos primeras filas, y muestra Apellidos, Nombre y REACA a la izquierda. Cada evaluación configurada forma un bloque con sus UT activas en orden, `Media nª` y `Educa nª`; el bloque FINAL contiene `Media final` y `Educa final`. Los nombres de evaluaciones proceden de Calendario. El encabezado UT muestra el código, toma su color de Config y tiene una nota con nombre y peso. REACA es derivado, compacto y no editable semánticamente; la celda tiene una Note con Medidas cuando existe texto. Grupo, Email, Medidas y el UUID técnico no son visibles.
 
-La selección de alumnado, las notas finales de UT recibidas de Moodle, los cálculos, Educa y las ponderaciones pertenecen al siguiente bloque funcional.
+Las notas UT son entradas de 0 a 10 con hasta dos decimales, visibles como `0,00`; la celda vacía queda visualmente vacía y cuenta como cero en el cálculo. Cada media de evaluación redondea a dos decimales la suma de `nota UT × Peso (%) / 100`, referenciando directamente M28:M42 de su `4 Config`. La media final redondea a dos decimales la suma de `Media nª × Peso final / 100` y referencia AH29:AH(28+n) de Config. Cambiar pesos actualiza las medias sin Repair. Educa por evaluación y final son entradas manuales independientes: entero 1–10 o `MH`, con vacío permitido. `MH` se muestra literalmente y equivale a 10 para el semáforo; Educa no interviene en Media final.
+
+Todas las notas visibles no vacías muestran solo color de texto: menos de 5 rojo `#C62828`, de 5 a menos de 7 azul `#1565C0`, de 7 a menos de 9 verde `#2E7D32`, desde 9 o `MH` dorado `#B26A00`. Una media cero muestra `0,00` rojo; una UT vacía no se colorea. Media y REACA usan fondo gris suave; Educa vacía tiene fondo ámbar suave. Los bordes entre alumnos y columnas son finos y entre bloques de evaluación más marcados.
+
+Cada fila de Eval conserva `alumno_id` oculto. Inicialmente se ordena por Apellidos y Nombre. `Inicializar / reparar estructura` migra las Eval vacías de 1.6.x en la misma hoja y con el mismo `sheet_id`; actualiza nombre, REACA y Note por UUID, agrega alumnos nuevos al final, reinstala cabeceras, fórmulas, validaciones y formato, y nunca borra notas UT, Educa ni filas históricas aunque el alumno desaparezca o cambie de grupo. Repair es el mecanismo explícito de sincronización de alumnado; no hay trigger. Si la estructura de UT ya no coincide, preserva Eval y avisa sin reconstruirla. Si se borró la hoja, Repair puede crear una nueva sin alterar `5 Seg`; las notas perdidas solo están en el backup. Preparar nuevo curso elimina Eval tras el backup.
 
 # 14. Generación, estados y ayuda
 
@@ -360,8 +364,8 @@ La plantilla y el repositorio no contienen datos personales reales. Los cuaderno
 - evaluaciones cronológicamente coherentes;
 - tramos horarios coherentes y consecutivos;
 - actividad `MODULO`, tipo de enseñanza y grupo válidos;
-- en la fase futura de ponderaciones, pesos de UT por evaluación iguales a 100 %;
-- en la fase futura de ponderaciones, pesos de evaluaciones en el curso iguales a 100 %;
+- pesos de UT por evaluación iguales a 100 % cuando hay UT activas;
+- pesos finales de evaluaciones en el curso iguales a 100 %;
 - horas de UT no negativas;
 - notas entre 0 y 10;
 - hoja activa y `actividad_id` válidos antes de recalcular o generar.
@@ -386,9 +390,8 @@ No todo debe completarse al principio del curso.
 
 - Completado: núcleo, Portada, Calendario y Horario.
 - Completado: Alumnado y primera fase de Configuración individual de módulo.
-- Siguiente: ponderaciones y validación final de `4 Config`.
-- Futuro: Seguimiento y Evaluación.
-- Posterior: validaciones finales, ayuda ampliada, accesibilidad, rendimiento y pruebas.
+- Completado: ponderaciones de `4 Config`, Seguimiento y Evaluación.
+- Siguiente: validaciones finales, ayuda ampliada, accesibilidad, rendimiento y pruebas; `7 Tutoría` permanece en el roadmap futuro.
 
 # 19. Decisiones cerradas
 
@@ -407,6 +410,6 @@ No todo debe completarse al principio del curso.
 - `6 Eval` selecciona alumnado por grupo y referencia dinámicamente `4 Config`.
 - Las notas Educa son manuales e independientes.
 - Preparar nuevo curso conserva datos reutilizables y reinicia datos anuales solo después del backup verificado.
-- Las futuras hojas 4 y 6 anteriores se eliminan del activo; las hojas 5 se archivan sin referencias rotas.
+- Las hojas 4 y 6 anteriores se eliminan del activo; las hojas 5 se archivan sin referencias rotas.
 - Los festivos precargados son propuestas editables y no se reponen mediante reparación.
 - Colores y nombres de hojas no son fuentes únicas de verdad.

@@ -1,9 +1,9 @@
 # Estado del proyecto
 
-**Última actualización:** 2026-10-07
-**Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config` y `5 Seg` operativos; `6 Eval` gestionada vacía
-**Versión vigente:** `1.6.3`
-**Esquema vigente:** `10`
+**Última actualización:** 2026-10-08
+**Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
+**Versión vigente:** `1.7.0`
+**Esquema vigente:** `11`
 
 # Completado
 
@@ -42,7 +42,7 @@
 # Alumnado — FUNCIONANDO
 
 - Creada `3 Alumnado` como hoja global, visible y editable.
-- Columnas exactas: `Apellidos`, `Nombre`, `Grupo`, `Email`.
+- Columnas visibles: `Apellidos`, `Nombre`, `Grupo`, `Email`, `REACA`, `Medidas`; UUID técnico oculto por alumno.
 - Tema, anchos, cabecera congelada, Email en texto y área preparada para pegado.
 - Reparación idempotente que conserva las filas de alumnado.
 - Estado `Pendiente`/`Configurado` y ayuda contextual en el Sidebar; Email no es obligatorio.
@@ -157,6 +157,13 @@ Pendiente de cierre del bloque:
 - `5 Seg` dibuja el borde inferior continuo de A:H y elimina el antiguo separador vertical C/D al crear o reparar.
 - Los apartados principales del configurador de Calendario son exclusivos y reinician la apertura de fechas internas al cambiar de apartado.
 - Versión 1.6.3 con esquema 10; `6 Eval` permanece vacía.
+
+# Evaluación 1.7.0
+
+- `3 Alumnado` añade REACA, Medidas y `alumno_id` oculto; Repair migra filas existentes de forma idempotente.
+- `6 Eval` presenta UT activas por evaluación, medias calculadas y Educa manual; sus fórmulas referencian directamente las ponderaciones de `4 Config`.
+- Repair migra las hojas vacías 1.6.x in-place, sincroniza alumnado por UUID y conserva notas y filas históricas. Las discrepancias estructurales de UT se avisan sin reconstrucción.
+- Pendiente de validación manual en `CP_DEV`: pesos reactivos, valores y formato de notas, REACA/Notes, altas y bajas, migración de Eval previa y revisión visual.
 
 # Decisiones vigentes
 

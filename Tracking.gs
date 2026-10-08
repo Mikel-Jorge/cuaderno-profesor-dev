@@ -61,6 +61,12 @@ function getTrackingDialogData_() {
     if (!planRows.length || record.appliedSignature !== buildModuleCanonicalSignature_(configSheet)) {
       return null;
     }
+    try {
+      if (!isEvaluationConfigComplete_(configSheet,
+        validateModuleConfigPrerequisites_(spreadsheet, activity))) return null;
+    } catch (error) {
+      return null;
+    }
     return {
       id: record.activityId,
       label: getModuleDisplayName_(activity),
@@ -119,6 +125,10 @@ function createTrackingAndEvaluation_(activityId) {
     if (context.academicYear !== record.academicYear) {
       throwModuleConfigExpectedError_('La 4 Config pertenece a otro curso académico.');
     }
+    if (!isEvaluationConfigComplete_(configSheet, context)) {
+      throwModuleConfigExpectedError_('Completa las ponderaciones de UT y evaluaciones en 4 Config.');
+    }
+    createOrRepairStudentsSheet_();
     const previousRows = readModuleConfigRegistry_(spreadsheet).map(moduleConfigRecordToRow_);
     const existingTracking = record.trackingSheetId
       ? getSheetById_(spreadsheet, record.trackingSheetId) : null;
@@ -139,7 +149,7 @@ function createTrackingAndEvaluation_(activityId) {
         const evaluationName = buildManagedModuleSheetName_(spreadsheet, '6 Eval', activity);
         const evaluationSheet = spreadsheet.insertSheet(evaluationName);
         createdSheets.push(evaluationSheet);
-        prepareEmptyEvaluationSheet_(evaluationSheet);
+        repairEvaluationSheet_(evaluationSheet, configSheet, context, activity);
         record.evaluationSheetId = evaluationSheet.getSheetId();
       }
       const records = readModuleConfigRegistry_(spreadsheet).map(function(item) {
@@ -521,18 +531,6 @@ function isRegisteredModuleTrackingSheet_(sheet) {
   return headers[0] === 'UT' && headers[1] === 'Total inicial' && headers[2] === 'Color';
 }
 
-function prepareEmptyEvaluationSheet_(sheet) {
-  ensureSheetSize_(sheet, 1, 1);
-  sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).breakApart();
-  sheet.clear();
-  sheet.setConditionalFormatRules([]);
-  sheet.setFrozenRows(0);
-  sheet.setFrozenColumns(0);
-  sheet.setHiddenGridlines(true);
-  sheet.setTabColor(CP.TAB_COLORS.EVALUATION);
-  trimSheetToBounds_(sheet, 1, 1);
-}
-
 function repairManagedModuleConsumerSheets_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   let repaired = 0;
@@ -543,6 +541,7 @@ function repairManagedModuleConsumerSheets_() {
       ? getSheetById_(spreadsheet, record.trackingSheetId) : null;
     const evaluationSheet = record.evaluationSheetId
       ? getSheetById_(spreadsheet, record.evaluationSheetId) : null;
+    let createdEvaluation = null;
     if (isRegisteredModuleTrackingSheet_(trackingSheet)) {
       formatAndRepairTrackingSheet_(trackingSheet);
       repaired += 1;
@@ -552,9 +551,26 @@ function repairManagedModuleConsumerSheets_() {
       if (!activity) return;
       const name = buildManagedModuleSheetName_(spreadsheet, '6 Eval', activity);
       const created = spreadsheet.insertSheet(name);
-      prepareEmptyEvaluationSheet_(created);
+      createdEvaluation = created;
+      try {
+        const configSheet = getSheetById_(spreadsheet, record.sheetId);
+        const context = validateModuleConfigPrerequisites_(spreadsheet, activity);
+        repairEvaluationSheet_(created, configSheet, context, activity);
+      } catch (error) {
+        spreadsheet.deleteSheet(created);
+        throw error;
+      }
       record.evaluationSheetId = created.getSheetId();
       recreatedEvaluations += 1;
+    }
+    const currentEvaluation = getSheetById_(spreadsheet, record.evaluationSheetId);
+    if (currentEvaluation && currentEvaluation !== createdEvaluation) {
+      const activity = getModuleActivityById_(record.activityId);
+      const configSheet = getSheetById_(spreadsheet, record.sheetId);
+      if (activity && configSheet) {
+        const context = validateModuleConfigPrerequisites_(spreadsheet, activity);
+        repairEvaluationSheet_(currentEvaluation, configSheet, context, activity);
+      }
     }
   });
   if (recreatedEvaluations) {
