@@ -214,6 +214,11 @@ function getUiProcessDefinition_(processId, processInput) {
           completedMessage: 'Hojas tecnicas ocultas y portada situada en primer lugar.',
           run: finishStructureInitialization_,
         },
+        {
+          label: 'Instalando advertencias de edición...',
+          completedMessage: 'Protecciones del Cuaderno actualizadas sin alterar las del usuario.',
+          run: installAllManagedProtections_,
+        },
       ],
     };
   }

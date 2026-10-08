@@ -22,6 +22,8 @@ function createOrRepairScheduleSheet_() {
     renderScheduleSheet_(sheet, buildScheduleRenderModel_(spreadsheet, slots));
   }
 
+  installManagedSheetProtections_(sheet, 'HORARIO');
+
   actualizarIndicePortada();
   SpreadsheetApp.flush();
 }

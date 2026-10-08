@@ -1,8 +1,8 @@
 # Arquitectura técnica
 
 **Estado:** vigente
-**Última revisión:** 2026-10-08
-**Versión:** `1.7.0` / esquema `11`
+**Última revisión:** 2026-10-09
+**Versión:** `1.7.1` / esquema `11`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -21,7 +21,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.7.0`, esquema `11` y paleta fija de pestañas.
+- `Config.gs`: constantes, nombres de hojas, versión `1.7.1`, esquema `11` y paleta fija de pestañas.
 - `Theme.gs`: tema global, presets y colores semánticos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -33,6 +33,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 - `ModuleConfig.gs`: registro, creación, calendario, UT y planificación de `4 Config`.
 - `Tracking.gs`: creación conjunta, snapshot, reparación y archivo anual de `5 Seg`/`6 Eval`.
 - `Evaluation.gs`: layout, fórmulas y sincronización conservadora de `6 Eval`.
+- `Protections.gs`: protecciones de advertencia propias e idempotentes para hojas gestionadas.
 - `Portada.gs`: estructura, datos e índice dinámico de `0 Portada`.
 - `NewCourse.gs`: backup y pasos de Preparar nuevo curso.
 - `Utils.gs`: acceso, tamaño, recorte y ordenación de hojas.
@@ -214,9 +215,11 @@ En el cambio de curso se capturan los valores calculados de Acum./Total, se mate
 
 ## 11.4. `6 Eval`
 
-`Evaluation.gs` construye la hoja visible desde las UT activas y evaluaciones de Config. Las notas UT y Educa viven únicamente en `6 Eval`; una columna técnica oculta vincula cada fila a `alumno_id`. Las fórmulas de Media usan referencias directas a M28:M42 y AH29:AH(28+n) de Config. No existe hoja técnica de notas ni snapshot de pesos.
+`Evaluation.gs` construye la hoja visible desde las UT activas y evaluaciones de Config. Las notas UT y Educa viven únicamente en `6 Eval`; una columna técnica oculta vincula cada fila a `alumno_id`. Las tres filas de cabecera muestran bloques temáticos, columnas y pesos de UT por fórmula directa a M28:M42. Las fórmulas de Media referencian M28:M42 y AH29:AH(28+n) de Config. No existe hoja técnica de notas ni snapshot de pesos.
 
-Repair conserva el `sheet_id` de las hojas vacías 1.6.x y las rellena in-place. En hojas funcionales compara el esquema de columnas antes de escribir; una discrepancia de UT genera aviso y preserva la hoja. Si coincide, restaura fórmulas, validaciones, notes y formato, sincroniza A:C por UUID, agrega alumnos nuevos al final y conserva intactas las entradas de notas y filas históricas. Si Eval fue borrada, puede recrearla sin tocar Seg. Preparar nuevo curso la elimina tras el backup.
+Repair conserva el `sheet_id` de las hojas vacías 1.6.x y las rellena in-place. En hojas funcionales compara el esquema de columnas antes de escribir; una discrepancia de UT genera aviso y preserva la hoja. Si coincide, migra la tercera fila de cabecera de 1.7.0 mediante inserción, lee valores, fórmulas y Notes por `alumno_id`, sincroniza A:C, añade alumnos y reescribe el bloque ordenado por apellido y nombre. Después reinstala fórmulas derivadas y la fila `MEDIA DEL GRUPO`; las entradas y los ausentes históricos permanecen asociados a su UUID. Si Eval fue borrada, puede recrearla sin tocar Seg. Preparar nuevo curso la elimina tras el backup.
+
+`Protections.gs` usa protecciones de hoja `setWarningOnly(true)` con excepciones de edición para los campos docentes. Una descripción `CUADERNO:<tipo>` identifica las protecciones propias; la instalación actualiza o sustituye únicamente las propias y deja intactas las manuales. Las hojas técnicas, Portada, Calendario, Horario y Seg OLD se protegen completas; Alumnado, Config, Seg y Eval exponen solo sus entradas. El paso de Repair se ejecuta tras reconstruir rangos y es idempotente. Las nuevas Config, Seg y Eval reciben protección al crearse.
 
 # 12. Sidebar y estados
 

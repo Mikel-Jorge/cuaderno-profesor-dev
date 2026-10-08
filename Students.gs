@@ -10,6 +10,13 @@ const CP_STUDENT_HEADERS = Object.freeze([
 
 const CP_STUDENTS_MIN_DATA_ROWS = 200;
 
+function normalizeStudentReacaValue_(value) {
+  if (value === true || String(value).trim().toUpperCase() === 'TRUE') return true;
+  if (value === false || value === '' || value === null ||
+      String(value).trim().toUpperCase() === 'FALSE') return false;
+  return null;
+}
+
 function createOrRepairStudentsSheet_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = getOrCreateSheet_(spreadsheet, CP.SHEETS.STUDENTS);
@@ -19,6 +26,8 @@ function createOrRepairStudentsSheet_() {
   ensureSheetSize_(sheet, requiredRows, CP_STUDENT_HEADERS.length);
   sheet.getRange(1, 1, 1, CP_STUDENT_HEADERS.length).setValues([CP_STUDENT_HEADERS]);
   const dataRows = Math.max(0, sheet.getLastRow() - 1);
+  const reacaValues = dataRows
+    ? sheet.getRange(2, 5, dataRows, 1).getValues().map(function(row) { return row[0]; }) : [];
   if (dataRows) {
     const values = sheet.getRange(2, 1, dataRows, CP_STUDENT_HEADERS.length).getValues();
     let changed = false;
@@ -32,7 +41,21 @@ function createOrRepairStudentsSheet_() {
   }
 
   applyStudentsSheetTheme_(sheet, getActiveTheme_(spreadsheet), requiredRows);
+  const checkboxRange = sheet.getRange(2, 5, requiredRows - 1, 1);
+  checkboxRange.setNumberFormat('General').insertCheckboxes();
+  if (reacaValues.length) {
+    let unknown = 0;
+    const restored = reacaValues.map(function(value) {
+      const normalized = normalizeStudentReacaValue_(value);
+      if (normalized === null) unknown += 1;
+      return [normalized === null ? value : normalized];
+    });
+    sheet.getRange(2, 5, restored.length, 1).setValues(restored);
+    if (unknown) console.warn('REACA: ' + unknown +
+      ' valores no reconocidos conservados para revisión manual.');
+  }
   trimSheetToBounds_(sheet, requiredRows, CP_STUDENT_HEADERS.length);
+  installManagedSheetProtections_(sheet);
   return sheet;
 }
 
@@ -63,9 +86,7 @@ function applyStudentsSheetTheme_(sheet, theme, rowCount) {
     .setFontColor(colors.text)
     .setFontWeight('normal');
   sheet.getRange(2, 4, Math.max(1, rowCount - 1), 1).setNumberFormat('@');
-  sheet.getRange(2, 5, Math.max(1, rowCount - 1), 1)
-    .setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build())
-    .setHorizontalAlignment('center');
+  sheet.getRange(2, 5, Math.max(1, rowCount - 1), 1).setHorizontalAlignment('center');
   sheet.getRange(2, 6, Math.max(1, rowCount - 1), 1).setWrap(true);
   sheet.hideColumns(7);
 }
@@ -75,6 +96,7 @@ function clearStudentsForNewCourse_() {
   const dataRowCount = Math.max(0, sheet.getLastRow() - 1);
   if (dataRowCount) {
     sheet.getRange(2, 1, dataRowCount, CP_STUDENT_HEADERS.length).clearContent();
+    sheet.getRange(2, 5, dataRowCount, 1).insertCheckboxes();
   }
   return 'Estructura de Alumnado conservada y datos del curso anterior eliminados.';
 }

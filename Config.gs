@@ -1,6 +1,6 @@
 const CP = Object.freeze({
   PROJECT_NAME: 'Cuaderno del Profesor',
-  NOTEBOOK_VERSION: '1.7.0',
+  NOTEBOOK_VERSION: '1.7.1',
   SCHEMA_VERSION: '11',
   TAB_COLORS: Object.freeze({
     GENERAL: '#546E7A',

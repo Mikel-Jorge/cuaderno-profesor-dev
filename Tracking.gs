@@ -378,6 +378,7 @@ function formatAndRepairTrackingSheet_(sheet) {
   });
   applyTrackingValidations_(sheet, dataRows, snapshot.map(function(unit) { return unit.code; }));
   styleTrackingRows_(sheet, dataRows, lastRow, snapshot);
+  installManagedSheetProtections_(sheet, 'TRACKING');
 }
 
 function buildTrackingAccumulatedFormula_(row, separator) {
@@ -649,6 +650,7 @@ function archiveTrackingAndDeleteModuleSheetsForNewCourse_(spreadsheet) {
       materializeTrackingForArchive_(operation.trackingSheet);
       operation.trackingSheet.setName(operation.archiveName);
       operation.trackingSheet.setTabColor(CP.TAB_COLORS.TRACKING);
+      installManagedSheetProtections_(operation.trackingSheet, 'TRACKING_OLD');
     }
     if (operation.evaluationSheet) spreadsheet.deleteSheet(operation.evaluationSheet);
     if (operation.configSheet) spreadsheet.deleteSheet(operation.configSheet);

@@ -47,6 +47,8 @@ function ensureModuleConfigTechnicalStructure_() {
   );
   spreadsheet.getSheetByName(CP.SHEETS.MODULE_CONFIG).hideSheet();
   spreadsheet.getSheetByName(CP.SHEETS.MODULE_PLAN).hideSheet();
+  installManagedSheetProtections_(spreadsheet.getSheetByName(CP.SHEETS.MODULE_CONFIG), 'TECNICA');
+  installManagedSheetProtections_(spreadsheet.getSheetByName(CP.SHEETS.MODULE_PLAN), 'TECNICA');
 }
 
 function ensureModuleTechnicalTable_(sheet, headers) {
@@ -340,6 +342,7 @@ function renderNewModuleConfigSheet_(sheet, activity, context) {
   refreshModuleConfigUtSupport_(sheet, activity, context);
   sheet.hideColumns(CP_MODULE_CONFIG_LAYOUT.UT_ID_COLUMN, 5);
   trimSheetToBounds_(sheet, rows, CP_MODULE_CONFIG_LAYOUT.COLUMNS);
+  installManagedSheetProtections_(sheet, 'CONFIG');
 }
 
 function buildModuleCalendarModel_(spreadsheet, type) {

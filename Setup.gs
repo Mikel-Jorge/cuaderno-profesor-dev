@@ -12,6 +12,7 @@ function inicializarCuaderno() {
   createOrRepairScheduleSheet_();
   initializeMetaStructure_();
   finishStructureInitialization_();
+  installAllManagedProtections_();
 }
 
 function initializeCoverStructure_() {

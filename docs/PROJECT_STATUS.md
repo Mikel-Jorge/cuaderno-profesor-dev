@@ -1,8 +1,8 @@
 # Estado del proyecto
 
-**Última actualización:** 2026-10-08
+**Última actualización:** 2026-10-09
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.7.0`
+**Versión vigente:** `1.7.1`
 **Esquema vigente:** `11`
 
 # Completado
@@ -164,6 +164,14 @@ Pendiente de cierre del bloque:
 - `6 Eval` presenta UT activas por evaluación, medias calculadas y Educa manual; sus fórmulas referencian directamente las ponderaciones de `4 Config`.
 - Repair migra las hojas vacías 1.6.x in-place, sincroniza alumnado por UUID y conserva notas y filas históricas. Las discrepancias estructurales de UT se avisan sin reconstrucción.
 - Pendiente de validación manual en `CP_DEV`: pesos reactivos, valores y formato de notas, REACA/Notes, altas y bajas, migración de Eval previa y revisión visual.
+
+# Correctivo 1.7.1
+
+- REACA instala checkbox nativo y normaliza valores booleanos y textos heredados `TRUE`/`FALSE` al reparar.
+- Eval usa tema global, cabecera de tres filas con pesos UT en vivo, columna Medidas, notas compactas y Educa siempre amarilla y en negrita.
+- Repair ordena por `alumno_id` sin desplazar notas; incorpora `MEDIA DEL GRUPO` con vacíos UT como cero y `MH` como diez solo para promedio Educa.
+- Protecciones `CUADERNO:` de solo advertencia en rangos generados; entradas docentes y protecciones externas se conservan.
+- `6 Eval` permanece en validación manual en `CP_DEV`. `7 Tutoría` continúa como bloque futuro.
 
 # Decisiones vigentes
 

@@ -12,6 +12,7 @@ function createOrRepairCover_(sheet) {
   updateCoverData_(sheet, config);
   applyCoverTheme_(sheet, getActiveTheme_(spreadsheet, config));
   renderCoverIndex_(sheet);
+  installManagedSheetProtections_(sheet, 'PORTADA');
 }
 
 function renderPortada_(sheet) {

@@ -11,7 +11,7 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 
 **Estado:** especificación funcional vigente
 **Versión del documento:** 3.1
-**Versión del cuaderno:** `1.7.0`
+**Versión del cuaderno:** `1.7.1`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.7.0
+# 2. Estado funcional de la versión 1.7.1
 
 Están cerrados funcionalmente:
 
@@ -172,7 +172,7 @@ Dos actividades como `PMDM · DAM2A` y `PMDM · DAM2B` son imparticiones indepen
 
 Debe ser clara, temática, cómoda para pegar datos y con la cabecera congelada. Email es opcional; REACA es un checkbox opcional y Medidas es texto libre opcional. La columna G oculta `alumno_id` guarda un UUID estable, generado solo para filas de alumnos y conservado al reparar. No se añaden DNI, teléfonos ni identificadores administrativos.
 
-`Inicializar / reparar estructura` garantiza la hoja, cabeceras, checkbox, formato y posición sin borrar filas de alumnado. Migra A:D en su lugar, asigna los UUID ausentes y es idempotente. Preparar nuevo curso limpia también REACA, Medidas y los UUID después del backup.
+`Inicializar / reparar estructura` garantiza la hoja, cabeceras, checkbox nativo, formato y posición sin borrar filas de alumnado. Normaliza los booleanos y los textos heredados `TRUE`/`FALSE`, asigna los UUID ausentes solo cuando Apellidos, Nombre y Grupo están completos y es idempotente. Preparar nuevo curso limpia también REACA, Medidas y los UUID después del backup.
 
 ## 10.2. Estado en el Sidebar
 
@@ -325,13 +325,17 @@ Al preparar otro curso, cada seguimiento activo se materializa y archiva como `5
 
 # 13. Evaluación
 
-`6 Eval <SIGLA> · <GRUPO>` usa dos filas de cabecera, congela A:C y las dos primeras filas, y muestra Apellidos, Nombre y REACA a la izquierda. Cada evaluación configurada forma un bloque con sus UT activas en orden, `Media nª` y `Educa nª`; el bloque FINAL contiene `Media final` y `Educa final`. Los nombres de evaluaciones proceden de Calendario. El encabezado UT muestra el código, toma su color de Config y tiene una nota con nombre y peso. REACA es derivado, compacto y no editable semánticamente; la celda tiene una Note con Medidas cuando existe texto. Grupo, Email, Medidas y el UUID técnico no son visibles.
+`6 Eval <SIGLA> · <GRUPO>` usa tres filas de cabecera, congela A:C y las tres primeras filas, y muestra Apellidos, Nombre y Medidas a la izquierda. Cada evaluación configurada forma un bloque con sus UT activas en orden, `Media nª` y `Educa nª`; el bloque FINAL contiene `Media final` y `Educa final`. Los nombres de evaluaciones proceden de Calendario. La fila 1 usa los colores primario y de acento del tema; la fila 2 usa el secundario salvo las UT, que conservan su color propio. La fila 3 referencia directamente el peso de cada UT en Config y se actualiza al cambiarlo. La Note de cada UT contiene su nombre completo. La celda Medidas muestra `REACA` si corresponde o queda vacía, y tiene una Note con el texto de Medidas con independencia de REACA. Grupo, Email y el UUID técnico no son visibles.
 
 Las notas UT son entradas de 0 a 10 con hasta dos decimales, visibles como `0,00`; la celda vacía queda visualmente vacía y cuenta como cero en el cálculo. Cada media de evaluación redondea a dos decimales la suma de `nota UT × Peso (%) / 100`, referenciando directamente M28:M42 de su `4 Config`. La media final redondea a dos decimales la suma de `Media nª × Peso final / 100` y referencia AH29:AH(28+n) de Config. Cambiar pesos actualiza las medias sin Repair. Educa por evaluación y final son entradas manuales independientes: entero 1–10 o `MH`, con vacío permitido. `MH` se muestra literalmente y equivale a 10 para el semáforo; Educa no interviene en Media final.
 
-Todas las notas visibles no vacías muestran solo color de texto: menos de 5 rojo `#C62828`, de 5 a menos de 7 azul `#1565C0`, de 7 a menos de 9 verde `#2E7D32`, desde 9 o `MH` dorado `#B26A00`. Una media cero muestra `0,00` rojo; una UT vacía no se colorea. Media y REACA usan fondo gris suave; Educa vacía tiene fondo ámbar suave. Los bordes entre alumnos y columnas son finos y entre bloques de evaluación más marcados.
+Todas las notas visibles no vacías muestran solo color de texto: menos de 5 rojo `#C62828`, de 5 a menos de 7 azul `#1565C0`, de 7 a menos de 9 verde `#2E7D32`, desde 9 o `MH` dorado `#B26A00`. Una media cero muestra `0,00` rojo; una UT vacía no se colorea. Media y Medidas usan fondo gris suave; toda celda Educa mantiene fondo amarillo suave y negrita incluso rellena. Las columnas de notas son compactas y los bordes entre alumnos y columnas son finos, con mayor separación entre bloques.
 
-Cada fila de Eval conserva `alumno_id` oculto. Inicialmente se ordena por Apellidos y Nombre. `Inicializar / reparar estructura` migra las Eval vacías de 1.6.x en la misma hoja y con el mismo `sheet_id`; actualiza nombre, REACA y Note por UUID, agrega alumnos nuevos al final, reinstala cabeceras, fórmulas, validaciones y formato, y nunca borra notas UT, Educa ni filas históricas aunque el alumno desaparezca o cambie de grupo. Repair es el mecanismo explícito de sincronización de alumnado; no hay trigger. Si la estructura de UT ya no coincide, preserva Eval y avisa sin reconstruirla. Si se borró la hoja, Repair puede crear una nueva sin alterar `5 Seg`; las notas perdidas solo están en el backup. Preparar nuevo curso elimina Eval tras el backup.
+Cada fila de Eval conserva `alumno_id` oculto. Al crear o reparar, el alumnado queda ordenado por Apellidos y Nombre mediante ese ID: notas UT, Educa, Notes y filas históricas siguen asociadas al alumno correcto; los alumnos nuevos se intercalan en su lugar. `Inicializar / reparar estructura` migra las Eval de 1.7.0 con sus notas a la cabecera de tres filas, actualiza Medidas y reinstala fórmulas, validaciones y formato. Repair es el mecanismo explícito de sincronización de alumnado; no hay trigger. Si la estructura de UT ya no coincide, preserva Eval y avisa sin reconstruirla. Si se borró la hoja, Repair puede crear una nueva sin alterar `5 Seg`; las notas perdidas solo están en el backup. Preparar nuevo curso elimina Eval tras el backup.
+
+Una fila final `MEDIA DEL GRUPO` muestra con dos decimales la media de cada UT (vacío = 0), de cada Media de evaluación y de Media final. En las columnas Educa promedia solo los valores rellenos y trata `MH` como 10; si no hay valores muestra vacío. Sus fórmulas se actualizan al editar notas sin triggers y aplican el mismo semáforo, conservando fondo gris.
+
+Las celdas generadas y técnicas de las hojas gestionadas tienen protección nativa de solo advertencia. El docente puede confirmar una edición consciente y conserva la edición normal de Alumnado, los campos de entrada de Config, los campos docentes de Seg y las notas UT/Educa de Eval. Las protecciones propias llevan prefijo `CUADERNO:`; Reparar actualiza solo esas protecciones y no modifica las protecciones manuales ni las hojas ajenas. Los seguimientos OLD y las hojas técnicas tienen advertencia en toda la hoja.
 
 # 14. Generación, estados y ayuda
 

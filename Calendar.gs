@@ -1093,11 +1093,13 @@ function actualizarCalendario_() {
     renderCalendarUnavailableSheet_(sheet, spreadsheet, error && error.message
       ? error.message
       : 'No se ha podido generar el calendario visible.');
+    installManagedSheetProtections_(sheet, 'CALENDARIO');
     actualizarIndicePortada();
     spreadsheet.toast('Calendario pendiente de configuración.', CP.PROJECT_NAME, 4);
     return;
   }
   renderCalendarSheet_(sheet, model);
+  installManagedSheetProtections_(sheet, 'CALENDARIO');
   actualizarIndicePortada();
   spreadsheet.toast('Calendario actualizado.', CP.PROJECT_NAME, 4);
 }

@@ -286,6 +286,7 @@ function prepareNewCourseAnnualData_(processInput) {
       archiveTrackingAndDeleteModuleSheetsForNewCourse_(spreadsheet);
       reorderManagedVisibleSheets_(spreadsheet);
       actualizarIndicePortada();
+      installAllManagedProtections_();
       spreadsheet.toast('Nuevo curso preparado.', CP.PROJECT_NAME, 5);
     } catch (error) {
       let annualDataRestored = true;
