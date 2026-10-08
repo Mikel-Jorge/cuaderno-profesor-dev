@@ -1,3 +1,5 @@
+var CP_REPAIR_SKIP_COVER = false;
+
 function inicializarCuaderno() {
   initializeCoverStructure_();
   initializeConfigStructure_();
@@ -46,6 +48,16 @@ function finishStructureInitialization_() {
     CP.PROJECT_NAME,
     5
   );
+}
+
+function finishSelectiveRepair_(selection) {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  hideTechnicalSheets_(spreadsheet);
+  reorderManagedVisibleSheets_(spreadsheet);
+  if (selection.cover) actualizarIndicePortada();
+  installSelectedManagedProtections_(selection);
+  spreadsheet.toast('Reparación finalizada.', CP.PROJECT_NAME, 5);
+  return 'Mantenimiento finalizado.';
 }
 
 function initializeMetaSheet_(sheet) {

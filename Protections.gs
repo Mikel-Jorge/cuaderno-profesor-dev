@@ -95,3 +95,23 @@ function installAllManagedProtections_() {
   });
   return 'Protecciones de advertencia del Cuaderno actualizadas.';
 }
+
+function installSelectedManagedProtections_(selection) {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const kinds = {
+    PORTADA: selection.cover,
+    CALENDARIO: selection.calendar,
+    HORARIO: selection.schedule,
+    STUDENTS: selection.students,
+    CONFIG: selection.config,
+    TRACKING: selection.tracking,
+    EVALUATION: selection.evaluation,
+    TECNICA: true,
+    TRACKING_OLD: true,
+  };
+  spreadsheet.getSheets().forEach(function(sheet) {
+    const kind = getManagedProtectionKind_(sheet);
+    if (kinds[kind]) installManagedSheetProtections_(sheet, kind);
+  });
+  return 'Metadatos y protecciones actualizados.';
+}

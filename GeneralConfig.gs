@@ -1,9 +1,11 @@
-function abrirDatosGenerales() {
+function abrirDatosGenerales(wizardStep) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const values = getGeneralConfigForUi_(spreadsheet);
   const template = HtmlService.createTemplateFromFile('UiDialogGeneralConfig');
   template.generalConfig = values;
-  template.blockingError = getConfigStructureError_(spreadsheet);
+  template.blockingError = wizardStep === 1 ? '' : getConfigStructureError_(spreadsheet);
+  template.wizardStep = wizardStep === 1 ? 1 : 0;
+  template.themeConfig = getThemeConfigForUi_(spreadsheet, values);
   setCommonUiTemplateData_(template);
 
   const output = template.evaluate()
@@ -18,6 +20,48 @@ function guardarDatosGenerales(input) {
     updateCover: true,
     showToast: true,
   });
+}
+
+function guardarDatosGeneralesAsistente(input) {
+  const values = normalizeGeneralConfigInput_(input);
+  validateAcademicYear_(values[CP.CONFIG_KEYS.ACADEMIC_YEAR]);
+  validateThemeConfig_(values);
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  let initialized = false;
+  if (getConfigStructureError_(spreadsheet)) {
+    initializeConfigStructure_();
+    initialized = true;
+  }
+  const result = saveGeneralConfig_(values, {
+    updateCover: true, showToast: false, includeTheme: true,
+  });
+  if (!spreadsheet.getSheetByName(CP.SHEETS.COVER)) {
+    initializeCoverStructure_();
+    initialized = true;
+  }
+  if (!spreadsheet.getSheetByName(CP.SHEETS.CALENDAR_TYPES)) {
+    initializeCalendarStructure_();
+    initialized = true;
+  }
+  if (!spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_SLOTS)) {
+    ensureScheduleTechnicalStructure_();
+    initialized = true;
+  }
+  if (!spreadsheet.getSheetByName(CP.SHEETS.MODULE_CONFIG)) {
+    ensureModuleConfigTechnicalStructure_();
+    initialized = true;
+  }
+  if (!spreadsheet.getSheetByName(CP.SHEETS.META)) {
+    initializeMetaStructure_();
+    initialized = true;
+  }
+  if (initialized) {
+    hideTechnicalSheets_(spreadsheet);
+    reorderManagedVisibleSheets_(spreadsheet);
+    installSelectedManagedProtections_({ cover: false, calendar: false, schedule: false,
+      students: false, config: false, tracking: false, evaluation: false });
+  }
+  return result;
 }
 
 function saveGeneralConfig_(input, options) {
@@ -47,6 +91,12 @@ function saveGeneralConfig_(input, options) {
     if (changedGeneralKeys.length) {
       updateCoverData_(coverSheet, values, changedGeneralKeys);
     }
+    if (saveOptions.includeTheme && changedKeys.some(function(key) {
+      return [CP.CONFIG_KEYS.THEME_PRESET, CP.CONFIG_KEYS.THEME_PRIMARY,
+        CP.CONFIG_KEYS.THEME_SECONDARY, CP.CONFIG_KEYS.THEME_ACCENT].indexOf(key) !== -1;
+    })) {
+      applyCoverTheme_(coverSheet, getActiveTheme_(spreadsheet, values));
+    }
   }
 
   if (saveOptions.showToast !== false) {
@@ -63,14 +113,14 @@ function saveGeneralConfig_(input, options) {
 function getConfigStructureError_(spreadsheet) {
   const sheet = spreadsheet.getSheetByName(CP.SHEETS.CONFIG);
   if (!sheet) {
-    return 'Falta la hoja técnica _CONFIG. Usa «Inicializar / reparar estructura» para reparar el cuaderno.';
+    return 'Falta la hoja técnica _CONFIG. Usa «Reparar estructura» para reparar el cuaderno.';
   }
   if (sheet.getLastRow() < 1 || sheet.getLastColumn() < 2) {
-    return 'La hoja técnica _CONFIG no tiene la estructura esperada. Usa «Inicializar / reparar estructura» para reparar el cuaderno.';
+    return 'La hoja técnica _CONFIG no tiene la estructura esperada. Usa «Reparar estructura» para reparar el cuaderno.';
   }
   const headers = sheet.getRange(1, 1, 1, 2).getValues()[0].map(normalizeConfigValue_);
   if (headers[0] !== 'Clave' || headers[1] !== 'Valor') {
-    return 'La hoja técnica _CONFIG no tiene las cabeceras esperadas. Usa «Inicializar / reparar estructura» para reparar el cuaderno.';
+    return 'La hoja técnica _CONFIG no tiene las cabeceras esperadas. Usa «Reparar estructura» para reparar el cuaderno.';
   }
   return '';
 }

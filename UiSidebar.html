@@ -27,11 +27,15 @@
 
         <section class="sidebar-section sidebar-help" aria-labelledby="help-title">
           <h2 id="help-title">&#x2753; Ayuda</h2>
+          <p id="active-sheet-context" class="form-help"></p>
+          <label class="form-field" for="help-search"><span>Buscar en la ayuda</span>
+            <input id="help-search" type="search" autocomplete="off"></label>
           <div id="help-sections"></div>
         </section>
       </div>
 
       <footer class="author-footer sidebar-footer">
+        <?= uiConfig.projectName ?> · <?= uiConfig.versionLabel ?><br>
         &copy; <?= uiConfig.author ?><br>
         <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a>
       </footer>
@@ -42,8 +46,10 @@
       const statusList = document.getElementById('status-list');
       const helpSections = document.getElementById('help-sections');
       const refreshButton = document.getElementById('refresh-button');
+      const helpSearch = document.getElementById('help-search');
 
       renderSidebar(sidebarData);
+      helpSearch.addEventListener('input', function() { renderHelp(sidebarData); });
 
       refreshButton.addEventListener('click', function() {
         refreshButton.disabled = true;
@@ -82,19 +88,45 @@
           statusList.appendChild(row);
         });
 
+        document.getElementById('active-sheet-context').textContent = data.activeSheetName
+          ? 'Estás en: ' + data.activeSheetName : '';
+        renderHelp(data);
+      }
+
+      function renderHelp(data) {
         helpSections.replaceChildren();
-        data.helpSections.forEach(function(section) {
+        const query = helpSearch.value.trim().toLocaleLowerCase('es');
+        data.helpSections.filter(function(section) {
+          const faqText = (section.faqs || []).map(function(item) { return item.join(' '); }).join(' ');
+          return !query || (section.title + ' ' + section.text + ' ' + faqText)
+            .toLocaleLowerCase('es').includes(query);
+        }).forEach(function(section) {
           const details = document.createElement('details');
           const summary = document.createElement('summary');
           const paragraph = document.createElement('p');
 
           details.className = 'help-item';
-          details.open = section.open;
+          details.open = query ? true : section.open;
           summary.textContent = section.title;
           paragraph.textContent = section.text;
           details.append(summary, paragraph);
+          (section.faqs || []).filter(function(item) {
+            return !query || (item[0] + ' ' + item[1]).toLocaleLowerCase('es').includes(query) ||
+              section.title.toLocaleLowerCase('es').includes(query);
+          }).forEach(function(item) {
+            const faq = document.createElement('details');
+            const question = document.createElement('summary');
+            const answer = document.createElement('p');
+            faq.className = 'help-item';
+            faq.open = Boolean(query);
+            question.textContent = item[0];
+            answer.textContent = item[1];
+            faq.append(question, answer);
+            details.appendChild(faq);
+          });
           helpSections.appendChild(details);
         });
+        if (!helpSections.childElementCount) helpSections.textContent = 'No hay resultados.';
       }
 
       function setRefreshState(refreshing) {

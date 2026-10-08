@@ -2,7 +2,7 @@
 
 **Última actualización:** 2026-10-09
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.7.1`
+**Versión vigente:** `1.8.0`
 **Esquema vigente:** `11`
 
 # Completado
@@ -173,6 +173,15 @@ Pendiente de cierre del bloque:
 - Protecciones `CUADERNO:` de solo advertencia en rangos generados; entradas docentes y protecciones externas se conservan.
 - `6 Eval` permanece en validación manual en `CP_DEV`. `7 Tutoría` continúa como bloque futuro.
 
+# Versión 1.8.0
+
+- Reparar estructura ofrece selección de siete bloques visibles y progreso dinámico; el mantenimiento técnico se ejecuta siempre. Se separan las reparaciones de Config, Seg y Eval y las protecciones de hojas no elegidas se respetan.
+- Eval alinea explícitamente nombre y apellidos después de ordenar, integra la cabecera final con el accent del tema y ensancha las dos columnas finales.
+- El asistente explícito de seis pasos usa los configuradores de datos generales, Calendario y Horario; después de Preparar nuevo curso se abre al terminar el backup y reinicio anual. Tramos y actividades siguen conservándose.
+- Menús reordenados, nombre visible Reparar estructura y ayuda ampliada en Sidebar y `USER_GUIDE.md`.
+- Abrir el asistente o Crear configuración de módulo es solo lectura; el primer guardado prepara la estructura inicial y la creación confirmada sanea Config huérfanas.
+- Pendiente de validación manual en `CP_DEV`: recorrido de asistente, Repair con combinaciones de selección, protección e inspección visual de Eval.
+
 # Decisiones vigentes
 
 - No existe `3 Módulos`.
@@ -186,7 +195,6 @@ Pendiente de cierre del bloque:
 # Mejora aplazada
 
 - Función global `Cambiar tema del cuaderno` cuando estén construidas las hojas principales.
-- Posible traslado futuro de `Inicializar / reparar estructura` a un área de mantenimiento.
 - Futuro bloque `7 Tutoría` para centralizar las funciones del docente tutor; todavía sin hoja ni estructura técnica.
 
 # Regla de actualización

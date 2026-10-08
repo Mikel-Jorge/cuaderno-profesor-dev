@@ -532,7 +532,9 @@ function isRegisteredModuleTrackingSheet_(sheet) {
   return headers[0] === 'UT' && headers[1] === 'Total inicial' && headers[2] === 'Color';
 }
 
-function repairManagedModuleConsumerSheets_() {
+function repairManagedModuleConsumerSheets_(options) {
+  const repairTracking = !options || options.tracking !== false;
+  const repairEvaluation = !options || options.evaluation !== false;
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   let repaired = 0;
   let recreatedEvaluations = 0;
@@ -543,11 +545,11 @@ function repairManagedModuleConsumerSheets_() {
     const evaluationSheet = record.evaluationSheetId
       ? getSheetById_(spreadsheet, record.evaluationSheetId) : null;
     let createdEvaluation = null;
-    if (isRegisteredModuleTrackingSheet_(trackingSheet)) {
+    if (repairTracking && isRegisteredModuleTrackingSheet_(trackingSheet)) {
       formatAndRepairTrackingSheet_(trackingSheet);
       repaired += 1;
     }
-    if (isRegisteredModuleTrackingSheet_(trackingSheet) && !evaluationSheet) {
+    if (repairEvaluation && isRegisteredModuleTrackingSheet_(trackingSheet) && !evaluationSheet) {
       const activity = getModuleActivityById_(record.activityId);
       if (!activity) return;
       const name = buildManagedModuleSheetName_(spreadsheet, '6 Eval', activity);
@@ -565,7 +567,7 @@ function repairManagedModuleConsumerSheets_() {
       recreatedEvaluations += 1;
     }
     const currentEvaluation = getSheetById_(spreadsheet, record.evaluationSheetId);
-    if (currentEvaluation && currentEvaluation !== createdEvaluation) {
+    if (repairEvaluation && currentEvaluation && currentEvaluation !== createdEvaluation) {
       const activity = getModuleActivityById_(record.activityId);
       const configSheet = getSheetById_(spreadsheet, record.sheetId);
       if (activity && configSheet) {
@@ -578,10 +580,16 @@ function repairManagedModuleConsumerSheets_() {
     writeModuleTable_(spreadsheet.getSheetByName(CP.SHEETS.MODULE_CONFIG),
       CP_MODULE_CONFIG_HEADERS, records.map(moduleConfigRecordToRow_));
   }
-  reorderManagedVisibleSheets_(spreadsheet);
-  actualizarIndicePortada();
   return repaired + ' Seguimientos reparados; ' + recreatedEvaluations +
     ' hojas de Evaluación recreadas.';
+}
+
+function repairTrackingSheets_() {
+  return repairManagedModuleConsumerSheets_({ tracking: true, evaluation: false });
+}
+
+function repairEvaluationSheets_() {
+  return repairManagedModuleConsumerSheets_({ tracking: false, evaluation: true });
 }
 
 function getModuleConsumerActivityIdForSheet_(sheet) {

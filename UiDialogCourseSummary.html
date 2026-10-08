@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head><base target="_top"><meta charset="utf-8"><style><?!= uiThemeCss ?></style><?!= includeUiFile_('UiStyles'); ?></head>
+  <body><main class="app">
+    <header class="brand-header"><img class="brand-logo" src="<?!= branding.icon ?>" alt=""><div class="brand-copy"><p class="brand-name"><?= uiConfig.projectName ?></p><span class="version-label"><?= uiConfig.versionLabel ?></span></div></header>
+    <p class="wizard-progress">Paso 6 de 6 · Resumen</p>
+    <h2>Configuración del curso</h2>
+    <dl class="location-summary">
+      <div><dt>Curso</dt><dd><?= summary.academicYear ?></dd></div>
+      <div><dt>Calendario</dt><dd><?= summary.calendar ? 'Configurado' : 'Pendiente' ?></dd></div>
+      <div><dt>Tramos</dt><dd><?= summary.slots ?></dd></div>
+      <div><dt>Actividades</dt><dd><?= summary.activities ?></dd></div>
+      <div><dt>Horario</dt><dd><?= summary.sessions ? summary.sessions + ' sesiones asignadas' : 'Pendiente' ?></dd></div>
+    </dl>
+    <p>Siguiente paso recomendado: completa Alumnado y crea la configuración de cada módulo.</p>
+    <p>Consulta Ayuda → Primeros pasos si necesitas continuar.</p>
+    <p id="error" class="confirmation-error" role="alert"></p>
+    <div class="actions"><button class="button button-secondary" id="back" type="button">Atrás</button><button class="button" id="finish" type="button">Finalizar</button></div>
+    <footer class="author-footer">&copy; <?= uiConfig.author ?> · <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a></footer>
+  </main><script>
+    document.getElementById('back').addEventListener('click', function() {
+      google.script.run.withFailureHandler(function(error) {
+        document.getElementById('error').textContent = error.message || String(error);
+      }).abrirPasoAsistenteCurso(5);
+    });
+    document.getElementById('finish').addEventListener('click', function() { google.script.host.close(); });
+  </script></body>
+</html>

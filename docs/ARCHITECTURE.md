@@ -2,7 +2,7 @@
 
 **Estado:** vigente
 **Última revisión:** 2026-10-09
-**Versión:** `1.7.1` / esquema `11`
+**Versión:** `1.8.0` / esquema `11`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -15,13 +15,17 @@ Este documento describe la arquitectura técnica. El comportamiento esperado se 
 - Git/GitHub como fuente de verdad del código versionado.
 - Operaciones por bloques y sin dependencias externas innecesarias.
 
-La lectura ordinaria de configuradores no crea, repara, oculta, reordena ni renderiza hojas. La excepción explícita es abrir Crear configuración de módulo: elimina referencias técnicas huérfanas de hojas `4 Config` ya borradas. Un guardado solo persiste el modelo afectado y actualiza sus vistas derivadas necesarias.
+La apertura de configuradores no crea, repara, oculta, reordena ni renderiza hojas. Crear configuración de módulo muestra los registros huérfanos como disponibles sin mutarlos; el backend de creación limpia esas referencias después de confirmar. Un guardado solo persiste el modelo afectado y actualiza sus vistas derivadas necesarias.
+
+`UiDialogRepair.html` recoge siete booleanos serializables. `Ui.gs` normaliza la selección y construye los pasos visibles del progreso. El mantenimiento de tablas técnicas y huérfanos se ejecuta siempre; `Setup.gs` cierra con metadatos, ocultación, orden y `Protections.gs` instala protecciones solo de los bloques seleccionados más hojas técnicas y OLD. Durante un paso de Repair sin Portada, `CP_REPAIR_SKIP_COVER` impide que los helpers de calendario, horario o módulos regeneren indirectamente su índice. `Tracking.gs` permite recorrer Seguimiento y Evaluación por separado. La selección viaja como DTO y nunca contiene objetos de Apps Script.
+
+El asistente de curso usa los mismos formularios y backends de GeneralConfig, Calendar y Schedule, mostrados como seis pasos modales consecutivos. Los tres pasos de Horario filtran las secciones de un único configurador y guardan su modelo completo al avanzar si hubo cambios. `UiDialogCourseSummary.html` obtiene contadores y estado desde las fuentes actuales. En primer uso se prepara la estructura técnica necesaria al guardar el primer paso; abrir el asistente es solo lectura. El proceso de nuevo curso abre el mismo primer paso al finalizar backup y transición anual. La apertura normal del libro sigue sin escrituras ni diálogos.
 
 Los colores son siempre presentación. Ningún cálculo reconstruye datos desde fondos o estilos.
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.7.1`, esquema `11` y paleta fija de pestañas.
+- `Config.gs`: constantes, nombres de hojas, versión `1.8.0`, esquema `11` y paleta fija de pestañas.
 - `Theme.gs`: tema global, presets y colores semánticos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -154,7 +158,7 @@ Los datos se separan en reutilizables y anuales. `_CONFIG` conserva profesor, ce
 
 Tras actualizar configuración, `prepareNewCourseAnnualData_()` captura snapshots de Alumnado y de las tablas de Horario y Calendario. En una única transición limpia Alumnado, vacía sesiones y apoyos, reinicia el calendario, precarga propuestas y regenera vistas. Como paso destructivo posterior al backup, materializa y renombra por identidad cada `5 Seg` como OLD, elimina `6 Eval` y `4 Config`, y vacía `_MOD_CONFIG` y `_MOD_PLAN`; nunca decide la identidad por el nombre de pestaña. El backup completo permanece como garantía de la transición anual.
 
-`Inicializar / reparar estructura` no llama a estas funciones anuales. Por tanto, una reparación conserva datos y no recupera propuestas que el docente haya eliminado.
+`Reparar estructura` no llama a estas funciones anuales. Por tanto, una reparación conserva datos y no recupera propuestas que el docente haya eliminado.
 
 # 11. Arquitectura de Config, Seg y Eval
 
@@ -191,7 +195,7 @@ Config almacena la autoridad sobre:
 
 El recálculo explícito, protegido con bloqueo de documento, valida primero que las horas previstas no superen las sesiones reales disponibles; si hay exceso, aborta sin sustituir plan ni redibujar calendario. Las sesiones reales cruzan Horario y Calendario, excluyen días no lectivos y el periodo de FEOE del tipo de enseñanza. Después distribuye las UT secuencialmente, calcula la evaluación por último día asignado, sustituye solo el plan de la actividad activa y regenera su calendario. Backend y hoja comparten una firma canónica por fila compuesta por posición, `ut_id`, código, nombre, color, horas, evaluación visible y `evaluation_id`; excluye Peso (%) y los pesos finales porque no cambian el calendario. El backend calcula y persiste la firma aplicada desde las celdas tras vaciar la cola de escrituras de fórmulas, incluida la tabla vacía. Fórmulas auxiliares por fila comparan el valor actual con la referencia aplicada y una suma de indicadores alimenta el aviso visible, sin `onEdit`; las fórmulas con varios argumentos usan el separador del locale. Solo los días con varias UT reales reciben el token semántico `theme.colors.mixedDay` y una nota con el desglose de horas; dos sesiones de la misma UT no generan nota de planificación. El defecto deja sesiones sin UT y produce warning.
 
-La hoja `4 Config` es la fuente de verdad de las UT; `_MOD_CONFIG` relaciona `actividad_id`, curso y `sheet_id`, pero no es un backup del contenido editable. Un registro es huérfano solo cuando su `sheet_id` ya no existe, con independencia del nombre actual de la hoja. `cleanupOrphanModuleConfigs_()` se ejecuta al abrir Crear configuración, dentro del backend de creación y como paso del proceso visible de Reparar. Elimina únicamente las filas huérfanas del registro y las del plan con el mismo `actividad_id` y curso, en bloques contiguos; conserva las cabeceras y los demás datos, y refresca el índice de Portada. Usa bloqueo de documento y snapshots para intentar restaurar ambas tablas si falla la operación. Es idempotente y no forma parte de la limpieza anual. Las UT perdidas con la hoja no se reconstruyen.
+La hoja `4 Config` es la fuente de verdad de las UT; `_MOD_CONFIG` relaciona `actividad_id`, curso y `sheet_id`, pero no es un backup del contenido editable. Un registro es huérfano solo cuando su `sheet_id` ya no existe, con independencia del nombre actual de la hoja. `cleanupOrphanModuleConfigs_()` se ejecuta dentro del backend de creación y como paso del proceso visible de Reparar, nunca al abrir el configurador. Elimina únicamente las filas huérfanas del registro y las del plan con el mismo `actividad_id` y curso, en bloques contiguos; conserva las cabeceras y los demás datos, y refresca el índice de Portada. Usa bloqueo de documento y snapshots para intentar restaurar ambas tablas si falla la operación. Es idempotente y no forma parte de la limpieza anual. Las UT perdidas con la hoja no se reconstruyen.
 
 `buildRealModuleSessions_()` termina en `fecha_fin` de la última evaluación ordenada del tipo, inclusive, y sigue excluyendo FEOE y días no lectivos. El recálculo valida el exceso de horas antes de escribir la hoja, el plan o la firma aplicada. La tabla inferior combina A:B (UT), C:J (Nombre), K:L (Horas), M:N (Peso %), O:R (Color) y S:U (Evaluación). La migración conserva los datos de los layouts anteriores al recalcular o reparar. El resumen ocupa W:AM: W:AA Evaluación, AB:AC Pendientes, AD:AE Disponibles, AF:AG Peso UTs, AH:AI Peso final y AJ:AM Estado. Agrupa las sesiones reales por intervalo de evaluación para escribir los disponibles estables. Sus fórmulas consumen la suma de horas de UT sobre esas capacidades en orden cronológico, igual que el backend asigna las sesiones: limitan el consumo en cada evaluación intermedia y cargan todo el remanente en la última. La evaluación visible y el `evaluation_id` usan el fin acumulado de cada UT y cortes numéricos de sesiones reales embebidos en la hoja; el exceso conserva la última evaluación configurada. Estas fórmulas se regeneran cuando cambian las sesiones reales. El total pendiente resta todas las horas previstas al total disponible, sin nueva tabla técnica ni cambio de esquema.
 

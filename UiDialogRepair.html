@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <style><?!= uiThemeCss ?></style>
+    <?!= includeUiFile_('UiStyles'); ?>
+    <style>
+      .repair-list { display: grid; gap: 12px; margin: 14px 0; }
+      .repair-list label { display: flex; align-items: center; gap: 10px; }
+      .repair-list input { width: 18px; height: 18px; }
+      .repair-group { margin: 14px 0 4px; font-weight: bold; }
+      .repair-actions { display: flex; gap: 12px; }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header class="brand-header">
+        <img class="brand-logo" src="<?!= branding.icon ?>" alt="">
+        <div class="brand-copy"><p class="brand-name"><?= uiConfig.projectName ?></p>
+          <span class="version-label"><?= uiConfig.versionLabel ?></span></div>
+      </header>
+      <h2>Reparar estructura</h2>
+      <p>Selecciona los bloques visibles que quieres reparar. Las estructuras técnicas necesarias se comprueban siempre.</p>
+      <p>La reparación conserva los datos docentes.</p>
+      <div class="repair-actions">
+        <button class="button button-secondary" type="button" id="all">Seleccionar todo</button>
+        <button class="button button-secondary" type="button" id="none">Desmarcar todo</button>
+      </div>
+      <p class="repair-group">GENERAL</p>
+      <div class="repair-list">
+        <label><input type="checkbox" data-key="cover" checked> Portada</label>
+        <label><input type="checkbox" data-key="calendar" checked> Calendario</label>
+        <label><input type="checkbox" data-key="schedule" checked> Horario</label>
+        <label><input type="checkbox" data-key="students" checked> Alumnado</label>
+      </div>
+      <p class="repair-group">MÓDULOS</p>
+      <div class="repair-list">
+        <label><input type="checkbox" data-key="config" checked> Hojas 4 Config</label>
+        <label><input type="checkbox" data-key="tracking" checked> Hojas 5 Seg</label>
+        <label><input type="checkbox" data-key="evaluation" checked> Hojas 6 Eval</label>
+      </div>
+      <p id="technical-only" class="form-help" hidden>Solo se realizará mantenimiento técnico.</p>
+      <p id="error" class="confirmation-error" role="alert"></p>
+      <div class="actions">
+        <button class="button button-secondary" type="button" id="cancel">Cancelar</button>
+        <button class="button" type="button" id="repair">Reparar</button>
+      </div>
+      <footer class="author-footer">&copy; <?= uiConfig.author ?> ·
+        <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a></footer>
+    </main>
+    <script>
+      const boxes = Array.from(document.querySelectorAll('[data-key]'));
+      const repair = document.getElementById('repair');
+      function updateHint() {
+        document.getElementById('technical-only').hidden = boxes.some(function(box) { return box.checked; });
+      }
+      boxes.forEach(function(box) { box.addEventListener('change', updateHint); });
+      document.getElementById('all').addEventListener('click', function() {
+        boxes.forEach(function(box) { box.checked = true; }); updateHint();
+      });
+      document.getElementById('none').addEventListener('click', function() {
+        boxes.forEach(function(box) { box.checked = false; }); updateHint();
+      });
+      document.getElementById('cancel').addEventListener('click', function() { google.script.host.close(); });
+      repair.addEventListener('click', function() {
+        const selection = {};
+        boxes.forEach(function(box) { selection[box.dataset.key] = box.checked; });
+        document.querySelectorAll('button, input').forEach(function(control) { control.disabled = true; });
+        const spinner = document.createElement('span');
+        spinner.className = 'loading-spinner';
+        spinner.setAttribute('aria-hidden', 'true');
+        repair.replaceChildren(spinner, ' Abriendo progreso...');
+        google.script.run.withFailureHandler(function(error) {
+          document.getElementById('error').textContent = error.message || String(error);
+          document.querySelectorAll('button, input').forEach(function(control) { control.disabled = false; });
+          repair.textContent = 'Reparar';
+        }).iniciarReparacionSeleccionada(selection);
+      });
+    </script>
+  </body>
+</html>

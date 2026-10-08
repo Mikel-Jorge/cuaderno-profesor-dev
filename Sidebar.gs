@@ -21,6 +21,7 @@ function getSidebarData_() {
     stateItems: getSidebarStateItems_(config),
     helpSections: getSidebarHelpSections_(contextSectionId),
     contextSectionId: contextSectionId,
+    activeSheetName: activeSheet ? activeSheet.getName() : '',
     themeCss: createUiThemeCss_(getActiveTheme_(spreadsheet, config)),
   };
 }
@@ -93,6 +94,7 @@ function getSidebarContextSectionId_(sheet) {
   sectionBySheet[CP.SHEETS.SCHEDULE] = 'schedule';
   sectionBySheet[CP.SHEETS.STUDENTS] = 'students';
   if (getModuleConfigActivityIdForSheet_(sheet)) return 'module-config';
+  if (sheet && getManagedProtectionKind_(sheet) === 'EVALUATION') return 'evaluation';
   if (getModuleConsumerActivityIdForSheet_(sheet)) return 'module-tracking';
   return sectionBySheet[sheetName] || 'first-steps';
 }
@@ -102,7 +104,12 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'first-steps',
       title: 'Primeros pasos',
-      text: 'Completa los datos generales y revisa la portada. El estado superior indica qué partes están listas.',
+      text: 'Abre Cuaderno del Profesor → Asistente de configuración del curso: datos, calendario, tramos, actividades y horario. Después completa Alumnado, crea 4 Config de cada módulo, define UT, horas y pesos, recalcula, crea Seg y Eval, registra el seguimiento real y finalmente introduce notas. Puedes terminar el asistente con partes pendientes; el estado de arriba indica cuáles.',
+    },
+    {
+      id: 'dependencies',
+      title: '¿Qué depende de qué?',
+      text: 'Calendario + Horario → 4 Config → 5 Seg y 6 Eval. Alumnado → 6 Eval. Los pesos de 4 Config → medias de 6 Eval en vivo. Seg nace como instantánea de la planificación y después refleja la realidad: no se resincroniza con Config.',
     },
     {
       id: 'cover',
@@ -111,53 +118,69 @@ function getSidebarHelpSections_(contextSectionId) {
     },
     {
       id: 'general-data',
-      title: 'Datos generales',
-      text: 'Guarda el curso académico, el profesor y el centro. La apariencia se elige al preparar un nuevo curso.',
+      title: 'Configuración general',
+      text: 'Cuaderno del Profesor → Configuración general guarda curso académico, docente y centro. El tema se puede revisar en el asistente. El curso académico usa YYYY-YYYY.',
     },
     {
       id: 'calendar',
       title: 'Calendario',
-      text: 'Muestra septiembre-junio desde los datos estructurados. Al preparar curso se proponen festivos y vacaciones editables; compruébalos con el calendario de tu centro.',
+      text: 'Cuaderno del Profesor → Configurar calendario: activa tipos de enseñanza, periodos y evaluaciones; revisa festivos y otras fechas especiales, Navidad y Semana Santa. Los festivos y periodos no lectivos reducen las sesiones disponibles. FEOE es el periodo de formación en empresa y excluye sesiones reales del módulo; repaso permanece configurable. Contrasta las propuestas con el calendario oficial del centro.',
     },
     {
       id: 'schedule',
       title: 'Horario',
-      text: 'Muestra la semana actual de lunes a viernes y la siguiente durante el fin de semana. El día y el tramo actuales se actualizan con fórmulas de la hoja.',
+      text: 'Cuaderno del Profesor → Configurar horario: crea tramos consecutivos, actividades con sigla y grupo, y asigna la cuadrícula de lunes a viernes. MODULO identifica las imparticiones; el apoyo se indica en cada asignación. Una sesión equivale a una hora docente. En un curso nuevo se conservan tramos y actividades, pero se vacían las asignaciones semanales.',
     },
     {
       id: 'students',
       title: 'Alumnado',
-      text: 'Introduce el alumnado una sola vez en esta hoja e indica su grupo. La futura Evaluación seleccionará por grupo; el email es opcional.',
+      text: 'Introduce Apellidos, Nombre y Grupo en 3 Alumnado; Email es opcional. REACA es un checkbox y Medidas es texto que aparece como nota en Eval. El Cuaderno mantiene una identidad interna para no mezclar notas al ordenar. Tras altas o cambios, marca Alumnado y 6 Eval en Reparar estructura para sincronizar.',
     },
     {
       id: 'module-config',
-      title: 'Configuración de módulo',
-      text: 'Cada módulo y grupo se configura por separado. Define UT, nombre, color, horas manuales y evaluación; después usa Módulos → Recalcular. Horas son sesiones docentes, no minutos. El aviso indica cambios aún no aplicados. Un día mixto contiene varias UT. Compara siempre horas previstas con sesiones reales disponibles.',
+      title: 'Config de módulos',
+      text: 'Módulos → Crear configuración ofrece actividades MODULO con sesiones reales y calendario. Cada módulo + grupo es independiente. Define UT, nombre, horas, color y Peso; la evaluación se asigna por el último día de la UT. Las horas se reparten cronológicamente. El resumen muestra disponibles, pendientes, Peso UTs y Peso final. Usa Módulos → Recalcular para aplicar la planificación; el aviso indica cambios pendientes. Si se borra Config, las UT de esa hoja se pierden.',
     },
     {
       id: 'module-tracking',
-      title: 'Seguimiento del módulo',
-      text: 'Es un snapshot de la planificación al crearlo. Actualiza UT, Plan previsto, Actividades realizadas, Actual y Mejoras para reflejar lo ocurrido; los cambios posteriores de 4 Config no lo reconstruyen.',
+      title: 'Seguimiento',
+      text: '5 Seg parte de una instantánea de la planificación. Fecha y Total son derivados; puedes cambiar UT, Plan previsto, Actividades realizadas, Actual y Mejoras. Acum. suma por UT aunque esté intercalada. Rojo indica exceso respecto al total inicial y amarillo en Mejoras indica una propuesta. Registra lo que ocurrió; Config no reescribe el histórico. OLD conserva el curso anterior.',
+    },
+    {
+      id: 'evaluation',
+      title: 'Evaluación',
+      text: '6 Eval recibe notas UT de 0–10 con decimales; vacío cuenta como cero en Media. Los pesos de Config actualizan en vivo las medias y Media final. Educa por evaluación y Educa final son manuales (1–10 o MH); MH equivale a diez al calcular MEDIA DEL GRUPO. El semáforo ayuda a leer Educa; Medidas/REACA aparecen como nota. Las notas permanecen asociadas al alumno aunque se ordene o desaparezca de Alumnado. Las recuperaciones se gestionan en Moodle.',
     },
     {
       id: 'new-course',
       title: 'Preparar nuevo curso',
-      text: 'Tras verificar el backup, conserva profesor, centro, tema, tramos y actividades; archiva 5 Seg como OLD, elimina 4 Config y 6 Eval del curso anterior y limpia Alumnado, asignaciones y datos anuales del calendario.',
+      text: 'Cuaderno del Profesor → Preparar nuevo curso crea y verifica primero un backup. Conserva docente, centro, tema, tramos y actividades; archiva 5 Seg como OLD, elimina Config y Eval, limpia Alumnado, horario semanal y fechas anuales. Después abre el asistente. Cancelar el asistente conserva los pasos ya guardados.',
     },
     {
       id: 'initialize',
-      title: 'Inicializar / reparar',
-      text: 'Comprueba la estructura base, asigna identidades al alumnado y sincroniza 6 Eval sin borrar notas ni filas históricas; también ordena las hojas e índice.',
-    },
-    {
-      id: 'appearance',
-      title: 'Temas y apariencia',
-      text: 'El tema elegido se aplica a la portada y a la interfaz. Los colores personalizados se conservan en la configuración.',
+      title: 'Reparar estructura',
+      text: 'Cuaderno del Profesor → Reparar estructura permite elegir bloques visibles. Todos están marcados al abrir; sin marcas solo comprueba la estructura técnica. Si solo falla Evaluación, marca únicamente Hojas 6 Eval. Conserva datos docentes y no reinicia el curso. Algunas celdas calculadas muestran un aviso de protección al editar: puedes continuar si sabes lo que haces. Las protecciones manuales permanecen.',
     },
     {
       id: 'troubleshooting',
-      title: 'Problemas frecuentes',
-      text: 'Si falta una hoja o la portada no refleja los datos, ejecuta Inicializar / reparar estructura y vuelve a abrir este panel.',
+      title: 'Preguntas frecuentes',
+      text: 'Respuestas breves a los casos más habituales.',
+      faqs: [
+        ['¿Por qué no aparece un módulo al crear Config?', 'Comprueba que la actividad es MODULO, tiene grupo y sesiones lectivas en Calendario y Horario. Las referencias huérfanas se limpian al abrir Crear configuración.'],
+        ['¿Por qué no aparece al crear Seg y Eval?', 'Completa 4 Config, recalcula la planificación y revisa UT y ponderaciones.'],
+        ['¿Qué pasa si borro 4 Config?', 'La definición de UT en esa hoja se pierde. El registro se sanea y podrás crearla de nuevo; consulta el backup para recuperar datos.'],
+        ['¿Qué pasa si borro 6 Eval?', 'Reparar estructura puede recrearla; las notas borradas solo sobreviven en el backup.'],
+        ['¿Puedo cambiar la UT en Seguimiento?', 'Sí. Seguimiento refleja lo que ocurrió realmente y Acum. sigue la UT elegida.'],
+        ['¿Por qué una UT vacía cuenta como cero?', 'Es la regla de cálculo de la media del grupo en Evaluación.'],
+        ['¿Qué es MH?', 'Matrícula de Honor. Se muestra como MH y equivale a diez cuando se calcula una media.'],
+        ['¿Qué significa OLD?', 'Es un Seguimiento histórico del curso anterior, que no se resincroniza.'],
+        ['¿Por qué sigue un alumno ausente en Eval?', 'Las notas existentes nunca se borran automáticamente aunque deje de aparecer en Alumnado.'],
+        ['¿Qué hago si una fórmula parece rota?', 'Marca el bloque correspondiente en Reparar estructura. Eval conserva las notas si detecta una estructura de UT incompatible.'],
+        ['¿Por qué Sheets avisa de una celda protegida?', 'Es una advertencia para evitar cambios accidentales en celdas derivadas. Puedes continuar si sabes lo que haces.'],
+        ['¿Cambiar Config cambia Seguimiento?', 'No. Seg conserva la instantánea capturada al crearse.'],
+        ['¿Cambiar pesos de Config cambia Eval?', 'Sí. Las medias de Eval leen los pesos actuales de Config.'],
+        ['¿Qué es FEOE?', 'Es el periodo de formación en empresa, que reduce las sesiones lectivas disponibles del módulo.'],
+      ],
     },
   ];
 
@@ -174,6 +197,7 @@ function getSidebarHelpSections_(contextSectionId) {
       id: section.id,
       title: section.title,
       text: section.text,
+      faqs: section.faqs || [],
       open: section.id === contextSectionId,
     };
   });

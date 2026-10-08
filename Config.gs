@@ -1,6 +1,6 @@
 const CP = Object.freeze({
   PROJECT_NAME: 'Cuaderno del Profesor',
-  NOTEBOOK_VERSION: '1.7.1',
+  NOTEBOOK_VERSION: '1.8.0',
   SCHEMA_VERSION: '11',
   TAB_COLORS: Object.freeze({
     GENERAL: '#546E7A',
@@ -43,9 +43,10 @@ const CP = Object.freeze({
   MENU: Object.freeze({
     NAME: '📘 Cuaderno del Profesor 📘',
     NEW_COURSE: '🆕 Preparar nuevo curso',
-    INIT: '🔄 Inicializar / reparar estructura',
+    INIT: '🔧 Reparar estructura',
     CONFIG: '⚙️ Configuración',
-    GENERAL_DATA: '👤 Datos generales',
+    GENERAL_DATA: '⚙️ Configuración general',
+    COURSE_WIZARD: '✨ Asistente de configuración del curso',
     CALENDAR_CONFIG: '📅 Configurar calendario',
     SCHEDULE_CONFIG: '🕒 Configurar horario',
     MODULES: '📚 Módulos',
@@ -65,6 +66,8 @@ const CP = Object.freeze({
     NEW_COURSE_ACTION_ID: 'open-new-course-wizard',
     CONFIRMATION_DIALOG_WIDTH: 460,
     CONFIRMATION_DIALOG_HEIGHT: 430,
+    REPAIR_DIALOG_WIDTH: 480,
+    REPAIR_DIALOG_HEIGHT: 720,
     GENERAL_CONFIG_DIALOG_WIDTH: 620,
     GENERAL_CONFIG_DIALOG_HEIGHT: 780,
     CALENDAR_CONFIG_DIALOG_WIDTH: 780,

@@ -10,8 +10,8 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 ## Definición funcional del proyecto
 
 **Estado:** especificación funcional vigente
-**Versión del documento:** 3.1
-**Versión del cuaderno:** `1.7.1`
+**Versión del documento:** 3.2
+**Versión del cuaderno:** `1.8.0`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.7.1
+# 2. Estado funcional de la versión 1.8.0
 
 Están cerrados funcionalmente:
 
@@ -38,6 +38,12 @@ Están cerrados funcionalmente:
 - `2 Horario`.
 
 Alumnado y `4 Config ...` están operativos. `5 Seg ...` implementa el seguimiento como snapshot editable de la planificación inicial. `6 Eval ...` registra las calificaciones del módulo.
+
+El menú principal presenta configuración general, calendario y horario; después Reparar estructura y Ayuda; Preparar nuevo curso queda al final. El asistente de configuración del curso está disponible como acción explícita. Módulos es un menú independiente. El Sidebar presenta estado, contexto y ayuda sin duplicar acciones.
+
+`Reparar estructura` abre un selector sin efectos al abrirse. Los siete bloques visibles (Portada, Calendario, Horario, Alumnado, todas las 4 Config, todas las 5 Seg y todas las 6 Eval) empiezan marcados; se pueden marcar o desmarcar todos. Una selección vacía ejecuta solo mantenimiento técnico. Al confirmar siempre se comprueban las estructuras técnicas, migraciones, referencias huérfanas, metadatos, ocultación, orden, colores de pestaña y protecciones técnicas. Solo los bloques elegidos se regeneran o reformatean; las dependencias no marcadas pueden leerse. Alumnado por sí solo no sincroniza Eval y Config por sí sola no repara Seg/Eval. Los OLD solo reciben orden, color de pestaña y protección de aviso. Las protecciones manuales se conservan. El progreso muestra únicamente los bloques elegidos y los pasos técnicos.
+
+En 6 Eval, tras sincronizar y ordenar por `alumno_id`, Apellidos y Nombre de todas las filas de alumnado se alinean a la izquierda y Medidas al centro, incluida la última fila. La cabecera FINAL, Media final y Educa final usa la familia accent del tema; los datos Educa conservan su fondo amarillo, negrita y semáforo. Las dos columnas finales son ligeramente más anchas.
 
 # 3. Estructura del libro
 
@@ -121,7 +127,9 @@ El cuaderno activo conserva profesor, centro, tema, tramos horarios y catálogo 
 
 La transición anual conserva snapshots en memoria para restaurar Alumnado, Horario y Calendario si falla antes de finalizar; el backup verificado sigue siendo la garantía completa. Finalmente regenera Calendario, Horario, Portada, estados, metadatos e índice.
 
-`Inicializar / reparar estructura` nunca aplica esta política anual, no borra datos ni repone festivos eliminados por el docente.
+`Reparar estructura` nunca aplica esta política anual, no borra datos ni repone festivos eliminados por el docente.
+
+Al terminar la transición anual se abre el mismo asistente de configuración del curso disponible para el primer uso. Guía por datos generales, Calendario, tramos, actividades, horario semanal y resumen. El backup sigue siendo obligatorio solo para la transición de un curso existente. Cada paso se guarda con las validaciones y tablas actuales al avanzar; cancelar conserva los pasos guardados. Es válido finalizar con configuración parcial y el resumen muestra lo pendiente. Abrir el Spreadsheet no inicia el asistente ni escribe datos.
 
 Tras el backup se materializan y renombran las `5 Seg ...` activas como `OLD AACC`, se eliminan las `6 Eval ...` y las `4 Config ...` gestionadas del curso anterior y se vacían sus registros en `_MOD_CONFIG` y `_MOD_PLAN`. Los históricos conservan valores, textos, colores, separadores y aspecto sin referencias rotas.
 
@@ -172,7 +180,7 @@ Dos actividades como `PMDM · DAM2A` y `PMDM · DAM2B` son imparticiones indepen
 
 Debe ser clara, temática, cómoda para pegar datos y con la cabecera congelada. Email es opcional; REACA es un checkbox opcional y Medidas es texto libre opcional. La columna G oculta `alumno_id` guarda un UUID estable, generado solo para filas de alumnos y conservado al reparar. No se añaden DNI, teléfonos ni identificadores administrativos.
 
-`Inicializar / reparar estructura` garantiza la hoja, cabeceras, checkbox nativo, formato y posición sin borrar filas de alumnado. Normaliza los booleanos y los textos heredados `TRUE`/`FALSE`, asigna los UUID ausentes solo cuando Apellidos, Nombre y Grupo están completos y es idempotente. Preparar nuevo curso limpia también REACA, Medidas y los UUID después del backup.
+`Reparar estructura`, al seleccionar Alumnado, garantiza la hoja, cabeceras, checkbox nativo, formato y posición sin borrar filas de alumnado. Normaliza los booleanos y los textos heredados `TRUE`/`FALSE`, asigna los UUID ausentes solo cuando Apellidos, Nombre y Grupo están completos y es idempotente. Preparar nuevo curso limpia también REACA, Medidas y los UUID después del backup.
 
 ## 10.2. Estado en el Sidebar
 
@@ -267,9 +275,9 @@ Los pesos de UT y de evaluación no forman parte de esa firma porque no alteran 
 
 Las sesiones disponibles se limitan al intervalo desde el inicio lectivo hasta la fecha final inclusiva de la última evaluación configurada para el tipo de enseñanza. Deben ser días lectivos del Horario con tramo `SESION` y `actividad_id` del módulo, sin festivos ni periodo de FEOE. No se asignan UT a repaso, recuperaciones ni fechas posteriores a esa evaluación.
 
-Si una hoja `4 Config` es eliminada manualmente, su configuración se considera perdida. Al abrir Crear configuración, antes de mostrar los módulos, el sistema elimina automáticamente el registro `_MOD_CONFIG` cuyo `sheet_id` ya no existe y solo las filas `_MOD_PLAN` de su `actividad_id` y curso; el módulo queda disponible para crearlo de nuevo sin ejecutar Reparar. El backend repite la comprobación antes de crear y `Inicializar / reparar estructura` usa la misma rutina. Una segunda limpieza no altera el estado. La limpieza no afecta a una hoja existente que se haya renombrado. `_MOD_CONFIG` no recupera UT, nombres, horas ni colores que solo existían en la hoja borrada. Si falla la limpieza técnica, se muestra el error y se detiene la creación.
+Si una hoja `4 Config` es eliminada manualmente, su configuración se considera perdida. Al abrir Crear configuración, el módulo se muestra disponible sin modificar las tablas. Al confirmar la creación, el backend elimina el registro `_MOD_CONFIG` cuyo `sheet_id` ya no existe y solo las filas `_MOD_PLAN` de su `actividad_id` y curso; `Reparar estructura` usa la misma rutina. Una segunda limpieza no altera el estado. La limpieza no afecta a una hoja existente que se haya renombrado. `_MOD_CONFIG` no recupera UT, nombres, horas ni colores que solo existían en la hoja borrada. Si falla la limpieza técnica, se muestra el error y se detiene la creación.
 
-`Inicializar / reparar estructura` actualiza también las hojas `4 Config` registradas que aún existen: migra las combinaciones, restaura la nota y las fórmulas y formatos del resumen sin borrar UT, horas, pesos, colores ni el plan aplicado. No redistribuye sesiones; esa operación sigue siendo exclusiva de Recalcular.
+`Reparar estructura`, al seleccionar 4 Config, actualiza las hojas registradas que aún existen: migra las combinaciones, restaura la nota y las fórmulas y formatos del resumen sin borrar UT, horas, pesos, colores ni el plan aplicado. No redistribuye sesiones; esa operación sigue siendo exclusiva de Recalcular.
 
 El recálculo muestra un estado verde cuando todas las sesiones quedan distribuidas sin avisos, ámbar cuando faltan horas o una UT cruza evaluaciones, y rojo ante un error. Mantiene una pantalla de espera durante la ejecución. La Config resalta en ámbar los cambios pendientes de aplicar al calendario y muestra un estado discreto cuando está actualizada.
 
@@ -319,7 +327,7 @@ Las filas de datos tienen un borde inferior fino `#B0B0B0` continuo de Fecha a M
 
 Entre las filas de datos aparecen separadores completos: nombres reales de evaluaciones en mayúsculas y rojo, y `NAVIDAD`, `SEMANA SANTA` y, cuando proceda, `FEOE` en azul. No se hardcodea el número de evaluaciones ni se crean filas diarias durante vacaciones.
 
-`Inicializar / reparar estructura` puede reinstalar cabecera, congelación, notas, formato, validaciones, fórmulas y reglas condicionales a partir de las filas y el snapshot existentes. Nunca reseedá desde `4 Config` ni altera UT, Actual, Plan previsto, Actividades realizadas o Mejoras. Si la hoja fue borrada, limpia su referencia huérfana y una creación posterior parte de nuevo de la planificación disponible, sin afirmar que recupera datos docentes perdidos.
+`Reparar estructura`, al seleccionar 5 Seg, puede reinstalar cabecera, congelación, notas, formato, validaciones, fórmulas y reglas condicionales a partir de las filas y el snapshot existentes. Nunca reseedá desde `4 Config` ni altera UT, Actual, Plan previsto, Actividades realizadas o Mejoras. Si la hoja fue borrada, limpia su referencia huérfana y una creación posterior parte de nuevo de la planificación disponible, sin afirmar que recupera datos docentes perdidos.
 
 Al preparar otro curso, cada seguimiento activo se materializa y archiva como `5 Seg <SIGLA> · <GRUPO> OLD AACC` antes de eliminar su `4 Config`. Conserva valores, textos, acumulados, totales, mejoras, colores, separadores y formato sin `#REF!`; deja de tener validaciones dependientes. Los OLD permanecen en Portada y dentro de la familia 5 y no impiden crear el seguimiento del nuevo curso.
 
@@ -331,7 +339,7 @@ Las notas UT son entradas de 0 a 10 con hasta dos decimales, visibles como `0,00
 
 Todas las notas visibles no vacías muestran solo color de texto: menos de 5 rojo `#C62828`, de 5 a menos de 7 azul `#1565C0`, de 7 a menos de 9 verde `#2E7D32`, desde 9 o `MH` dorado `#B26A00`. Una media cero muestra `0,00` rojo; una UT vacía no se colorea. Media y Medidas usan fondo gris suave; toda celda Educa mantiene fondo amarillo suave y negrita incluso rellena. Las columnas de notas son compactas y los bordes entre alumnos y columnas son finos, con mayor separación entre bloques.
 
-Cada fila de Eval conserva `alumno_id` oculto. Al crear o reparar, el alumnado queda ordenado por Apellidos y Nombre mediante ese ID: notas UT, Educa, Notes y filas históricas siguen asociadas al alumno correcto; los alumnos nuevos se intercalan en su lugar. `Inicializar / reparar estructura` migra las Eval de 1.7.0 con sus notas a la cabecera de tres filas, actualiza Medidas y reinstala fórmulas, validaciones y formato. Repair es el mecanismo explícito de sincronización de alumnado; no hay trigger. Si la estructura de UT ya no coincide, preserva Eval y avisa sin reconstruirla. Si se borró la hoja, Repair puede crear una nueva sin alterar `5 Seg`; las notas perdidas solo están en el backup. Preparar nuevo curso elimina Eval tras el backup.
+Cada fila de Eval conserva `alumno_id` oculto. Al crear o reparar, el alumnado queda ordenado por Apellidos y Nombre mediante ese ID: notas UT, Educa, Notes y filas históricas siguen asociadas al alumno correcto; los alumnos nuevos se intercalan en su lugar. `Reparar estructura`, al seleccionar 6 Eval, migra las Eval de 1.7.0 con sus notas a la cabecera de tres filas, actualiza Medidas y reinstala fórmulas, validaciones y formato. Reparar es el mecanismo explícito de sincronización de alumnado; no hay trigger. Si la estructura de UT ya no coincide, preserva Eval y avisa sin reconstruirla. Si se borró la hoja, puede crear una nueva sin alterar `5 Seg`; las notas perdidas solo están en el backup. Preparar nuevo curso elimina Eval tras el backup.
 
 Una fila final `MEDIA DEL GRUPO` muestra con dos decimales la media de cada UT (vacío = 0), de cada Media de evaluación y de Media final. En las columnas Educa promedia solo los valores rellenos y trata `MH` como 10; si no hay valores muestra vacío. Sus fórmulas se actualizan al editar notas sin triggers y aplican el mismo semáforo, conservando fondo gris.
 
@@ -358,7 +366,7 @@ El Sidebar muestra estado real de Datos generales, Calendario, Horario y Alumnad
 
 La UI usa tema centralizado, branding común, confirmaciones explícitas y progreso para operaciones largas. Las acciones destructivas se identifican con `danger`.
 
-Los diálogos de configuración leen sin crear, reparar, ocultar, reordenar ni regenerar hojas, salvo el saneamiento automático y limitado de Config huérfanas al abrir Crear configuración de módulo. Las demás reparaciones son explícitas y los guardados solo actualizan el modelo afectado y las vistas derivadas necesarias.
+Los diálogos de configuración leen sin crear, reparar, ocultar, reordenar ni regenerar hojas. El saneamiento de Config huérfanas ocurre al confirmar una creación o al ejecutar Reparar estructura. Las demás reparaciones son explícitas y los guardados solo actualizan el modelo afectado y las vistas derivadas necesarias.
 
 La plantilla y el repositorio no contienen datos personales reales. Los cuadernos de uso real no se comparten públicamente.
 

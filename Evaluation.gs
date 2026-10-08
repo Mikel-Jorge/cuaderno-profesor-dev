@@ -326,11 +326,14 @@ function styleEvaluationSheet_(sheet, layout, count, footerRow) {
   sheet.getRange(1, 1, 1, last).setBackground(colors.primary).setFontColor(colors.onPrimary);
   sheet.getRange(1, layout.finalStart, 1, 2)
     .setBackground(colors.accent).setFontColor(colors.onAccent);
+  sheet.getRange(2, layout.finalStart, 2, 2)
+    .setBackground(colors.accent).setFontColor(colors.onAccent);
   sheet.setRowHeights(1, 3, 30);
   [190, 150, 76].forEach(function(width, index) { sheet.setColumnWidth(index + 1, width); });
   if (count) {
     sheet.getRange(4, 1, count, last).setBackground(colors.surface)
       .setFontColor(colors.text).setFontWeight('normal').setVerticalAlignment('middle');
+    sheet.getRange(4, 1, count, 2).setHorizontalAlignment('left');
     sheet.getRange(4, 3, count, 1).setBackground(colors.muted)
       .setHorizontalAlignment('center');
     sheet.getRange(4, 4, count, last - 3).setHorizontalAlignment('center');
@@ -356,8 +359,8 @@ function styleEvaluationSheet_(sheet, layout, count, footerRow) {
     sheet.getRange(4, layout.finalEducaColumn, count, 1)
       .setBackground(CP_EVAL_COLORS.pending).setFontWeight('bold');
   }
-  sheet.setColumnWidth(layout.finalMediaColumn, 72);
-  sheet.setColumnWidth(layout.finalEducaColumn, 59);
+  sheet.setColumnWidth(layout.finalMediaColumn, 82);
+  sheet.setColumnWidth(layout.finalEducaColumn, 68);
   sheet.getRange(footerRow, 1, 1, last).setBackground(colors.muted)
     .setFontColor(colors.text).setFontWeight('bold').setHorizontalAlignment('center');
   sheet.getRange(4, 1, count + 1, last).setBorder(true, true, true, true, true, true,

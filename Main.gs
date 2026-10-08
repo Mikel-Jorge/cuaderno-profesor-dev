@@ -1,9 +1,5 @@
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
-  const configMenu = ui.createMenu(CP.MENU.CONFIG)
-    .addItem(CP.MENU.GENERAL_DATA, 'abrirDatosGenerales')
-    .addItem(CP.MENU.CALENDAR_CONFIG, 'abrirConfiguracionCalendario')
-    .addItem(CP.MENU.SCHEDULE_CONFIG, 'abrirConfiguracionHorario');
   const modulesMenu = ui.createMenu(CP.MENU.MODULES)
     .addItem(CP.MENU.MODULE_CONFIG_CREATE, 'abrirCreacionConfiguracionModulo')
     .addItem(CP.MENU.MODULE_CONFIG_RECALCULATE, 'recalcularConfiguracionModulo')
@@ -11,12 +7,17 @@ function onOpen() {
 
   ui
     .createMenu(CP.MENU.NAME)
-    .addItem(CP.MENU.NEW_COURSE, 'abrirPrepararNuevoCurso')
-    .addItem(CP.MENU.INIT, 'abrirDialogoInicializacion')
-    .addSubMenu(configMenu)
-    .addSubMenu(modulesMenu)
+    .addItem(CP.MENU.GENERAL_DATA, 'abrirDatosGenerales')
+    .addItem(CP.MENU.CALENDAR_CONFIG, 'abrirConfiguracionCalendario')
+    .addItem(CP.MENU.SCHEDULE_CONFIG, 'abrirConfiguracionHorario')
+    .addItem(CP.MENU.COURSE_WIZARD, 'abrirAsistenteConfiguracionCurso')
     .addSeparator()
+    .addItem(CP.MENU.INIT, 'abrirDialogoInicializacion')
     .addItem(CP.MENU.HELP, 'mostrarAyuda')
+    .addSeparator()
+    .addItem(CP.MENU.NEW_COURSE, 'abrirPrepararNuevoCurso')
+    .addToUi();
+  modulesMenu
     .addToUi();
 }
 

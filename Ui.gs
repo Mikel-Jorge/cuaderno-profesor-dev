@@ -1,9 +1,47 @@
 function abrirDialogoInicializacion() {
-  showConfirmationDialog_(CP.UI.INIT_CONFIRMATION_ID);
+  const template = HtmlService.createTemplateFromFile('UiDialogRepair');
+  setCommonUiTemplateData_(template);
+  const output = template.evaluate()
+    .setWidth(CP.UI.REPAIR_DIALOG_WIDTH).setHeight(CP.UI.REPAIR_DIALOG_HEIGHT);
+  SpreadsheetApp.getUi().showModalDialog(output, CP.MENU.INIT);
+}
+
+function iniciarReparacionSeleccionada(selection) {
+  showProgressDialog_(CP.UI.INIT_PROCESS_ID, normalizeRepairSelection_(selection));
 }
 
 function abrirPrepararNuevoCurso() {
   showConfirmationDialog_(CP.UI.NEW_COURSE_CONFIRMATION_ID);
+}
+
+function abrirAsistenteConfiguracionCurso() {
+  abrirPasoAsistenteCurso(1);
+}
+
+function abrirPasoAsistenteCurso(step) {
+  if (!Number.isInteger(step) || step < 1 || step > 6) {
+    throw new Error('El paso del asistente no existe.');
+  }
+  if (step === 1) return abrirDatosGenerales(1);
+  if (step === 2) return abrirConfiguracionCalendario(2);
+  if (step < 6) return abrirConfiguracionHorario(step);
+  const template = HtmlService.createTemplateFromFile('UiDialogCourseSummary');
+  template.summary = getCourseWizardSummary_();
+  setCommonUiTemplateData_(template);
+  SpreadsheetApp.getUi().showModalDialog(template.evaluate().setWidth(600).setHeight(560),
+    CP.MENU.COURSE_WIZARD);
+}
+
+function getCourseWizardSummary_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const config = getGeneralConfigValues_(spreadsheet);
+  return {
+    academicYear: config[CP.CONFIG_KEYS.ACADEMIC_YEAR] || 'Pendiente',
+    calendar: isCalendarConfiguredForSidebar_(),
+    slots: getScheduleTimeSlots_().length,
+    activities: getScheduleActivities_().length,
+    sessions: getWeeklySchedule_().length,
+  };
 }
 
 function showConfirmationDialog_(confirmationId) {
@@ -21,7 +59,7 @@ function showConfirmationDialog_(confirmationId) {
 
 function ejecutarAccionConfirmadaUi(actionId) {
   if (actionId === CP.UI.INIT_ACTION_ID) {
-    showProgressDialog_(CP.UI.INIT_PROCESS_ID);
+    abrirDialogoInicializacion();
     return;
   }
 
@@ -40,6 +78,7 @@ function showProgressDialog_(processId, processInput) {
     id: process.id,
     title: process.title,
     successMessage: process.successMessage,
+    afterSuccessAction: process.id === CP.UI.NEW_COURSE_PROCESS_ID ? 'open-course-wizard' : '',
     steps: process.steps.map(function(step) {
       return { label: step.label };
     }),
@@ -115,7 +154,14 @@ function ejecutarPasoProcesoUi(processId, stepIndex, processInput) {
   }
 
   const step = process.steps[stepIndex];
-  const resultMessage = step.run(process.input);
+  const previousSkip = CP_REPAIR_SKIP_COVER;
+  if (processId === CP.UI.INIT_PROCESS_ID) CP_REPAIR_SKIP_COVER = !process.input.cover;
+  let resultMessage;
+  try {
+    resultMessage = step.run(process.input);
+  } finally {
+    CP_REPAIR_SKIP_COVER = previousSkip;
+  }
 
   return buildUiStepResponse_(
     stepIndex,
@@ -143,87 +189,59 @@ function getUiProcessDefinition_(processId, processInput) {
   }
 
   if (processId === CP.UI.INIT_PROCESS_ID) {
+    const selection = normalizeRepairSelection_(processInput);
+    const steps = [
+      { label: 'Comprobando estructura técnica...', completedMessage: 'Estructura técnica comprobada.', run: function() {
+        initializeConfigStructure_();
+        initializeCalendarStructure_();
+        ensureScheduleTechnicalStructure_();
+        ensureModuleConfigTechnicalStructure_();
+        cleanupOrphanModuleConfigsWithLock_();
+      } },
+    ];
+    [
+      ['cover', 'Reparando Portada...', 'Portada reparada.', initializeCoverStructure_],
+      ['calendar', 'Reparando Calendario...', 'Calendario reparado.', createOrRepairCalendarSheet_],
+      ['schedule', 'Reparando Horario...', 'Horario reparado.', createOrRepairScheduleSheet_],
+      ['students', 'Reparando Alumnado...', 'Alumnado reparado.', createOrRepairStudentsSheet_],
+      ['config', 'Reparando hojas 4 Config...', 'Hojas de Configuración reparadas.', repairExistingModuleConfigSheets_],
+      ['tracking', 'Reparando hojas 5 Seg...', 'Hojas de Seguimiento reparadas.', repairTrackingSheets_],
+      ['evaluation', 'Reparando hojas 6 Eval...', 'Hojas de Evaluación reparadas.', repairEvaluationSheets_],
+    ].forEach(function(item) {
+      if (selection[item[0]]) steps.push({
+        label: item[1], completedMessage: item[2], run: item[3],
+      });
+    });
+    steps.push({
+      label: 'Actualizando metadatos...', completedMessage: 'Metadatos actualizados.',
+      run: initializeMetaStructure_,
+    });
+    steps.push({
+      label: 'Finalizando mantenimiento...', completedMessage: 'Mantenimiento finalizado.',
+      run: finishSelectiveRepair_,
+    });
     return {
       id: CP.UI.INIT_PROCESS_ID,
       title: CP.MENU.INIT,
-      successMessage: 'La estructura del cuaderno esta lista.',
-      input: {},
-      steps: [
-        {
-          label: 'Preparando la portada...',
-          completedMessage: 'Portada creada o reparada.',
-          run: initializeCoverStructure_,
-        },
-        {
-          label: 'Preparando la configuracion...',
-          completedMessage: 'Configuracion comprobada.',
-          run: initializeConfigStructure_,
-        },
-        {
-          label: 'Preparando el calendario...',
-          completedMessage: 'Estructura tecnica del calendario comprobada.',
-          run: initializeCalendarStructure_,
-        },
-        {
-          label: 'Preparando la estructura tecnica de Horario...',
-          completedMessage: 'Estructura tecnica de Horario preparada.',
-          run: ensureScheduleTechnicalStructure_,
-        },
-        {
-          label: 'Preparando la estructura tecnica de Modulos...',
-          completedMessage: 'Registro y planificacion de Modulos preparados.',
-          run: ensureModuleConfigTechnicalStructure_,
-        },
-        {
-          label: 'Comprobando configuraciones de módulo...',
-          completedMessage: 'Referencias de módulos comprobadas.',
-          run: cleanupOrphanModuleConfigsWithLock_,
-        },
-        {
-          label: 'Reparando configuraciones de módulos...',
-          completedMessage: 'Hojas de configuración de módulos reparadas sin borrar datos.',
-          run: repairExistingModuleConfigSheets_,
-        },
-        {
-          label: 'Preparando Alumnado...',
-          completedMessage: 'Alumnado migrado e identidades conservadas.',
-          run: createOrRepairStudentsSheet_,
-        },
-        {
-          label: 'Reparando seguimiento y evaluación...',
-          completedMessage: 'Seguimientos reparados sin alterar entradas docentes y evaluaciones comprobadas.',
-          run: repairManagedModuleConsumerSheets_,
-        },
-        {
-          label: 'Renderizando el calendario visible...',
-          completedMessage: 'Calendario visible creado o reparado.',
-          run: createOrRepairCalendarSheet_,
-        },
-        {
-          label: 'Renderizando el horario visible...',
-          completedMessage: 'Horario visible creado o reparado cuando hay tramos configurados.',
-          run: createOrRepairScheduleSheet_,
-        },
-        {
-          label: 'Actualizando metadatos...',
-          completedMessage: 'Metadatos actualizados.',
-          run: initializeMetaStructure_,
-        },
-        {
-          label: 'Finalizando la estructura...',
-          completedMessage: 'Hojas tecnicas ocultas y portada situada en primer lugar.',
-          run: finishStructureInitialization_,
-        },
-        {
-          label: 'Instalando advertencias de edición...',
-          completedMessage: 'Protecciones del Cuaderno actualizadas sin alterar las del usuario.',
-          run: installAllManagedProtections_,
-        },
-      ],
+      successMessage: 'La reparación ha finalizado.',
+      input: selection,
+      steps: steps,
     };
   }
 
   throw new Error('El proceso solicitado no existe.');
+}
+
+function normalizeRepairSelection_(input) {
+  const keys = ['cover', 'calendar', 'schedule', 'students', 'config', 'tracking', 'evaluation'];
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    throw new Error('Selecciona los bloques que deseas reparar.');
+  }
+  return keys.reduce(function(selection, key) {
+    if (typeof input[key] !== 'boolean') throw new Error('Selección de reparación no válida.');
+    selection[key] = input[key];
+    return selection;
+  }, {});
 }
 
 function includeUiFile_(fileName) {

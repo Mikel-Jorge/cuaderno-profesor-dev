@@ -9,6 +9,7 @@
 <body>
 <main class="app">
   <header class="brand-header"><img class="brand-logo" src="<?!= branding.icon ?>" alt=""><div class="brand-copy"><p class="brand-name"><?= uiConfig.projectName ?></p><span class="version-label"><?= uiConfig.versionLabel ?></span></div></header>
+  <? if (wizardStep) { ?><p class="wizard-progress">Paso <?= wizardStep ?> de 6 · <?= wizardStep === 3 ? 'Tramos horarios' : wizardStep === 4 ? 'Actividades' : 'Horario semanal' ?></p><p class="form-help">Los pasos guardados se conservan si cancelas. Atrás descarta los cambios de este paso aún no guardados.</p><? } ?>
   <form class="config-form" id="schedule-form">
     <div class="config-scroll">
       <div class="result" id="blocking-error" role="alert"></div>
@@ -26,7 +27,7 @@
       </section>
     </div>
     <div class="save-loading is-hidden" id="save-loading" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Guardando horario...</span></div>
-    <div class="config-feedback"><div class="result" id="form-result" role="status"></div><div class="actions"><button class="button button-secondary" id="close-button" type="button">Cancelar</button><button class="button" id="save-button" type="submit" disabled>Guardar</button></div></div>
+    <div class="config-feedback"><div class="result" id="form-result" role="status"></div><div class="actions"><button class="button button-secondary" id="close-button" type="button">Cancelar</button><? if (wizardStep) { ?><button class="button button-secondary" id="back-button" type="button">Atrás</button><? } ?><button class="button" id="save-button" type="submit" disabled><?= wizardStep ? 'Siguiente' : 'Guardar' ?></button></div></div>
   </form>
   <div class="internal-confirmation-backdrop is-hidden" id="confirmation-overlay" aria-hidden="true">
     <section class="internal-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="confirmation-title" aria-describedby="confirmation-message">
@@ -38,6 +39,7 @@
   <footer class="author-footer">&copy; <?= uiConfig.author ?> &middot; <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a></footer>
 </main>
 <script>
+  const WIZARD_STEP = <?!= JSON.stringify(wizardStep) ?>;
   const INITIAL_SCHEDULE_CONFIG = <?!= JSON.stringify(scheduleConfig) ?>;
   const form = document.getElementById('schedule-form');
   const slotsList = document.getElementById('slots-list');
@@ -57,7 +59,7 @@
   let baseline = '';
   let isSaving = false;
   let pendingConfirmation = null;
-  const expandedSections = { slots: false, activities: false, weekly: false };
+  const expandedSections = { slots: WIZARD_STEP === 3, activities: WIZARD_STEP === 4, weekly: WIZARD_STEP === 5 };
   const expandedActivities = {};
   const isBlocked = Boolean(data.blockingError);
 
@@ -72,20 +74,31 @@
   form.addEventListener('click', handleAction);
   form.addEventListener('submit', function(event) {
     event.preventDefault();
-    if (isBlocked || isSaving || !isDirty() || !form.reportValidity()) return;
+    if (isBlocked || isSaving) return;
+    if (WIZARD_STEP && !isDirty()) {
+      google.script.run.withFailureHandler(handleSaveError).abrirPasoAsistenteCurso(WIZARD_STEP + 1);
+      return;
+    }
+    if (!isDirty() || !form.reportValidity()) return;
     const validationError = validateSlots();
     if (validationError) { showResult(validationError, 'error'); return; }
     setSavingState(true);
     hideResult();
-    google.script.run.withSuccessHandler(function() { google.script.host.close(); }).withFailureHandler(handleSaveError).guardarConfiguracionHorario(getPayload());
+    google.script.run.withSuccessHandler(function() {
+      if (WIZARD_STEP) google.script.run.withFailureHandler(handleSaveError).abrirPasoAsistenteCurso(WIZARD_STEP + 1);
+      else google.script.host.close();
+    }).withFailureHandler(handleSaveError).guardarConfiguracionHorario(getPayload());
   });
   closeButton.addEventListener('click', function() { google.script.host.close(); });
+  if (WIZARD_STEP) document.getElementById('back-button').addEventListener('click', function() {
+    google.script.run.withFailureHandler(handleSaveError).abrirPasoAsistenteCurso(WIZARD_STEP - 1);
+  });
   confirmationCancel.addEventListener('click', closeConfirmation);
   confirmationAccept.addEventListener('click', acceptConfirmation);
   confirmationOverlay.addEventListener('click', function(event) { if (event.target === confirmationOverlay) closeConfirmation(); });
   document.addEventListener('keydown', function(event) { if (event.key === 'Escape' && pendingConfirmation) closeConfirmation(); });
 
-  function renderAll() { renderSections(); renderSlots(); renderActivities(); renderWeeklyGrid(); if (isBlocked) form.querySelectorAll('input, select, button').forEach(function(control) { if (control !== closeButton) control.disabled = true; }); }
+  function renderAll() { renderSections(); renderSlots(); renderActivities(); renderWeeklyGrid(); if (WIZARD_STEP) ['slots', 'activities', 'weekly'].forEach(function(section) { document.getElementById(section + '-section').classList.toggle('is-hidden', section !== ({3:'slots',4:'activities',5:'weekly'})[WIZARD_STEP]); }); if (isBlocked) form.querySelectorAll('input, select, button').forEach(function(control) { if (control !== closeButton) control.disabled = true; }); }
   function renderSections() {
     Object.keys(expandedSections).forEach(function(section) {
       const panel = document.getElementById(section + '-panel');
@@ -200,7 +213,7 @@
   function getPayload() { normalizeSlotChain(); return { slots: data.slots.map(function(slot) { return Object.assign({}, slot); }), activities: data.activities.map(function(activity) { return Object.assign({}, activity); }), sessions: data.sessions.map(function(session) { return Object.assign({}, session); }) }; }
   function serialize() { return JSON.stringify({ slots: data.slots, activities: data.activities, sessions: data.sessions }); }
   function isDirty() { return serialize() !== baseline; }
-  function updateSaveButton() { saveButton.disabled = isBlocked || isSaving || !isDirty(); }
+  function updateSaveButton() { saveButton.disabled = isBlocked || isSaving || (!WIZARD_STEP && !isDirty()); }
   function setSavingState(saving) { isSaving = saving; form.classList.toggle('is-saving', saving); closeButton.disabled = saving; saveButton.disabled = saving; form.querySelector('.config-scroll').classList.toggle('is-hidden', saving); saveLoading.classList.toggle('is-hidden', !saving); updateSaveButton(); }
   function handleSaveError(error) { setSavingState(false); showResult(error && error.message ? error.message : 'No se ha podido guardar el horario.', 'error'); }
   function showResult(message, state) { resultElement.textContent = message; resultElement.className = 'result visible ' + state; }

@@ -35,7 +35,7 @@ const context = vm.createContext({
   },
 });
 vm.runInContext(script.replace('<?!= JSON.stringify(calendarConfig) ?>',
-  JSON.stringify(initialData)), context);
+  JSON.stringify(initialData)).replace('<?!= JSON.stringify(wizardStep) ?>', '0'), context);
 const click = (action, typeIndex, itemIndex) => {
   const dataset = { action };
   if (typeIndex !== undefined) dataset.typeIndex = String(typeIndex);

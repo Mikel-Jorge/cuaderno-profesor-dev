@@ -153,18 +153,18 @@ function assertScheduleStructureReady_(spreadsheet) {
     [CP.SHEETS.SCHEDULE_SESSIONS, CP_SCHEDULE_HEADERS.SESSIONS],
   ].forEach(function(definition) {
     const sheet = spreadsheet.getSheetByName(definition[0]);
-    if (!sheet) throw new Error('Falta la hoja técnica ' + definition[0] + '. Usa «Inicializar / reparar estructura».');
+    if (!sheet) throw new Error('Falta la hoja técnica ' + definition[0] + '. Usa «Reparar estructura».');
     if (sheet.getLastRow() < 1 || sheet.getLastColumn() < definition[1].length) {
-      throw new Error('La hoja técnica ' + definition[0] + ' no tiene la estructura esperada. Usa «Inicializar / reparar estructura».');
+      throw new Error('La hoja técnica ' + definition[0] + ' no tiene la estructura esperada. Usa «Reparar estructura».');
     }
     const headers = sheet.getRange(1, 1, 1, definition[1].length).getValues()[0].map(normalizeScheduleText_);
     if (headers.some(function(header, index) { return header !== definition[1][index]; })) {
-      throw new Error('La hoja técnica ' + definition[0] + ' no tiene las cabeceras esperadas. Usa «Inicializar / reparar estructura».');
+      throw new Error('La hoja técnica ' + definition[0] + ' no tiene las cabeceras esperadas. Usa «Reparar estructura».');
     }
   });
 }
 
-function abrirConfiguracionHorario() {
+function abrirConfiguracionHorario(wizardStep) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   let scheduleConfig;
   try {
@@ -186,6 +186,7 @@ function abrirConfiguracionHorario() {
   }
   const template = HtmlService.createTemplateFromFile('UiDialogScheduleConfig');
   template.scheduleConfig = scheduleConfig;
+  template.wizardStep = [3, 4, 5].indexOf(wizardStep) !== -1 ? wizardStep : 0;
   setCommonUiTemplateData_(template);
   const output = template.evaluate()
     .setWidth(CP.UI.SCHEDULE_CONFIG_DIALOG_WIDTH)

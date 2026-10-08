@@ -333,7 +333,7 @@ function calculateGregorianEasterSunday_(year, timeZone) {
   return createCalendarDate_(year, month, day, timeZone);
 }
 
-function abrirConfiguracionCalendario() {
+function abrirConfiguracionCalendario(wizardStep) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   let calendarConfig;
   try {
@@ -367,6 +367,7 @@ function abrirConfiguracionCalendario() {
   }
   const template = HtmlService.createTemplateFromFile('UiDialogCalendarConfig');
   template.calendarConfig = calendarConfig;
+  template.wizardStep = wizardStep === 2 ? 2 : 0;
   setCommonUiTemplateData_(template);
 
   const output = template.evaluate()
@@ -532,14 +533,14 @@ function assertCalendarStructureReady_(spreadsheet) {
   requiredSheets.forEach(function(definition) {
     const sheet = spreadsheet.getSheetByName(definition[0]);
     if (!sheet) {
-      throw new Error('Falta la hoja técnica ' + definition[0] + '. Usa «Inicializar / reparar estructura» para reparar el cuaderno.');
+      throw new Error('Falta la hoja técnica ' + definition[0] + '. Usa «Reparar estructura» para reparar el cuaderno.');
     }
     if (sheet.getLastRow() < 1 || sheet.getLastColumn() < definition[1].length) {
-      throw new Error('La hoja técnica ' + definition[0] + ' no tiene la estructura esperada. Usa «Inicializar / reparar estructura» para reparar el cuaderno.');
+      throw new Error('La hoja técnica ' + definition[0] + ' no tiene la estructura esperada. Usa «Reparar estructura» para reparar el cuaderno.');
     }
     const headers = sheet.getRange(1, 1, 1, definition[1].length).getValues()[0].map(normalizeCalendarText_);
     if (headers.some(function(header, index) { return header !== definition[1][index]; })) {
-      throw new Error('La hoja técnica ' + definition[0] + ' no tiene las cabeceras esperadas. Usa «Inicializar / reparar estructura» para reparar el cuaderno.');
+      throw new Error('La hoja técnica ' + definition[0] + ' no tiene las cabeceras esperadas. Usa «Reparar estructura» para reparar el cuaderno.');
     }
   });
 }

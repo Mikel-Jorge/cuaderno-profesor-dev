@@ -12,6 +12,7 @@
     <img class="brand-logo" src="<?!= branding.icon ?>" alt="">
     <div class="brand-copy"><p class="brand-name"><?= uiConfig.projectName ?></p><span class="version-label"><?= uiConfig.versionLabel ?></span></div>
   </header>
+  <? if (wizardStep) { ?><p class="wizard-progress">Paso 2 de 6 · Calendario</p><p class="form-help">Los pasos guardados se conservan si cancelas. Atrás descarta los cambios de este paso aún no guardados.</p><? } ?>
   <form class="config-form" id="calendar-form">
     <div class="config-scroll">
       <p class="calendar-course" id="calendar-course"></p>
@@ -24,13 +25,15 @@
       <div class="result" id="form-result" role="status"></div>
       <div class="actions">
         <button class="button button-secondary" id="close-button" type="button">Cancelar</button>
-        <button class="button" id="save-button" type="submit" disabled>Guardar</button>
+        <? if (wizardStep) { ?><button class="button button-secondary" id="back-button" type="button">Atrás</button><? } ?>
+        <button class="button" id="save-button" type="submit" disabled><?= wizardStep ? 'Siguiente' : 'Guardar' ?></button>
       </div>
     </div>
   </form>
   <footer class="author-footer">&copy; <?= uiConfig.author ?> &middot; <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a></footer>
 </main>
 <script>
+  const WIZARD_STEP = <?!= JSON.stringify(wizardStep) ?>;
   const INITIAL_CALENDAR_CONFIG = <?!= JSON.stringify(calendarConfig) ?>;
   const form = document.getElementById('calendar-form');
   const typesList = document.getElementById('types-list');
@@ -65,13 +68,21 @@
   form.addEventListener('click', handleActionClick);
   form.addEventListener('submit', function(domEvent) {
     domEvent.preventDefault();
-    if (isBlocked || isSaving || !isDirty() || !form.reportValidity() || !validateEventScopes()) return;
+    if (isBlocked || isSaving) return;
+    if (WIZARD_STEP && !isDirty()) {
+      google.script.run.withFailureHandler(handleSaveError).abrirPasoAsistenteCurso(3);
+      return;
+    }
+    if (!isDirty() || !form.reportValidity() || !validateEventScopes()) return;
     setSavingState(true);
     hideResult();
     google.script.run.withSuccessHandler(handleSaveSuccess).withFailureHandler(handleSaveError)
       .guardarConfiguracionCalendario(getCalendarPayloadData());
   });
   closeButton.addEventListener('click', function() { google.script.host.close(); });
+  if (WIZARD_STEP) document.getElementById('back-button').addEventListener('click', function() {
+    google.script.run.withFailureHandler(handleSaveError).abrirPasoAsistenteCurso(1);
+  });
 
   function renderAll() {
     renderTypes();
@@ -370,7 +381,8 @@
       calendarData = cloneData(response.data);
       ensureEventUiKeys();
     }
-    google.script.host.close();
+    if (WIZARD_STEP) google.script.run.withFailureHandler(handleSaveError).abrirPasoAsistenteCurso(3);
+    else google.script.host.close();
   }
   function handleSaveError(error) {
     setSavingState(false);
@@ -416,13 +428,13 @@
   }
   function serializeData() { return JSON.stringify(getCalendarPayloadData()); }
   function isDirty() { return serializeData() !== baseline; }
-  function updateSaveButton() { saveButton.disabled = isBlocked || isSaving || !isDirty(); }
+  function updateSaveButton() { saveButton.disabled = isBlocked || isSaving || (!WIZARD_STEP && !isDirty()); }
   function setSavingState(saving) {
     isSaving = saving;
     form.classList.toggle('is-saving', saving);
     closeButton.disabled = saving;
     saveButton.disabled = saving;
-    saveButton.textContent = saving ? 'Guardando...' : 'Guardar';
+    saveButton.textContent = saving ? 'Guardando...' : WIZARD_STEP ? 'Siguiente' : 'Guardar';
     form.querySelector('.config-scroll').classList.toggle('is-hidden', saving);
     saveLoading.classList.toggle('is-hidden', !saving);
     updateSaveButton();

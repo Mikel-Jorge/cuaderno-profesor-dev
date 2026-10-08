@@ -82,7 +82,7 @@ function assertModuleConfigStructureReady_(spreadsheet) {
     const sheet = spreadsheet.getSheetByName(definition[0]);
     if (!sheet || sheet.getLastColumn() < definition[1].length) {
       throw new Error(
-        'Falta la estructura técnica de Módulos. Usa «Inicializar / reparar estructura».'
+        'Falta la estructura técnica de Módulos. Usa «Reparar estructura».'
       );
     }
     const headers = sheet.getRange(1, 1, 1, definition[1].length).getValues()[0]
@@ -90,7 +90,7 @@ function assertModuleConfigStructureReady_(spreadsheet) {
     if (headers.some(function(header, index) { return header !== definition[1][index]; })) {
       throw new Error(
         'La hoja técnica ' + definition[0] +
-        ' no tiene las cabeceras esperadas. Usa «Inicializar / reparar estructura».'
+        ' no tiene las cabeceras esperadas. Usa «Reparar estructura».'
       );
     }
   });
@@ -99,10 +99,9 @@ function assertModuleConfigStructureReady_(spreadsheet) {
 function abrirCreacionConfiguracionModulo() {
   const template = HtmlService.createTemplateFromFile('UiDialogModuleConfig');
   try {
-    cleanupOrphanModuleConfigsWithLock_();
     template.moduleData = getModuleConfigDialogData_();
   } catch (error) {
-    console.error('Error al sanear configuraciones de módulo: ' +
+    console.error('Error al leer configuraciones de módulo: ' +
       (error && error.stack ? error.stack : error));
     template.moduleData = {
       modules: [],

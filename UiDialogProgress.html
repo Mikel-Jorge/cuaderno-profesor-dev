@@ -116,6 +116,11 @@
       function finishSuccessfully() {
         statusElement.textContent = 'Proceso completado.';
         showResult(PROCESS.successMessage, 'success');
+        if (PROCESS.afterSuccessAction === 'open-course-wizard') {
+          google.script.run.withFailureHandler(function(error) {
+            appendLog(error.message || String(error), true);
+          }).abrirPasoAsistenteCurso(1);
+        }
       }
 
       function showResult(message, state) {
