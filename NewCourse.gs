@@ -37,7 +37,51 @@ function iniciarPreparacionNuevoCurso(input) {
   processInput.previousConfig = getGeneralConfigValues_(
     SpreadsheetApp.getActiveSpreadsheet()
   );
-  showProgressDialog_(CP.UI.NEW_COURSE_PROCESS_ID, processInput);
+  const process = getNewCourseProcessDefinition_(processInput);
+  process.steps.forEach(function(step) { step.run(process.input); });
+  return getCourseWizardSummary_();
+}
+
+function guardarDatosGeneralesNuevoCurso(input) {
+  const values = normalizeGeneralConfigInput_(input);
+  validateThemeConfig_(values);
+  return saveGeneralConfig_(values, { updateCover: true, showToast: false, includeTheme: true });
+}
+
+function obtenerResumenNuevoCurso() {
+  return getCourseWizardSummary_();
+}
+
+function obtenerFormularioPasoNuevoCurso(step) {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const isCalendar = step === 2;
+  if (!isCalendar && [3, 4, 5].indexOf(step) === -1) {
+    throw new Error('El paso solicitado no existe.');
+  }
+  const template = HtmlService.createTemplateFromFile(
+    isCalendar ? 'UiDialogCalendarConfig' : 'UiDialogScheduleConfig');
+  if (isCalendar) {
+    assertCalendarStructureReady_(spreadsheet);
+    template.calendarConfig = getCalendarConfigForUi_(spreadsheet);
+    template.wizardStep = 0;
+  } else {
+    assertScheduleStructureReady_(spreadsheet);
+    template.scheduleConfig = getScheduleConfigForUi_(spreadsheet);
+    template.wizardStep = step;
+  }
+  setCommonUiTemplateData_(template);
+  let html = template.evaluate().getContent();
+  const bridge = '<style>.brand-header,.author-footer,.config-feedback,.save-loading,.wizard-progress{display:none!important}.app{padding:8px!important}.config-scroll{max-height:none!important}</style>' +
+    '<script>document.addEventListener("submit",function(event){event.preventDefault();event.stopImmediatePropagation()},true);' +
+    'window.addEventListener("message",function(event){if(!event.data||event.data.type!=="course-wizard-request")return;' +
+    'var error="";if(isBlocked)error=blockingErrorElement.textContent;' +
+    'else if(isDirty()&&!form.reportValidity())error="Revisa los campos obligatorios.";' +
+    (isCalendar ? 'else if(isDirty()&&!validateEventScopes())error="Revisa las fechas especiales.";' : 'else if(isDirty())error=validateSlots()||"";') +
+    'parent.postMessage({type:"course-wizard-response",requestId:event.data.requestId,step:' + step +
+    ',error:error,dirty:isDirty(),payload:error?null:' +
+    (isCalendar ? 'getCalendarPayloadData()' : 'getPayload()') + '},"*")});<\/script>';
+  html = html.replace('</body>', bridge + '</body>');
+  return html;
 }
 
 function normalizeNewCourseProcessInput_(input) {

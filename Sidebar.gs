@@ -22,8 +22,20 @@ function getSidebarData_() {
     helpSections: getSidebarHelpSections_(contextSectionId),
     contextSectionId: contextSectionId,
     activeSheetName: activeSheet ? activeSheet.getName() : '',
+    contextDescription: getSidebarContextDescription_(contextSectionId),
     themeCss: createUiThemeCss_(getActiveTheme_(spreadsheet, config)),
   };
+}
+
+function getSidebarContextDescription_(sectionId) {
+  const descriptions = {
+    cover: 'Portada e índice del cuaderno', calendar: 'Periodos y fechas del curso',
+    schedule: 'Tramos, actividades y sesiones', students: 'Datos del alumnado',
+    'module-config': 'Planificación de UT y ponderaciones',
+    'module-tracking': 'Seguimiento de las sesiones',
+    evaluation: 'Calificaciones y notas Educa',
+  };
+  return descriptions[sectionId] || 'Hoja no gestionada por el Cuaderno.';
 }
 
 function getSidebarStateItems_(config) {
@@ -104,7 +116,7 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'first-steps',
       title: 'Primeros pasos',
-      text: 'Abre Cuaderno del Profesor → Asistente de configuración del curso: datos, calendario, tramos, actividades y horario. Después completa Alumnado, crea 4 Config de cada módulo, define UT, horas y pesos, recalcula, crea Seg y Eval, registra el seguimiento real y finalmente introduce notas. Puedes terminar el asistente con partes pendientes; el estado de arriba indica cuáles.',
+      text: 'Prepara el curso, completa Alumnado, crea 4 Config de cada módulo, define UT y ponderaciones, recalcula, crea Seg y Eval, y trabaja durante el curso.',
     },
     {
       id: 'dependencies',
@@ -180,6 +192,10 @@ function getSidebarHelpSections_(contextSectionId) {
         ['¿Cambiar Config cambia Seguimiento?', 'No. Seg conserva la instantánea capturada al crearse.'],
         ['¿Cambiar pesos de Config cambia Eval?', 'Sí. Las medias de Eval leen los pesos actuales de Config.'],
         ['¿Qué es FEOE?', 'Es el periodo de formación en empresa, que reduce las sesiones lectivas disponibles del módulo.'],
+        ['¿Qué ocurre si cambio Config?', 'Recalcula para aplicar los cambios de planificación. Seguimiento conserva su registro y Eval actualiza sus medias desde los pesos vigentes.'],
+        ['¿Qué es el Peso de UT y el Peso final?', 'Peso de UT pondera cada unidad dentro de su evaluación; Peso final pondera las evaluaciones en la media final.'],
+        ['¿Qué hace Reparar estructura?', 'Comprueba y repara los bloques seleccionados, conservando los datos del cuaderno.'],
+        ['¿Qué conserva Preparar nuevo curso?', 'Conserva docente, centro, tema, tramos y actividades. Guarda Seguimiento como OLD; reinicia Alumnado, sesiones semanales y fechas anuales.'],
       ],
     },
   ];
@@ -193,10 +209,35 @@ function getSidebarHelpSections_(contextSectionId) {
     }
     return 0;
   }).map(function(section) {
+    const presentation = {
+      'first-steps': ['🚀', 'Empieza por el curso y sigue el orden recomendado', 'curso inicio preparar'],
+      dependencies: ['↳', 'Cómo se relacionan las hojas', 'dependencias pesos'],
+      cover: ['🏠', 'Índice y datos del curso', 'portada'],
+      'general-data': ['⚙️', 'Docente, centro y apariencia', 'tema profesor'],
+      calendar: ['📅', 'Periodos, evaluaciones y fechas', 'feoe festivos navidad'],
+      schedule: ['🕒', 'Tramos, actividades y semana', 'horario apoyo'],
+      students: ['👥', 'Identidad, REACA y Medidas', 'alumnado'],
+      'module-config': ['📚', 'UT, horas y pesos', 'modulo config peso'],
+      'module-tracking': ['📝', 'Registro de lo impartido', 'seguimiento old'],
+      evaluation: ['📊', 'Notas, medias y Educa', 'evaluacion eval peso mh'],
+      initialize: ['🔧', 'Mantenimiento selectivo', 'reparar protegida'],
+      'new-course': ['🆕', 'Copia y preparación anual', 'backup curso'],
+      troubleshooting: ['❓', 'Respuestas rápidas', 'faq dudas'],
+    }[section.id] || ['', '', ''];
+    let text = section.text;
+    if (section.id === 'first-steps') text = 'Prepara el curso, completa Alumnado, crea 4 Config de cada módulo, define UT y ponderaciones, recalcula y crea Seguimiento y Evaluación. Después registra las sesiones y notas.';
+    if (section.id === 'general-data') text = 'Cuaderno del Profesor → Configuración → Configuración general guarda curso académico, docente, centro y Theme. El curso usa YYYY-YYYY.';
+    if (section.id === 'calendar') text = text.replace('Cuaderno del Profesor → Configurar calendario', 'Cuaderno del Profesor → Configuración → Calendario');
+    if (section.id === 'schedule') text = text.replace('Cuaderno del Profesor → Configurar horario', 'Cuaderno del Profesor → Configuración → Horario');
+    if (section.id === 'new-course') text = 'Cuaderno del Profesor → Preparar nuevo curso abre un único proceso guiado: copia verificada, datos generales, calendario, tramos, actividades, horario y resumen. Conserva docente, centro, tema, tramos y actividades; guarda Seguimiento como OLD y reinicia datos anuales. Los pasos guardados permanecen si cancelas.';
+    if (section.id === 'initialize') text = 'Cuaderno del Profesor → Reparar estructura permite elegir las hojas que necesitan mantenimiento. Los datos docentes se conservan. Puedes seleccionar todo o solo el bloque afectado.';
     return {
       id: section.id,
-      title: section.title,
-      text: section.text,
+      title: section.id === 'module-config' ? 'Módulos / 4 Config' : section.title,
+      text: text,
+      icon: presentation[0],
+      subtitle: presentation[1],
+      keywords: presentation[2],
       faqs: section.faqs || [],
       open: section.id === contextSectionId,
     };

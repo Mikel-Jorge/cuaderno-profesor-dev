@@ -198,8 +198,7 @@
         if (response && response.values) {
           setFormValues(response.values);
         }
-        if (WIZARD_STEP) google.script.run.withFailureHandler(handleSaveError).abrirPasoAsistenteCurso(2);
-        else google.script.host.close();
+        google.script.host.close();
       }
 
       function handleSaveError(error) {

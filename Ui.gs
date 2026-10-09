@@ -11,25 +11,7 @@ function iniciarReparacionSeleccionada(selection) {
 }
 
 function abrirPrepararNuevoCurso() {
-  showConfirmationDialog_(CP.UI.NEW_COURSE_CONFIRMATION_ID);
-}
-
-function abrirAsistenteConfiguracionCurso() {
-  abrirPasoAsistenteCurso(1);
-}
-
-function abrirPasoAsistenteCurso(step) {
-  if (!Number.isInteger(step) || step < 1 || step > 6) {
-    throw new Error('El paso del asistente no existe.');
-  }
-  if (step === 1) return abrirDatosGenerales(1);
-  if (step === 2) return abrirConfiguracionCalendario(2);
-  if (step < 6) return abrirConfiguracionHorario(step);
-  const template = HtmlService.createTemplateFromFile('UiDialogCourseSummary');
-  template.summary = getCourseWizardSummary_();
-  setCommonUiTemplateData_(template);
-  SpreadsheetApp.getUi().showModalDialog(template.evaluate().setWidth(600).setHeight(560),
-    CP.MENU.COURSE_WIZARD);
+  abrirAsistenteNuevoCurso();
 }
 
 function getCourseWizardSummary_() {
@@ -63,11 +45,6 @@ function ejecutarAccionConfirmadaUi(actionId) {
     return;
   }
 
-  if (actionId === CP.UI.NEW_COURSE_ACTION_ID) {
-    abrirAsistenteNuevoCurso();
-    return;
-  }
-
   throw new Error('La acci\u00f3n confirmada no existe.');
 }
 
@@ -78,7 +55,7 @@ function showProgressDialog_(processId, processInput) {
     id: process.id,
     title: process.title,
     successMessage: process.successMessage,
-    afterSuccessAction: process.id === CP.UI.NEW_COURSE_PROCESS_ID ? 'open-course-wizard' : '',
+    afterSuccessAction: '',
     steps: process.steps.map(function(step) {
       return { label: step.label };
     }),
@@ -104,18 +81,6 @@ function getUiConfirmationDefinition_(confirmationId) {
       confirmText: 'Continuar',
       variant: CP.UI.CONFIRMATION_VARIANTS.NORMAL,
       actionId: CP.UI.INIT_ACTION_ID,
-    });
-  }
-
-  if (confirmationId === CP.UI.NEW_COURSE_CONFIRMATION_ID) {
-    return validateUiConfirmation_({
-      id: CP.UI.NEW_COURSE_CONFIRMATION_ID,
-      title: CP.MENU.NEW_COURSE,
-      message: 'Esta operaci\u00f3n prepara el cuaderno para un nuevo curso acad\u00e9mico.',
-      helperText: 'Puede sustituir informaci\u00f3n del curso actual cuando existan datos espec\u00edficos del curso.',
-      confirmText: 'Preparar nuevo curso',
-      variant: CP.UI.CONFIRMATION_VARIANTS.DANGER,
-      actionId: CP.UI.NEW_COURSE_ACTION_ID,
     });
   }
 

@@ -2,8 +2,15 @@
 
 **Última actualización:** 2026-10-09
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.8.0`
+**Versión vigente:** `1.8.1`
 **Esquema vigente:** `11`
+
+## Pulido 1.8.1
+
+- Menú superior único con Configuración y Módulos; Ayuda al final y sin asistente independiente.
+- Preparar nuevo curso recorre Seguridad, General, Calendario, Tramos, Actividades, Horario y Resumen en un diálogo, con copia verificada antes del reinicio y guardado por paso.
+- Reparar estructura usa un selector compacto; Nombre en 6 Eval mide 132 px al crear o reparar.
+- La Sidebar presenta búsqueda local sin tildes, contexto, estado resumido y FAQ con jerarquía propia. Es el refinamiento de UX previo al futuro bloque de Tutoría.
 
 # Completado
 

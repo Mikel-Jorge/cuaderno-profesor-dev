@@ -11,7 +11,7 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 
 **Estado:** especificación funcional vigente
 **Versión del documento:** 3.2
-**Versión del cuaderno:** `1.8.0`
+**Versión del cuaderno:** `1.8.1`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.8.0
+# 2. Estado funcional de la versión 1.8.1
 
 Están cerrados funcionalmente:
 
@@ -39,7 +39,11 @@ Están cerrados funcionalmente:
 
 Alumnado y `4 Config ...` están operativos. `5 Seg ...` implementa el seguimiento como snapshot editable de la planificación inicial. `6 Eval ...` registra las calificaciones del módulo.
 
-El menú principal presenta configuración general, calendario y horario; después Reparar estructura y Ayuda; Preparar nuevo curso queda al final. El asistente de configuración del curso está disponible como acción explícita. Módulos es un menú independiente. El Sidebar presenta estado, contexto y ayuda sin duplicar acciones.
+Existe un único menú superior `📘 Cuaderno del Profesor`: submenús Configuración (General, Calendario, Horario) y Módulos (Crear Config, Recalcular, Crear Seguimiento y Evaluación); después Reparar estructura, Preparar nuevo curso y Ayuda, en ese orden. No existe un asistente de configuración independiente. Los tres configuradores puntuales siguen disponibles durante el curso.
+
+El selector de Reparar estructura presenta General y Módulos en dos columnas, con Seleccionar todo y Ninguno. Si no hay marcas, indica brevemente que solo se realizará mantenimiento general. `6 Eval` usa 132 px para Nombre al crear o reparar, sin alterar los 190 px de Apellidos.
+
+La Ayuda muestra contexto de hoja, resumen de controles correcto/total calculado desde los elementos reales, pendientes por defecto y detalle expandible. Sus secciones son acordeones de primer nivel con una sola sección abierta fuera de búsqueda. El buscador local ignora tildes y mayúsculas, busca también FAQ y palabras clave, y abre las coincidencias. La Ayuda no duplica acciones ejecutables del menú.
 
 `Reparar estructura` abre un selector sin efectos al abrirse. Los siete bloques visibles (Portada, Calendario, Horario, Alumnado, todas las 4 Config, todas las 5 Seg y todas las 6 Eval) empiezan marcados; se pueden marcar o desmarcar todos. Una selección vacía ejecuta solo mantenimiento técnico. Al confirmar siempre se comprueban las estructuras técnicas, migraciones, referencias huérfanas, metadatos, ocultación, orden, colores de pestaña y protecciones técnicas. Solo los bloques elegidos se regeneran o reformatean; las dependencias no marcadas pueden leerse. Alumnado por sí solo no sincroniza Eval y Config por sí sola no repara Seg/Eval. Los OLD solo reciben orden, color de pestaña y protección de aviso. Las protecciones manuales se conservan. El progreso muestra únicamente los bloques elegidos y los pasos técnicos.
 
@@ -113,7 +117,7 @@ El índice se construye desde las hojas visibles existentes y excluye todas las 
 
 # 6. Preparar nuevo curso
 
-La acción solicita confirmación `danger` y crea obligatoriamente una copia del Spreadsheet en su carpeta original, con el nombre original. Si el backup no puede crearse y verificarse, no se ejecuta ninguna mutación posterior.
+La acción abre un único diálogo HTML de siete pasos. Al abrirse no modifica el cuaderno. El paso Seguridad solicita confirmación expresa y crea obligatoriamente una copia del Spreadsheet en su carpeta original, con el nombre original. Si el backup no puede crearse y verificarse, no se ejecuta ninguna mutación posterior.
 
 Después del backup verificado puede mover el cuaderno activo dentro de Mi unidad, renombrarlo como `CuadernoProfesor_XXXX` y actualizar curso, profesor, centro y apariencia. La copia conserva el contenido anterior íntegro.
 
@@ -129,7 +133,7 @@ La transición anual conserva snapshots en memoria para restaurar Alumnado, Hora
 
 `Reparar estructura` nunca aplica esta política anual, no borra datos ni repone festivos eliminados por el docente.
 
-Al terminar la transición anual se abre el mismo asistente de configuración del curso disponible para el primer uso. Guía por datos generales, Calendario, tramos, actividades, horario semanal y resumen. El backup sigue siendo obligatorio solo para la transición de un curso existente. Cada paso se guarda con las validaciones y tablas actuales al avanzar; cancelar conserva los pasos guardados. Es válido finalizar con configuración parcial y el resumen muestra lo pendiente. Abrir el Spreadsheet no inicia el asistente ni escribe datos.
+Tras la transición anual se continúa dentro del mismo diálogo por Datos generales, Calendario, Tramos, Actividades, Horario semanal y Resumen. Cada paso se guarda con los modelos y validadores actuales al avanzar; cancelar conserva los pasos guardados. Es válido finalizar con configuración parcial y el resumen muestra lo pendiente. Abrir el Spreadsheet no inicia el proceso ni escribe datos. El paso Seguridad no puede ejecutarse dos veces dentro del mismo flujo.
 
 Tras el backup se materializan y renombran las `5 Seg ...` activas como `OLD AACC`, se eliminan las `6 Eval ...` y las `4 Config ...` gestionadas del curso anterior y se vacían sus registros en `_MOD_CONFIG` y `_MOD_PLAN`. Los históricos conservan valores, textos, colores, separadores y aspecto sin referencias rotas.
 
@@ -256,7 +260,7 @@ El `RESUMEN DE HORAS Y PONDERACIONES` incluye `Peso UTs`, `Peso final` y `Estado
 
 ## 11.5. Recálculo explícito
 
-El menú `📚 Módulos → 🔄 Recalcular configuración del módulo`:
+El menú `📘 Cuaderno del Profesor → 📚 Módulos → 🔄 Recalcular configuración del módulo`:
 
 1. comprobará la hoja activa;
 2. verificará mediante metadatos internos que es una `4 Config` gestionada;

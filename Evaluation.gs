@@ -329,7 +329,7 @@ function styleEvaluationSheet_(sheet, layout, count, footerRow) {
   sheet.getRange(2, layout.finalStart, 2, 2)
     .setBackground(colors.accent).setFontColor(colors.onAccent);
   sheet.setRowHeights(1, 3, 30);
-  [190, 150, 76].forEach(function(width, index) { sheet.setColumnWidth(index + 1, width); });
+  [190, 132, 76].forEach(function(width, index) { sheet.setColumnWidth(index + 1, width); });
   if (count) {
     sheet.getRange(4, 1, count, last).setBackground(colors.surface)
       .setFontColor(colors.text).setFontWeight('normal').setVerticalAlignment('middle');

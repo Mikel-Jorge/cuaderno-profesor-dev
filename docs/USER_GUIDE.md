@@ -1,17 +1,20 @@
-# Guía de uso · Cuaderno del Profesor 1.8.0
+# Guía de uso · Cuaderno del Profesor 1.8.1
 
 ## Empezar un curso
 
-Abre **Cuaderno del Profesor → Asistente de configuración del curso**. El asistente recorre seis pasos: datos generales, Calendario, tramos, actividades, horario semanal y resumen. Se inicia por una acción tuya; abrir el archivo no escribe datos ni muestra diálogos. Pulsa **Siguiente** para guardar los cambios del paso. Si cancelas, lo ya guardado permanece y puedes retomarlo desde el asistente o los menús de configuración. Puedes terminar aunque falten fechas o asignaciones; el resumen señala lo pendiente.
+El cuaderno se distribuye como copia de una plantilla inicializada. Usa el único menú **📘 Cuaderno del Profesor**. Sus submenús son **Configuración** (General, Calendario, Horario) y **Módulos** (Crear configuración, Recalcular, Crear seguimiento y evaluación). Después aparecen **Reparar estructura**, **Preparar nuevo curso** y **Ayuda**. No hay un asistente de configuración independiente.
 
-1. **Datos generales:** comprueba el curso académico propuesto, docente, centro, web y tema. El formato del curso es `YYYY-YYYY`.
-2. **Calendario:** activa los tipos de enseñanza pertinentes y revisa fechas lectivas, evaluaciones, FEOE, repaso y eventos. Los festivos, Navidad y Semana Santa propuestos se pueden editar; compruébalos con el calendario del centro. Los días no lectivos reducen las sesiones disponibles.
-3. **Tramos:** define periodos consecutivos. En cursos posteriores aparecen los tramos conservados.
-4. **Actividades:** revisa nombre, sigla, grupo, aula, color, tipo y categoría. Sus IDs se conservan entre cursos.
-5. **Horario semanal:** asigna actividades de lunes a viernes y, si procede, apoyos. En un curso nuevo parte vacío.
-6. **Resumen:** consulta el estado y finaliza. El siguiente paso es introducir Alumnado y configurar cada módulo.
+Para pasar de un curso a otro, abre **Preparar nuevo curso**. Un único diálogo guía siete pasos. Abrirlo no modifica el cuaderno; la copia y el reinicio solo comienzan después de confirmar en Seguridad. **Siguiente** guarda el paso actual. Si cancelas, los pasos guardados permanecen y puedes continuar con los configuradores individuales.
 
-Durante el curso puedes usar por separado **Configuración general**, **Configurar calendario** y **Configurar horario**. Una sesión representa una hora docente aunque el tramo dure otro número de minutos.
+1. **Seguridad:** confirma el nuevo curso y crea una copia verificada antes de reiniciar datos anuales.
+2. **Datos generales:** comprueba el curso propuesto, docente, centro, web y tema. El formato es `YYYY-YYYY`.
+3. **Calendario:** revisa tipos, fechas lectivas, evaluaciones, FEOE, repaso, festivos, Navidad y Semana Santa con el calendario del centro.
+4. **Tramos:** revisa los periodos consecutivos conservados del curso anterior.
+5. **Actividades:** revisa nombre, sigla, grupo, aula, color, tipo y categoría. Sus IDs se conservan.
+6. **Horario semanal:** asigna actividades y apoyos. Las sesiones anteriores parten vacías.
+7. **Resumen:** consulta lo completado y lo pendiente. Puedes finalizar parcialmente; después completa Alumnado y configura cada módulo.
+
+Durante el curso puedes usar por separado **Configuración → Configuración general**, **Configuración → Calendario** y **Configuración → Horario**. Una sesión representa una hora docente aunque el tramo dure otro número de minutos.
 
 ## Hojas y orden de trabajo
 
@@ -19,8 +22,8 @@ Durante el curso puedes usar por separado **Configuración general**, **Configur
 - **1 Calendario** deriva de tipos, periodos, evaluaciones y fechas especiales. FEOE excluye sesiones reales de los módulos.
 - **2 Horario** muestra la semana lectiva y su actividad actual. Calendario y Horario deben estar configurados para calcular las sesiones reales de **4 Config**.
 - **3 Alumnado** requiere Apellidos, Nombre y Grupo; Email es opcional. REACA es un checkbox y Medidas admite texto, que aparece como nota en Eval. El Cuaderno conserva internamente la identidad de cada persona para no mezclar notas al ordenar.
-- **4 Config** se crea desde **Módulos → Crear configuración de módulo** cuando la actividad es de categoría MODULO y tiene sesiones reales. Cada módulo + grupo es independiente. Introduce UT, horas, colores y pesos; usa **Módulos → Recalcular configuración del módulo** para aplicar cambios de planificación. Las horas se reparten cronológicamente; cada UT pertenece a la evaluación en la que termina. El resumen muestra disponibles, pendientes, Peso UTs y Peso final. El aviso marca cambios aún no aplicados. Los colores son presentación, nunca datos.
-- **5 Seg** se crea desde **Módulos → Crear seguimiento y evaluación**. Es una instantánea editable: Fecha y Total son derivados; registra UT, Plan previsto, Actividades realizadas, Actual y Mejoras. Acum. suma por UT incluso si aparece intercalada. Rojo señala que se superó el total inicial y el amarillo en Mejoras indica una propuesta. Cambios posteriores de Config no reescriben esta instantánea.
+- **4 Config** se crea desde **Cuaderno del Profesor → Módulos → Crear configuración de módulo** cuando la actividad es de categoría MODULO y tiene sesiones reales. Cada módulo + grupo es independiente. Introduce UT, horas, colores y pesos; usa **Cuaderno del Profesor → Módulos → Recalcular configuración del módulo** para aplicar cambios de planificación. Las horas se reparten cronológicamente; cada UT pertenece a la evaluación en la que termina. El resumen muestra disponibles, pendientes, Peso UTs y Peso final. El aviso marca cambios aún no aplicados. Los colores son presentación, nunca datos.
+- **5 Seg** se crea desde **Cuaderno del Profesor → Módulos → Crear seguimiento y evaluación**. Es una instantánea editable: Fecha y Total son derivados; registra UT, Plan previsto, Actividades realizadas, Actual y Mejoras. Acum. suma por UT incluso si aparece intercalada. Rojo señala que se superó el total inicial y el amarillo en Mejoras indica una propuesta. Cambios posteriores de Config no reescriben esta instantánea.
 - **6 Eval** recibe la nota final de cada UT calculada en Moodle, de 0–10 con decimales. Una UT vacía cuenta como cero en Media. Las medias y Media final leen en vivo los pesos de Config; Educa de cada evaluación y Educa final se introducen manualmente (1–10 o MH), con semáforo. MEDIA DEL GRUPO resume el grupo. Las recuperaciones se gestionan en Moodle. Tras cambios de Alumnado, selecciona Alumnado y 6 Eval en **Reparar estructura** para sincronizar.
 
 **Dependencias:** Calendario + Horario → Config → Seg y Eval; Alumnado → Eval; ponderaciones de Config → medias de Eval. Seg es una instantánea inicial que luego refleja lo ocurrido, mientras Eval lee los pesos actuales de Config.
@@ -31,7 +34,11 @@ El menú **Reparar estructura** abre un selector. Los siete bloques visibles emp
 
 ## Preparar nuevo curso
 
-**Preparar nuevo curso** es una acción excepcional. Primero crea y verifica una copia completa en la carpeta original. Solo entonces mueve o renombra el cuaderno activo y reinicia datos anuales: alumnado, horario semanal y fechas del calendario. Conserva docente, centro, tema, tramos y actividades; archiva Seguimiento como OLD y elimina Config y Eval anteriores. Después se abre el asistente para revisar el nuevo curso. Si cancelas ese asistente, el curso ya preparado y los pasos guardados siguen disponibles.
+**Preparar nuevo curso** es una acción excepcional. Dentro del mismo diálogo, primero crea y verifica una copia completa en la carpeta original. Solo entonces mueve o renombra el cuaderno activo y reinicia datos anuales: alumnado, horario semanal y fechas del calendario. Conserva docente, centro, tema, tramos y actividades; archiva Seguimiento como OLD y elimina Config y Eval anteriores. Puedes cancelar después del reinicio: el curso preparado y los pasos guardados siguen disponibles.
+
+## Ayuda y estado
+
+**Ayuda** abre una barra lateral adaptada al espacio estrecho de Sheets. Muestra la hoja actual, un resumen dinámico de controles correctos y solo los pendientes; **Ver detalle** enseña todos. Las secciones se despliegan una a una y la FAQ tiene preguntas propias. El buscador funciona sin tildes ni distinción de mayúsculas: por ejemplo, `evaluacion`, `peso`, `protegida` o `REACA`. La X limpia la búsqueda. **Actualizar estado** vuelve a cargar los datos una vez, sin consultas continuas.
 
 ## Preguntas frecuentes
 

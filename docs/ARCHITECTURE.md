@@ -2,7 +2,7 @@
 
 **Estado:** vigente
 **Última revisión:** 2026-10-09
-**Versión:** `1.8.0` / esquema `11`
+**Versión:** `1.8.1` / esquema `11`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -25,7 +25,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.8.0`, esquema `11` y paleta fija de pestañas.
+- `Config.gs`: constantes, nombres de hojas, versión `1.8.1`, esquema `11` y paleta fija de pestañas.
 - `Theme.gs`: tema global, presets y colores semánticos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -41,8 +41,8 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 - `Portada.gs`: estructura, datos e índice dinámico de `0 Portada`.
 - `NewCourse.gs`: backup y pasos de Preparar nuevo curso.
 - `Utils.gs`: acceso, tamaño, recorte y ordenación de hojas.
-- `Sidebar.gs` y `UiSidebar.html`: estado y ayuda contextual.
-- `Ui.gs` y `UiDialog*.html`: confirmaciones, asistentes y procesos secuenciales.
+- `Sidebar.gs` y `UiSidebar.html`: controles y secciones con contexto, icono, subtítulo y palabras clave; resumen correcto/total y filtrado local sin polling.
+- `Ui.gs` y `UiDialog*.html`: diálogos de mantenimiento y flujo único de preparación anual.
 - `Branding.gs` y `UiStyles.html`: identidad y estilos comunes.
 
 No se crean capas o abstracciones sin necesidad real.
@@ -152,7 +152,7 @@ No existe matrícula por módulo. Evaluación filtra por coincidencia de Grupo y
 
 # 10. Preparar nuevo curso
 
-El proceso UI ejecuta pasos independientes. Primero crea y verifica el backup en la carpeta original. Solo después puede mover, renombrar y modificar el cuaderno activo.
+`UiDialogNewCourse.html` mantiene los siete pasos en un único diálogo. El paso Seguridad llama a `iniciarPreparacionNuevoCurso()`, que valida la ubicación y ejecuta secuencialmente el backup verificado y la transición anual en una sola llamada. No se ejecuta ninguna mutación al abrir el diálogo. Los pasos posteriores usan `guardarDatosGeneralesNuevoCurso()`, `guardarConfiguracionCalendario()` y `guardarConfiguracionHorario()`. Calendario y Horario se renderizan dentro del diálogo como formularios aislados y devuelven DTO por `postMessage`; el padre controla navegación, validación y guardado. No se encadenan diálogos. Los configuradores individuales conservan sus propios puntos de entrada.
 
 Los datos se separan en reutilizables y anuales. `_CONFIG` conserva profesor, centro y tema; `_HOR_TRAMOS` y `_HOR_ACTIVIDADES` conservan estructura, catálogo e IDs. Alumnado, `_HOR_SESIONES` y todos los valores anuales del Calendario se reinician.
 

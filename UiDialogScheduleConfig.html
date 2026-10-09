@@ -75,24 +75,16 @@
   form.addEventListener('submit', function(event) {
     event.preventDefault();
     if (isBlocked || isSaving) return;
-    if (WIZARD_STEP && !isDirty()) {
-      google.script.run.withFailureHandler(handleSaveError).abrirPasoAsistenteCurso(WIZARD_STEP + 1);
-      return;
-    }
     if (!isDirty() || !form.reportValidity()) return;
     const validationError = validateSlots();
     if (validationError) { showResult(validationError, 'error'); return; }
     setSavingState(true);
     hideResult();
     google.script.run.withSuccessHandler(function() {
-      if (WIZARD_STEP) google.script.run.withFailureHandler(handleSaveError).abrirPasoAsistenteCurso(WIZARD_STEP + 1);
-      else google.script.host.close();
+      google.script.host.close();
     }).withFailureHandler(handleSaveError).guardarConfiguracionHorario(getPayload());
   });
   closeButton.addEventListener('click', function() { google.script.host.close(); });
-  if (WIZARD_STEP) document.getElementById('back-button').addEventListener('click', function() {
-    google.script.run.withFailureHandler(handleSaveError).abrirPasoAsistenteCurso(WIZARD_STEP - 1);
-  });
   confirmationCancel.addEventListener('click', closeConfirmation);
   confirmationAccept.addEventListener('click', acceptConfirmation);
   confirmationOverlay.addEventListener('click', function(event) { if (event.target === confirmationOverlay) closeConfirmation(); });

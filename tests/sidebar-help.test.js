@@ -1,0 +1,22 @@
+const assert = require('assert');
+const fs = require('fs');
+const vm = require('vm');
+const context = {};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync('Sidebar.gs', 'utf8'), context);
+const sections = context.getSidebarHelpSections_('evaluation');
+assert.strictEqual(sections[0].id, 'evaluation');
+assert.strictEqual(sections.filter(item => item.open).length, 1);
+assert(sections.every(item => item.icon && item.subtitle && item.keywords));
+const faq = sections.find(item => item.id === 'troubleshooting').faqs;
+const questions = faq.map(item => item[0]).join(' ');
+['FEOE', 'MH', 'OLD', 'REACA', 'Peso'].forEach(term => {
+  assert(questions.includes(term) || sections.some(item => item.text.includes(term)));
+});
+const html = fs.readFileSync('UiSidebar.html', 'utf8');
+assert(html.includes("normalize('NFD')"));
+assert(html.includes("items.filter(function(item){return item.status==='complete'}).length"));
+assert(html.includes('status-detail'));
+assert(html.includes('faq-item'));
+assert(!html.includes('setInterval('));
+console.log('sidebar help model and client search/status: ok');

@@ -1,138 +1,24 @@
-<!DOCTYPE html>
-<html lang="es">
-  <head>
-    <base target="_top">
-    <meta charset="utf-8">
-    <style id="active-theme"><?!= uiThemeCss ?></style>
-    <?!= includeUiFile_('UiStyles'); ?>
-  </head>
-  <body>
-    <main class="app sidebar-app">
-      <header class="brand-header sidebar-brand-header">
-        <img class="brand-logo sidebar-brand-logo" src="<?!= branding.icon ?>" alt="">
-        <div class="brand-copy">
-          <p class="brand-name"><?= uiConfig.projectName ?></p>
-          <span class="version-label"><?= uiConfig.versionLabel ?></span>
-        </div>
-        <button class="icon-button" id="refresh-button" type="button" title="Actualizar estado" aria-label="Actualizar estado">
-          &#x21bb;
-        </button>
-      </header>
-
-      <div class="sidebar-content">
-        <section class="sidebar-section" aria-labelledby="status-title">
-          <h2 id="status-title">Estado del cuaderno</h2>
-          <div class="sidebar-status" id="status-list"></div>
-        </section>
-
-        <section class="sidebar-section sidebar-help" aria-labelledby="help-title">
-          <h2 id="help-title">&#x2753; Ayuda</h2>
-          <p id="active-sheet-context" class="form-help"></p>
-          <label class="form-field" for="help-search"><span>Buscar en la ayuda</span>
-            <input id="help-search" type="search" autocomplete="off"></label>
-          <div id="help-sections"></div>
-        </section>
-      </div>
-
-      <footer class="author-footer sidebar-footer">
-        <?= uiConfig.projectName ?> · <?= uiConfig.versionLabel ?><br>
-        &copy; <?= uiConfig.author ?><br>
-        <a href="mailto:<?= uiConfig.authorEmail ?>"><?= uiConfig.authorEmail ?></a>
-      </footer>
-    </main>
-
-    <script>
-      let sidebarData = <?!= JSON.stringify(sidebarData) ?>;
-      const statusList = document.getElementById('status-list');
-      const helpSections = document.getElementById('help-sections');
-      const refreshButton = document.getElementById('refresh-button');
-      const helpSearch = document.getElementById('help-search');
-
-      renderSidebar(sidebarData);
-      helpSearch.addEventListener('input', function() { renderHelp(sidebarData); });
-
-      refreshButton.addEventListener('click', function() {
-        refreshButton.disabled = true;
-        refreshButton.classList.add('is-refreshing');
-        google.script.run
-          .withSuccessHandler(function(data) {
-            sidebarData = data;
-            document.getElementById('active-theme').textContent = data.themeCss;
-            renderSidebar(data);
-            setRefreshState(false);
-          })
-          .withFailureHandler(function() {
-            setRefreshState(false);
-          })
-          .obtenerDatosPanelLateral();
-      });
-
-      function renderSidebar(data) {
-        statusList.replaceChildren();
-        data.stateItems.forEach(function(item) {
-          const row = document.createElement('div');
-          const marker = document.createElement('span');
-          const copy = document.createElement('span');
-          const label = document.createElement('strong');
-          const detail = document.createElement('small');
-
-          row.className = 'status-item status-' + item.status;
-          marker.className = 'status-marker';
-          marker.textContent = item.status === 'complete' ? '\u2713' : '\u2022';
-          marker.setAttribute('aria-hidden', 'true');
-          copy.className = 'status-copy';
-          label.textContent = item.label;
-          detail.textContent = item.statusLabel;
-          copy.append(label, detail);
-          row.append(marker, copy);
-          statusList.appendChild(row);
-        });
-
-        document.getElementById('active-sheet-context').textContent = data.activeSheetName
-          ? 'Estás en: ' + data.activeSheetName : '';
-        renderHelp(data);
-      }
-
-      function renderHelp(data) {
-        helpSections.replaceChildren();
-        const query = helpSearch.value.trim().toLocaleLowerCase('es');
-        data.helpSections.filter(function(section) {
-          const faqText = (section.faqs || []).map(function(item) { return item.join(' '); }).join(' ');
-          return !query || (section.title + ' ' + section.text + ' ' + faqText)
-            .toLocaleLowerCase('es').includes(query);
-        }).forEach(function(section) {
-          const details = document.createElement('details');
-          const summary = document.createElement('summary');
-          const paragraph = document.createElement('p');
-
-          details.className = 'help-item';
-          details.open = query ? true : section.open;
-          summary.textContent = section.title;
-          paragraph.textContent = section.text;
-          details.append(summary, paragraph);
-          (section.faqs || []).filter(function(item) {
-            return !query || (item[0] + ' ' + item[1]).toLocaleLowerCase('es').includes(query) ||
-              section.title.toLocaleLowerCase('es').includes(query);
-          }).forEach(function(item) {
-            const faq = document.createElement('details');
-            const question = document.createElement('summary');
-            const answer = document.createElement('p');
-            faq.className = 'help-item';
-            faq.open = Boolean(query);
-            question.textContent = item[0];
-            answer.textContent = item[1];
-            faq.append(question, answer);
-            details.appendChild(faq);
-          });
-          helpSections.appendChild(details);
-        });
-        if (!helpSections.childElementCount) helpSections.textContent = 'No hay resultados.';
-      }
-
-      function setRefreshState(refreshing) {
-        refreshButton.disabled = refreshing;
-        refreshButton.classList.toggle('is-refreshing', refreshing);
-      }
-    </script>
-  </body>
-</html>
+<!DOCTYPE html><html lang="es"><head><base target="_top"><meta charset="utf-8"><style id="active-theme"><?!= uiThemeCss ?></style><?!= includeUiFile_('UiStyles'); ?>
+<style>
+:root{--sidebar-primary:var(--primary);--sidebar-on-primary:var(--on-primary);--sidebar-secondary:var(--secondary);--sidebar-accent:var(--accent);--sidebar-surface:var(--surface);--sidebar-alt:var(--muted);--sidebar-text:var(--text);--sidebar-muted:var(--muted-text);--sidebar-border:var(--border);--sidebar-success:var(--success);--sidebar-warning:var(--warning);--sidebar-danger:var(--danger)}
+.help-app{width:100%;min-width:0;font-size:13px;line-height:1.5;color:var(--sidebar-text)}.help-app .brand-header{gap:8px;padding:8px 12px}.help-app .brand-logo{width:27px;height:34px}.help-app .brand-name{font-size:13px}.help-app .version-label{font-size:11px}.help-app .icon-button{width:29px;height:29px;flex:0 0 29px;font-size:17px}
+.search-bar{position:sticky;top:0;z-index:3;background:var(--sidebar-surface);padding:7px 12px 9px;border-bottom:1px solid var(--sidebar-border)}.search-wrap{display:flex;align-items:center;gap:6px;border:1px solid var(--sidebar-border);border-radius:7px;padding:0 8px;background:var(--sidebar-surface)}.search-wrap:focus-within{border-color:var(--sidebar-primary);outline:2px solid var(--sidebar-accent)}.search-wrap input{border:0;outline:0;min-width:0;flex:1;height:34px;background:transparent;color:var(--sidebar-text);font-size:13px}.search-wrap button{border:0;background:transparent;color:var(--sidebar-text);font-size:18px;cursor:pointer}.search-wrap button[hidden]{display:none}
+.help-content{padding:9px 12px}.context-card,.status-card{border:1px solid var(--sidebar-border);border-radius:8px;padding:9px 10px;margin-bottom:9px;background:var(--sidebar-alt)}.eyebrow{margin:0;color:var(--sidebar-muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}.context-card strong{display:block;font-size:13px;overflow-wrap:anywhere}.context-card p:last-child{margin:2px 0 0;color:var(--sidebar-muted);font-size:12px}.status-head{display:flex;align-items:center;justify-content:space-between;gap:7px}.status-head strong{font-size:13px}.status-head small{color:var(--sidebar-muted)}.status-progress{height:5px;background:var(--sidebar-border);border-radius:99px;overflow:hidden;margin:7px 0}.status-progress span{display:block;height:100%;background:var(--sidebar-success)}.status-row{display:flex;gap:6px;padding:2px 0;font-size:12px}.status-row b{min-width:17px}.status-pending b{color:#8a5700}.status-complete b{color:#157348}.status-error b{color:var(--sidebar-danger)}.status-detail-toggle{border:0;background:transparent;padding:5px 0 0;color:var(--sidebar-primary);font-size:12px;font-weight:600;cursor:pointer}.status-detail[hidden]{display:none}
+.help-heading{font-size:12px;margin:12px 2px 7px;color:var(--sidebar-muted);text-transform:uppercase;letter-spacing:.04em}.help-card{border:1px solid var(--sidebar-border);border-radius:8px;margin:0 0 7px;background:var(--sidebar-surface);overflow:hidden}.help-card[open]{border-color:var(--sidebar-accent)}.help-card>summary{list-style:none;display:grid;grid-template-columns:22px 1fr 12px;gap:5px;align-items:center;padding:9px 10px;background:var(--sidebar-alt);cursor:pointer}.help-card>summary::-webkit-details-marker,.faq-item>summary::-webkit-details-marker{display:none}.help-icon{font-size:16px}.help-card-title{font-size:14px;font-weight:650;display:block;line-height:1.25}.help-subtitle{font-size:11.5px;color:var(--sidebar-muted);display:block;line-height:1.35}.chevron{font-size:15px;transition:transform .15s}.help-card[open]>.help-card-summary .chevron{transform:rotate(90deg)}.help-card-body{padding:9px 11px 11px;font-size:13px;line-height:1.5}.help-card-body p{margin:0 0 8px}.help-card-body p:last-child{margin-bottom:0}.help-card-body ul,.help-card-body ol{padding-left:20px;margin:6px 0}.help-card-body li{margin:3px 0}.context-chip{font-size:10px;border-radius:99px;background:var(--sidebar-accent);color:#fff;padding:1px 6px;margin-left:4px}.menu-path{display:flex;flex-wrap:wrap;gap:3px;margin:6px 0 9px}.menu-path span{padding:2px 5px;border-radius:4px;background:var(--sidebar-alt);font-size:11px}.menu-path i{color:var(--sidebar-muted);font-style:normal}.timeline{counter-reset:timeline;list-style:none!important;padding:0!important}.timeline li{counter-increment:timeline;display:flex;gap:8px;align-items:flex-start}.timeline li:before{content:counter(timeline);border-radius:50%;width:18px;height:18px;flex:0 0 18px;text-align:center;background:var(--sidebar-primary);color:#fff;font-size:11px}.dependency{display:grid;gap:3px;text-align:center;margin:7px 0;font-weight:600}.dependency em{font-style:normal;color:var(--sidebar-muted)}.callout{border-left:3px solid var(--sidebar-accent);padding:6px 8px;background:var(--sidebar-alt);font-size:12px}.callout.warning{border-color:var(--sidebar-warning)}.callout.danger{border-color:var(--sidebar-danger)}
+.faq-group{margin:10px 0 4px;font-size:11px;text-transform:uppercase;color:var(--sidebar-muted);letter-spacing:.04em}.faq-item{border-bottom:1px solid var(--sidebar-border);background:var(--sidebar-surface)}.faq-item>summary{list-style:none;display:flex;justify-content:space-between;gap:5px;cursor:pointer;padding:7px 5px;font-size:12.5px;font-weight:600;background:var(--sidebar-alt)}.faq-item>summary:after{content:'+';font-size:16px;line-height:1}.faq-item[open]>summary:after{content:'−'}.faq-item p{padding:8px 5px;margin:0;font-size:12.5px}.no-results{padding:20px 9px;text-align:center;color:var(--sidebar-muted)}.no-results strong{display:block;color:var(--sidebar-text)}.help-app button:focus-visible,.help-app summary:focus-visible{outline:2px solid var(--sidebar-primary);outline-offset:2px}.help-footer{text-align:center;font-size:11px;color:var(--sidebar-muted);padding:10px;border-top:1px solid var(--sidebar-border)}
+</style></head><body><main class="help-app"><header class="brand-header"><img class="brand-logo" src="<?!= branding.icon ?>" alt=""><div class="brand-copy"><p class="brand-name"><?= uiConfig.projectName ?></p><span class="version-label">Ayuda · <?= uiConfig.versionLabel ?></span></div><button class="icon-button" id="refresh" type="button" aria-label="Actualizar estado" title="Actualizar estado">↻</button></header>
+<div class="search-bar"><div class="search-wrap"><span aria-hidden="true">⌕</span><input id="search" type="search" autocomplete="off" placeholder="Buscar en la ayuda…" aria-label="Buscar en la ayuda"><button id="clear" type="button" aria-label="Limpiar búsqueda" hidden>×</button></div></div>
+<div class="help-content"><section class="context-card" aria-label="Hoja actual"><p class="eyebrow">Estás en</p><strong id="context-name"></strong><p id="context-description"></p></section><section class="status-card" aria-labelledby="status-title"><div class="status-head"><strong id="status-title">Estado del cuaderno</strong><small id="status-count"></small></div><div class="status-progress" role="progressbar" aria-label="Controles correctos" id="status-progress" aria-valuemin="0"><span id="status-fill"></span></div><div id="status-pending"></div><button class="status-detail-toggle" id="status-toggle" type="button" aria-expanded="false">Ver detalle</button><div class="status-detail" id="status-detail" hidden></div></section><h2 class="help-heading">Explora la ayuda</h2><div id="sections"></div></div><footer class="help-footer"><?= uiConfig.projectName ?> · <?= uiConfig.versionLabel ?><br>&copy; MJS</footer></main>
+<script>
+let data=<?!= JSON.stringify(sidebarData) ?>;const search=document.getElementById('search'),clear=document.getElementById('clear'),sections=document.getElementById('sections');
+function normalize(value){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es')}
+function element(tag,cls,text){const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node}
+function renderStatus(){const items=data.stateItems||[],ok=items.filter(function(item){return item.status==='complete'}).length,total=items.length,pending=document.getElementById('status-pending'),detail=document.getElementById('status-detail');document.getElementById('status-count').textContent=ok+' / '+total+' correctos';const bar=document.getElementById('status-progress');bar.setAttribute('aria-valuemax',String(total));bar.setAttribute('aria-valuenow',String(ok));document.getElementById('status-fill').style.width=(total?100*ok/total:0)+'%';pending.replaceChildren();detail.replaceChildren();items.forEach(function(item){const row=element('div','status-row status-'+item.status);row.append(element('b','',item.status==='complete'?'✓':item.status==='error'?'!':'⚠'),element('span','',item.label+' · '+item.statusLabel));detail.appendChild(row);if(item.status!=='complete')pending.appendChild(row.cloneNode(true))});if(!pending.childElementCount)pending.appendChild(element('div','status-row status-complete','✓ Todo correcto'));}
+function renderContext(){document.getElementById('context-name').textContent=data.contextSectionId==='first-steps'?'Hoja no gestionada':data.activeSheetName;document.getElementById('context-description').textContent=data.contextDescription}
+function renderHelpSections(){const query=normalize(search.value.trim());clear.hidden=!query;sections.replaceChildren();let matches=0;(data.helpSections||[]).forEach(function(section){const faq=section.faqs||[];const sectionMatch=normalize([section.title,section.subtitle,section.text,section.keywords].join(' ')).includes(query);const matchingFaqs=faq.filter(function(item){return normalize(item.join(' ')).includes(query)});if(query&&!sectionMatch&&!matchingFaqs.length)return;matches++;const card=element('details','help-card');card.dataset.id=section.id;card.open=Boolean(query)||Boolean(section.open);const summary=element('summary','help-card-summary'),icon=element('span','help-icon',section.icon),label=element('span'),title=element('span','help-card-title',section.title),subtitle=element('span','help-subtitle',section.subtitle),chevron=element('span','chevron','›');if(section.id===data.contextSectionId&&data.contextSectionId!=='first-steps')title.append(element('span','context-chip','Hoja actual'));label.append(title,subtitle);summary.append(icon,label,chevron);card.appendChild(summary);const body=element('div','help-card-body');renderSectionBody(body,section);if(faq.length)renderFaq(body,query&&!sectionMatch?matchingFaqs:faq,query);card.appendChild(body);card.addEventListener('toggle',function(){if(card.open&&!search.value.trim())sections.querySelectorAll('.help-card').forEach(function(other){if(other!==card)other.open=false})});sections.appendChild(card)});if(!matches){const empty=element('div','no-results');empty.append(element('strong','','No he encontrado resultados para «'+search.value.trim()+'». '),element('span','','Prueba con módulo, horario, notas o reparar.'));sections.appendChild(empty)}}
+function renderSectionBody(body,section){if(section.id==='first-steps'){const list=element('ol','timeline');['Prepara o configura el curso','Completa Alumnado','Crea 4 Config de cada módulo','Define UT y ponderaciones','Recalcula Config','Crea Seguimiento y Evaluación','Trabaja durante el curso'].forEach(function(text){list.appendChild(element('li','',text))});body.appendChild(list);return}if(section.id==='dependencies'){const flow=element('div','dependency');['Calendario + Horario','↓','4 Config','↓','5 Seg + 6 Eval','Alumnado ↓ 6 Eval'].forEach(function(text){flow.appendChild(element('span','',text))});body.appendChild(flow);body.appendChild(element('p','',section.text));return}const paths={ 'general-data':['Configuración','Configuración general'],calendar:['Configuración','Calendario'],schedule:['Configuración','Horario'],'module-config':['Módulos','Crear configuración de módulo'],'module-tracking':['Módulos','Crear seguimiento y evaluación'],evaluation:['Módulos','Crear seguimiento y evaluación'],initialize:['Reparar estructura'],'new-course':['Preparar nuevo curso']};if(paths[section.id]){const breadcrumb=element('div','menu-path');['Cuaderno del Profesor'].concat(paths[section.id]).forEach(function(part,index){if(index)breadcrumb.append(element('i','','›'));breadcrumb.append(element('span','',part))});body.appendChild(breadcrumb)}body.appendChild(element('p','',section.text.replace(/^Cuaderno del Profesor → [^:]+:\s*/,'')));if(section.id==='module-config')body.appendChild(element('div','callout','Consejo: recalcula Config después de cambiar las horas de una UT.'));if(section.id==='new-course')body.appendChild(element('div','callout warning','La copia se crea y verifica antes del reinicio anual.'))}
+function faqGroup(item){const question=normalize(item[0]);if(/nuevo curso|preparar/.test(question))return'Nuevo curso';if(/reparar|borro|protegida|formula/.test(question))return'Mantenimiento';if(/eval|ut vacia|mh|alumno|peso/.test(question))return'Evaluación';if(/config|modulo|seg|old/.test(question))return'Módulos';return'Calendario y horario'}
+function renderFaq(body,faqs,query){const groups={};faqs.forEach(function(item){const group=faqGroup(item);(groups[group]||(groups[group]=[])).push(item)});['Módulos','Evaluación','Calendario y horario','Mantenimiento','Nuevo curso'].forEach(function(group){if(!groups[group])return;body.appendChild(element('h3','faq-group',group));groups[group].forEach(function(item){const details=element('details','faq-item'),summary=element('summary','',item[0]);details.append(summary,element('p','',item[1]));details.open=Boolean(query);body.appendChild(details)})})}
+function render(){renderContext();renderStatus();renderHelpSections()}
+search.addEventListener('input',renderHelpSections);clear.addEventListener('click',function(){search.value='';search.focus();renderHelpSections()});document.getElementById('status-toggle').addEventListener('click',function(){const detail=document.getElementById('status-detail'),open=detail.hidden;detail.hidden=!open;this.textContent=open?'Ocultar detalle':'Ver detalle';this.setAttribute('aria-expanded',String(open))});document.getElementById('refresh').addEventListener('click',function(){const button=this;button.disabled=true;google.script.run.withSuccessHandler(function(next){data=next;document.getElementById('active-theme').textContent=next.themeCss;render();button.disabled=false}).withFailureHandler(function(){button.disabled=false}).obtenerDatosPanelLateral()});render();
+</script></body></html>

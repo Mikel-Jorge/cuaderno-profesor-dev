@@ -69,10 +69,6 @@
   form.addEventListener('submit', function(domEvent) {
     domEvent.preventDefault();
     if (isBlocked || isSaving) return;
-    if (WIZARD_STEP && !isDirty()) {
-      google.script.run.withFailureHandler(handleSaveError).abrirPasoAsistenteCurso(3);
-      return;
-    }
     if (!isDirty() || !form.reportValidity() || !validateEventScopes()) return;
     setSavingState(true);
     hideResult();
@@ -80,9 +76,6 @@
       .guardarConfiguracionCalendario(getCalendarPayloadData());
   });
   closeButton.addEventListener('click', function() { google.script.host.close(); });
-  if (WIZARD_STEP) document.getElementById('back-button').addEventListener('click', function() {
-    google.script.run.withFailureHandler(handleSaveError).abrirPasoAsistenteCurso(1);
-  });
 
   function renderAll() {
     renderTypes();
@@ -381,8 +374,7 @@
       calendarData = cloneData(response.data);
       ensureEventUiKeys();
     }
-    if (WIZARD_STEP) google.script.run.withFailureHandler(handleSaveError).abrirPasoAsistenteCurso(3);
-    else google.script.host.close();
+    google.script.host.close();
   }
   function handleSaveError(error) {
     setSavingState(false);
