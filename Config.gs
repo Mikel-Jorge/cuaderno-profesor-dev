@@ -1,6 +1,6 @@
 const CP = Object.freeze({
   PROJECT_NAME: 'Cuaderno del Profesor',
-  NOTEBOOK_VERSION: '1.8.1',
+  NOTEBOOK_VERSION: '1.8.2',
   SCHEMA_VERSION: '11',
   TAB_COLORS: Object.freeze({
     GENERAL: '#546E7A',
@@ -41,13 +41,13 @@ const CP = Object.freeze({
     THEME_ACCENT: 'tema_accent',
   }),
   MENU: Object.freeze({
-    NAME: '📘 Cuaderno del Profesor',
+    NAME: '📘 Cuaderno del Profesor 📘',
     NEW_COURSE: '🆕 Preparar nuevo curso',
     INIT: '🔧 Reparar estructura',
     CONFIG: '⚙️ Configuración',
-    GENERAL_DATA: 'Configuración general',
-    CALENDAR_CONFIG: 'Calendario',
-    SCHEDULE_CONFIG: 'Horario',
+    GENERAL_DATA: '🪪 Configurar datos del docente y centro',
+    CALENDAR_CONFIG: '📅 Configurar calendario',
+    SCHEDULE_CONFIG: '🕒 Configurar horario',
     MODULES: '📚 Módulos',
     MODULE_CONFIG_CREATE: '🗓️ Crear configuración de módulo',
     MODULE_CONFIG_RECALCULATE: '🔄 Recalcular configuración del módulo',

@@ -5,9 +5,20 @@
     <meta charset="utf-8">
     <style><?!= uiThemeCss ?></style>
     <?!= includeUiFile_('UiStyles'); ?>
+    <style>
+      .general-dialog .brand-header{padding:10px 16px}
+      .general-dialog .config-scroll{padding:8px 18px 16px}
+      .general-dialog-title{margin:2px 18px 8px;font-size:18px;color:var(--text)}
+      .general-dialog .form-section{border:1px solid var(--border);border-radius:9px;padding:15px;margin:0 0 12px;background:var(--surface)}
+      .general-dialog .form-section h2{margin:0 0 11px;font-size:15px;color:var(--primary)}
+      .general-dialog .form-grid{gap:12px}
+      .general-dialog .form-field input,.general-dialog .form-field select{min-height:38px;border-radius:6px}
+      .general-dialog .form-field label{font-size:12px;font-weight:600}
+      .general-dialog .form-help{margin:3px 0 0;font-size:11px}
+    </style>
   </head>
   <body>
-    <main class="app">
+    <main class="app general-dialog">
       <header class="brand-header">
         <img class="brand-logo" src="<?!= branding.icon ?>" alt="">
         <div class="brand-copy">
@@ -15,6 +26,8 @@
           <span class="version-label"><?= uiConfig.versionLabel ?></span>
         </div>
       </header>
+
+      <h1 class="general-dialog-title">Datos del docente y centro</h1>
 
       <? if (wizardStep) { ?>
         <p class="wizard-progress">Paso 1 de 6 · Datos generales</p>
@@ -24,7 +37,7 @@
       <form class="config-form" id="config-form">
         <div class="config-scroll">
           <section class="form-section" aria-labelledby="teacher-section-title">
-            <h2 id="teacher-section-title">Informaci&oacute;n docente</h2>
+            <h2 id="teacher-section-title">Curso y docente</h2>
             <div class="form-grid">
               <div class="form-field">
                 <label for="curso_academico">Curso acad&eacute;mico</label>

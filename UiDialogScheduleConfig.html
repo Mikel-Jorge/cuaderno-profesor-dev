@@ -90,7 +90,20 @@
   confirmationOverlay.addEventListener('click', function(event) { if (event.target === confirmationOverlay) closeConfirmation(); });
   document.addEventListener('keydown', function(event) { if (event.key === 'Escape' && pendingConfirmation) closeConfirmation(); });
 
-  function renderAll() { renderSections(); renderSlots(); renderActivities(); renderWeeklyGrid(); if (WIZARD_STEP) ['slots', 'activities', 'weekly'].forEach(function(section) { document.getElementById(section + '-section').classList.toggle('is-hidden', section !== ({3:'slots',4:'activities',5:'weekly'})[WIZARD_STEP]); }); if (isBlocked) form.querySelectorAll('input, select, button').forEach(function(control) { if (control !== closeButton) control.disabled = true; }); }
+  function renderAll() {
+    renderSections(); renderSlots(); renderActivities(); renderWeeklyGrid();
+    if (WIZARD_STEP) ['slots', 'activities', 'weekly'].forEach(function(section) {
+      const inactive = section !== ({3:'slots',4:'activities',5:'weekly'})[WIZARD_STEP];
+      const container = document.getElementById(section + '-section');
+      container.classList.toggle('is-hidden', inactive);
+      container.querySelectorAll('input, select, button').forEach(function(control) {
+        control.disabled = inactive;
+      });
+    });
+    if (isBlocked) form.querySelectorAll('input, select, button').forEach(function(control) {
+      if (control !== closeButton) control.disabled = true;
+    });
+  }
   function renderSections() {
     Object.keys(expandedSections).forEach(function(section) {
       const panel = document.getElementById(section + '-panel');

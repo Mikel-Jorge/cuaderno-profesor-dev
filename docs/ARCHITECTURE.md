@@ -2,7 +2,7 @@
 
 **Estado:** vigente
 **Última revisión:** 2026-10-09
-**Versión:** `1.8.1` / esquema `11`
+**Versión:** `1.8.2` / esquema `11`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -19,13 +19,13 @@ La apertura de configuradores no crea, repara, oculta, reordena ni renderiza hoj
 
 `UiDialogRepair.html` recoge siete booleanos serializables. `Ui.gs` normaliza la selección y construye los pasos visibles del progreso. El mantenimiento de tablas técnicas y huérfanos se ejecuta siempre; `Setup.gs` cierra con metadatos, ocultación, orden y `Protections.gs` instala protecciones solo de los bloques seleccionados más hojas técnicas y OLD. Durante un paso de Repair sin Portada, `CP_REPAIR_SKIP_COVER` impide que los helpers de calendario, horario o módulos regeneren indirectamente su índice. `Tracking.gs` permite recorrer Seguimiento y Evaluación por separado. La selección viaja como DTO y nunca contiene objetos de Apps Script.
 
-El asistente de curso usa los mismos formularios y backends de GeneralConfig, Calendar y Schedule, mostrados como seis pasos modales consecutivos. Los tres pasos de Horario filtran las secciones de un único configurador y guardan su modelo completo al avanzar si hubo cambios. `UiDialogCourseSummary.html` obtiene contadores y estado desde las fuentes actuales. En primer uso se prepara la estructura técnica necesaria al guardar el primer paso; abrir el asistente es solo lectura. El proceso de nuevo curso abre el mismo primer paso al finalizar backup y transición anual. La apertura normal del libro sigue sin escrituras ni diálogos.
+`UiDialogNewCourse.html` mantiene un solo popup. Calendario y Horario reutilizan sus formularios dentro de él, sin abrir otros diálogos. Los pasos de Horario ocultan y deshabilitan las secciones ajenas al paso actual. El stepper y el resumen consultan `getCourseWizardSummary_()` para distinguir apartados configurados y pendientes. La apertura normal del libro sigue sin escrituras ni diálogos.
 
 Los colores son siempre presentación. Ningún cálculo reconstruye datos desde fondos o estilos.
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.8.1`, esquema `11` y paleta fija de pestañas.
+- `Config.gs`: constantes, nombres de hojas, versión `1.8.2`, esquema `11` y paleta fija de pestañas.
 - `Theme.gs`: tema global, presets y colores semánticos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -41,7 +41,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 - `Portada.gs`: estructura, datos e índice dinámico de `0 Portada`.
 - `NewCourse.gs`: backup y pasos de Preparar nuevo curso.
 - `Utils.gs`: acceso, tamaño, recorte y ordenación de hojas.
-- `Sidebar.gs` y `UiSidebar.html`: controles y secciones con contexto, icono, subtítulo y palabras clave; resumen correcto/total y filtrado local sin polling.
+- `Sidebar.gs` y `UiSidebar.html`: controles y secciones con icono, subtítulo, viñetas y palabras clave; resumen correcto/total, detalle alternativo y filtrado local sin polling.
 - `Ui.gs` y `UiDialog*.html`: diálogos de mantenimiento y flujo único de preparación anual.
 - `Branding.gs` y `UiStyles.html`: identidad y estilos comunes.
 

@@ -18,5 +18,8 @@ assert(html.includes("normalize('NFD')"));
 assert(html.includes("items.filter(function(item){return item.status==='complete'}).length"));
 assert(html.includes('status-detail'));
 assert(html.includes('faq-item'));
+assert(!html.includes('Estás en'));
+assert(html.includes("document.getElementById('status-card').hidden=Boolean(query)"));
+assert(html.includes('pending.hidden=open'));
 assert(!html.includes('setInterval('));
 console.log('sidebar help model and client search/status: ok');

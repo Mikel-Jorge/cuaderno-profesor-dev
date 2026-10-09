@@ -1,20 +1,20 @@
-# Guía de uso · Cuaderno del Profesor 1.8.1
+# Guía de uso · Cuaderno del Profesor 1.8.2
 
 ## Empezar un curso
 
-El cuaderno se distribuye como copia de una plantilla inicializada. Usa el único menú **📘 Cuaderno del Profesor**. Sus submenús son **Configuración** (General, Calendario, Horario) y **Módulos** (Crear configuración, Recalcular, Crear seguimiento y evaluación). Después aparecen **Reparar estructura**, **Preparar nuevo curso** y **Ayuda**. No hay un asistente de configuración independiente.
+El cuaderno se distribuye como copia de una plantilla inicializada. Usa el único menú **📘 Cuaderno del Profesor 📘**. Sus submenús son **Configuración** (🪪 Configurar datos del docente y centro, 📅 Configurar calendario, 🕒 Configurar horario) y **Módulos** (Crear configuración, Recalcular, Crear seguimiento y evaluación). Después aparecen **Reparar estructura**, **Preparar nuevo curso** y **Ayuda**. No hay un asistente de configuración independiente.
 
-Para pasar de un curso a otro, abre **Preparar nuevo curso**. Un único diálogo guía siete pasos. Abrirlo no modifica el cuaderno; la copia y el reinicio solo comienzan después de confirmar en Seguridad. **Siguiente** guarda el paso actual. Si cancelas, los pasos guardados permanecen y puedes continuar con los configuradores individuales.
+Para pasar de un curso a otro, abre **Preparar nuevo curso**. Un único diálogo guía siete pasos. Abrirlo no modifica el cuaderno; la copia y el reinicio comienzan al pulsar **Crear copia y preparar** en Seguridad. **Siguiente** guarda el paso actual. Si cancelas, los pasos guardados permanecen y puedes continuar con los configuradores individuales.
 
-1. **Seguridad:** confirma el nuevo curso y crea una copia verificada antes de reiniciar datos anuales.
-2. **Datos generales:** comprueba el curso propuesto, docente, centro, web y tema. El formato es `YYYY-YYYY`.
+1. **Seguridad:** indica el nuevo curso y crea una copia verificada antes de reiniciar datos anuales.
+2. **Datos del docente y centro:** comprueba el curso propuesto, docente, centro, web y tema. El formato es `YYYY-YYYY`.
 3. **Calendario:** revisa tipos, fechas lectivas, evaluaciones, FEOE, repaso, festivos, Navidad y Semana Santa con el calendario del centro.
 4. **Tramos:** revisa los periodos consecutivos conservados del curso anterior.
 5. **Actividades:** revisa nombre, sigla, grupo, aula, color, tipo y categoría. Sus IDs se conservan.
 6. **Horario semanal:** asigna actividades y apoyos. Las sesiones anteriores parten vacías.
-7. **Resumen:** consulta lo completado y lo pendiente. Puedes finalizar parcialmente; después completa Alumnado y configura cada módulo.
+7. **Resumen:** consulta lo completado y lo pendiente. Los pasos pendientes aparecen en color neutro; puedes finalizar parcialmente. Después completa Alumnado y configura cada módulo.
 
-Durante el curso puedes usar por separado **Configuración → Configuración general**, **Configuración → Calendario** y **Configuración → Horario**. Una sesión representa una hora docente aunque el tramo dure otro número de minutos.
+Durante el curso puedes usar por separado **Configuración → Configurar datos del docente y centro**, **Configuración → Configurar calendario** y **Configuración → Configurar horario**. Una sesión representa una hora docente aunque el tramo dure otro número de minutos.
 
 ## Hojas y orden de trabajo
 
@@ -38,7 +38,7 @@ El menú **Reparar estructura** abre un selector. Los siete bloques visibles emp
 
 ## Ayuda y estado
 
-**Ayuda** abre una barra lateral adaptada al espacio estrecho de Sheets. Muestra la hoja actual, un resumen dinámico de controles correctos y solo los pendientes; **Ver detalle** enseña todos. Las secciones se despliegan una a una y la FAQ tiene preguntas propias. El buscador funciona sin tildes ni distinción de mayúsculas: por ejemplo, `evaluacion`, `peso`, `protegida` o `REACA`. La X limpia la búsqueda. **Actualizar estado** vuelve a cargar los datos una vez, sin consultas continuas.
+**Ayuda** abre una barra lateral adaptada al espacio estrecho de Sheets. Muestra un resumen dinámico de controles correctos y solo los pendientes; **Ver detalle** sustituye esa lista por todos los controles. Durante la búsqueda se oculta el estado para dejar espacio a los resultados. Las secciones se despliegan una a una y la FAQ tiene preguntas propias. El buscador funciona sin tildes ni distinción de mayúsculas: por ejemplo, `evaluacion`, `peso`, `protegida` o `REACA`. La X limpia la búsqueda. **Actualizar estado** vuelve a cargar los datos una vez, sin consultas continuas.
 
 ## Preguntas frecuentes
 

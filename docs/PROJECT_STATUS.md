@@ -2,8 +2,16 @@
 
 **Última actualización:** 2026-10-09
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.8.1`
+**Versión vigente:** `1.8.2`
 **Esquema vigente:** `11`
+
+## Correctivo UX 1.8.2
+
+- Menú con icono a ambos lados y nombres claros en las tres opciones de Configuración.
+- Seguridad del nuevo curso con texto breve y acción explícita; Datos del docente y centro mejor maquetados. Tramos, Actividades y Horario muestran solo su sección.
+- Stepper y resumen del curso reflejan datos guardados: verde para completos, neutro para pendientes.
+- Ayuda sin tarjeta «Estás en»; el detalle del estado sustituye a los pendientes y la búsqueda oculta el estado. Textos breves con acciones y viñetas.
+- Se verifica por prueba que el reinicio anual vacía las fechas finales de evaluación en los cuatro tipos.
 
 ## Pulido 1.8.1
 

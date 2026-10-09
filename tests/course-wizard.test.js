@@ -14,8 +14,8 @@ function menu(label) {
   };
 }
 const ctx = {
-  CP: { MENU: { NAME: '📘 Cuaderno del Profesor', CONFIG: '⚙️ Configuración', MODULES: '📚 Módulos',
-    GENERAL_DATA: 'Configuración general', CALENDAR_CONFIG: 'Calendario', SCHEDULE_CONFIG: 'Horario',
+  CP: { MENU: { NAME: '📘 Cuaderno del Profesor 📘', CONFIG: '⚙️ Configuración', MODULES: '📚 Módulos',
+    GENERAL_DATA: '🪪 Configurar datos del docente y centro', CALENDAR_CONFIG: '📅 Configurar calendario', SCHEDULE_CONFIG: '🕒 Configurar horario',
     MODULE_CONFIG_CREATE: 'Crear Config', MODULE_CONFIG_RECALCULATE: 'Recalcular', MODULE_TRACKING_CREATE: 'Crear Seg/Eval',
     INIT: 'Reparar', NEW_COURSE: 'Preparar nuevo curso', HELP: 'Ayuda' },
     CONFIG_KEYS: { ACADEMIC_YEAR: 'curso_academico' } },
@@ -30,9 +30,12 @@ vm.runInContext(fs.readFileSync('Main.gs', 'utf8'), ctx);
 vm.runInContext(fs.readFileSync('Ui.gs', 'utf8'), ctx);
 ctx.onOpen();
 assert.strictEqual(menuCalls.length, 1);
-assert.strictEqual(menuCalls[0].label, '📘 Cuaderno del Profesor');
+assert.strictEqual(menuCalls[0].label, '📘 Cuaderno del Profesor 📘');
 assert.strictEqual(menuCalls[0].items[0].label, '⚙️ Configuración');
 assert.strictEqual(menuCalls[0].items[1].label, '📚 Módulos');
+assert.strictEqual(menuCalls[0].items[0].items[0][0], '🪪 Configurar datos del docente y centro');
+assert.strictEqual(menuCalls[0].items[0].items[1][0], '📅 Configurar calendario');
+assert.strictEqual(menuCalls[0].items[0].items[2][0], '🕒 Configurar horario');
 assert.deepStrictEqual(menuCalls[0].items.at(-2), ['Preparar nuevo curso', 'abrirPrepararNuevoCurso']);
 assert.deepStrictEqual(menuCalls[0].items.at(-1), ['Ayuda', 'mostrarAyuda']);
 assert(!JSON.stringify(menuCalls).includes('Asistente de configuración'));
@@ -44,11 +47,13 @@ assert.strictEqual(JSON.stringify(ctx.getCourseWizardSummary_()), JSON.stringify
 
 const html = fs.readFileSync('UiDialogNewCourse.html', 'utf8');
 assert.strictEqual((html.match(/class="course-step(?: current)?"/g) || []).length, 7);
-assert(html.includes('confirm-reset'));
+assert(!html.includes('confirm-reset'));
+assert(html.includes('applyCompletion(prepared)'));
 assert(html.includes('obtenerFormularioPasoNuevoCurso'));
 assert(!html.includes('abrirPasoAsistenteCurso'));
 assert(!html.includes('showModalDialog'));
 const backend = fs.readFileSync('NewCourse.gs', 'utf8');
 assert(backend.includes('process.steps.forEach(function(step) { step.run(process.input); })'));
 assert(backend.includes("isCalendar ? 'UiDialogCalendarConfig' : 'UiDialogScheduleConfig'"));
+assert(fs.readFileSync('UiStyles.html', 'utf8').includes('.schedule-accordion.is-hidden'));
 console.log('unified menu and seven-step single-dialog wizard: ok');
