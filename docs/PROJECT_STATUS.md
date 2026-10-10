@@ -2,7 +2,7 @@
 
 **Última actualización:** 2026-10-10
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.8.7`
+**Versión vigente:** `1.8.8`
 **Esquema vigente:** `11`
 
 ## Correctivo visual de Preparar nuevo curso 1.8.7
