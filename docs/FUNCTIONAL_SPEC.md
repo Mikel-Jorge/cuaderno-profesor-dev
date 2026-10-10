@@ -11,7 +11,7 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 
 **Estado:** especificación funcional vigente
 **Versión del documento:** 3.3
-**Versión del cuaderno:** `1.8.8`
+**Versión del cuaderno:** `1.9.0`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.8.8
+# 2. Estado funcional de la versión 1.9.0
 
 Están cerrados funcionalmente:
 
@@ -111,6 +111,8 @@ Toda hoja visible generada amplía el lienzo antes de escribir y lo recorta de f
 
 Los colores son presentación. El nombre de una hoja tampoco debe ser su única identidad.
 
+Al guardar un cambio de tema, los colores temáticos se aplican a todas las hojas visibles gestionadas, incluidos Seguimientos OLD. No se alteran valores, fórmulas, Notes, colores semánticos ni hojas ajenas.
+
 # 5. Portada
 
 `0 Portada` muestra curso académico, profesor, datos del centro e índice navegable desde la primera fila y columna. Conserva una fila de separación tras el curso académico; los datos comienzan inmediatamente bajo sus dos encabezados. El curso se propone automáticamente: de agosto a diciembre, año actual-año siguiente; de enero a julio, año anterior-año actual.
@@ -119,16 +121,16 @@ El índice se construye desde las hojas visibles existentes y excluye todas las 
 
 # 6. Preparar nuevo curso
 
-La acción abre un único diálogo HTML de siete pasos. Al abrirse no modifica el cuaderno. Seguridad recoge el curso propuesto y la carpeta de la futura copia, actual por defecto. Siguiente guarda un borrador persistente por Spreadsheet en `DocumentProperties`. Cancelar cierra sin aplicar el borrador y volver a abrir permite continuarlo.
+La acción abre un único diálogo HTML de siete pasos. Al abrirse no modifica el cuaderno. Seguridad recoge el curso propuesto y la carpeta de destino del nuevo cuaderno activo, actual por defecto. Siguiente guarda un borrador persistente por Spreadsheet en `DocumentProperties`. Cancelar cierra sin aplicar el borrador y volver a abrir permite continuarlo.
 
-Solo al pulsar `Finalizar y generar cuaderno` se crea y verifica la copia del Spreadsheet en la carpeta elegida, con el nombre original. Si la copia no puede verificarse, no se ejecuta la transición. Después puede mover el cuaderno activo dentro de Mi unidad, renombrarlo como `CuadernoProfesor_XXXX` y aplicar curso, profesor, centro y apariencia. La copia conserva el contenido anterior íntegro.
+Solo al pulsar `Finalizar y generar cuaderno` se crea y verifica una copia histórica del Spreadsheet en la carpeta original, con el nombre original. Su índice se rehace con enlaces a la propia copia; si no es posible, se conservan los rótulos sin enlaces. Si la copia no puede verificarse, no se ejecuta la transición. Después se mueve el cuaderno activo a la carpeta de destino si es diferente, se renombra como `CuadernoProfesor_XXXX` y se aplican curso, profesor, centro y apariencia. La copia conserva el contenido anterior íntegro.
 
 El cuaderno activo conserva profesor, centro, tema, tramos horarios y catálogo de actividades, incluidos sus IDs estables. Después del backup se reinician de forma coordinada:
 
 - las filas de `3 Alumnado`, conservando hoja y cabecera;
 - `_HOR_SESIONES`, incluidos los apoyos, conservando `_HOR_TRAMOS` y `_HOR_ACTIVIDADES`;
 - activación y fechas lectivas, FEOE y repaso de `_CAL_TIPOS`;
-- fechas finales de `_CAL_EVALUACIONES` para 1º, 2º, Online y Curso de Especialización, conservando ID, nombre y orden;
+- todas las filas de `_CAL_EVALUACIONES`; las evaluaciones nuevas reciben IDs nuevos, mientras que la identidad de cada tipo de enseñanza se conserva;
 - todos los eventos anuales de `_FECHAS` y sus asociaciones en `_CAL_FECHA_TIPOS`.
 
 La transición anual conserva snapshots en memoria para restaurar Alumnado, Horario y Calendario si falla; el backup verificado sigue siendo la garantía completa. La generación de Calendario, Horario, Portada, metadatos e índice se ejecuta al finalizar el diálogo.
@@ -144,6 +146,8 @@ Tras el backup se materializan y renombran las `5 Seg ...` activas como `OLD AAC
 `1 Calendario` representa septiembre-junio desde el modelo técnico. Los tipos de enseñanza estables son `FP1`, `FP2`, `ONLINE` y `CE`, con periodos lectivos, evaluaciones y, cuando proceda, FEOE y repaso. Los identificadores técnicos históricos `practicas_inicio` y `practicas_fin` se mantienen por compatibilidad.
 
 Las fechas especiales se almacenan una sola vez y pueden ser globales o aplicarse a tipos concretos. Las categorías vigentes son `FESTIVO`, `REUNION` y `DESTACADO`. Los solapamientos se conservan como datos independientes y la prioridad solo resuelve la presentación. Fines de semana, lectividad, finales de evaluación y estadísticas se derivan sin inspeccionar colores.
+
+En Fechas especiales solo se eligen tipos activos; «Todos» equivale a todos ellos y se almacena sin IDs. Al guardar se descartan los IDs de tipos inactivos. Las Notes de Reunión y Destacado incluyen siempre el ámbito «Aplica a». Cuando se activa un tipo sin fecha final se propone el 30 de junio del año final; si Repaso no tiene fechas se proponen el 1 y el 30 de junio. Las propuestas son editables y no sustituyen fechas existentes.
 
 La hoja visible es una vista idempotente, compacta, temática y recortada. Guardar la configuración o ejecutar la reparación la regenera desde las tablas técnicas.
 
@@ -163,7 +167,7 @@ Fuentes oficiales contrastadas: [Calendario escolar del Departamento de Educaci�
 
 Los tramos forman una única cadena cronológica consecutiva. Cada tramo tiene ID estable, tipo `SESION` o `DESCANSO`, inicio y duración positiva múltiplo de cinco minutos. La hora final se deriva. Los descansos no admiten actividad ni cuentan como sesión docente.
 
-Las actividades admiten las categorías `MODULO`, `TUTORIA`, `GUARDIA`, `REUNION`, `DUAL`, `PPPP`, `P` y `OTRA`. Las sesiones semanales relacionan día, tramo y actividad; el apoyo es un texto opcional de hasta 40 caracteres asociado a la sesión concreta.
+Las actividades admiten las categorías `MODULO`, `TUTORIA`, `GUARDIA`, `REUNION`, `DUAL`, `PPPP`, `P` y `OTRA`. Los módulos nuevos solo eligen tipos de enseñanza activos; una actividad histórica puede conservar su tipo inactivo. TUTORIA, GUARDIA, REUNION, PPPP y P proponen un gris neutro sin sobrescribir personalizaciones; GUARDIA propone «Guardia», «G» y «Sala de Profesores». Las sesiones semanales relacionan día, tramo y actividad; el apoyo es un texto opcional de hasta 40 caracteres asociado solo a una sesión MODULO y se vacía al cambiar a otra categoría.
 
 La vista muestra la semana actual de lunes a viernes y, durante sábado y domingo, la semana siguiente. A1 y A2 mantienen el día y la fecha/hora reales. El tramo horario activo resalta solo su celda de hora con fondo `accent`, texto contrastado y negrita; las actividades conservan sus colores y durante el fin de semana no se marca ninguna sesión actual. Es una vista derivada y nunca actúa como fuente de datos.
 
@@ -181,10 +185,12 @@ Dos actividades como `PMDM · DAM2A` y `PMDM · DAM2B` son imparticiones indepen
 
 `3 Alumnado` es una hoja de entrada manual, no una vista derivada. Sus únicas columnas visibles son, en este orden:
 
-| Apellidos | Nombre | Grupo | Email | REACA | Medidas |
+| Apellidos | Nombre | Grupo | Email | REACA | Información / Medidas |
 |---|---|---|---|---|---|
 
 Debe ser clara, temática, cómoda para pegar datos y con la cabecera congelada. Email es opcional; REACA es un checkbox opcional y Medidas es texto libre opcional. La columna G oculta `alumno_id` guarda un UUID estable, generado solo para filas de alumnos y conservado al reparar. No se añaden DNI, teléfonos ni identificadores administrativos.
+
+Grupo ofrece una lista de grupos distintos de actividades MODULO, ordenados; admite valores históricos fuera de la lista. La lista se sincroniza al reparar Alumnado, al guardar Actividades del Horario y al terminar un curso nuevo, sin reformatar la hoja.
 
 `Reparar estructura`, al seleccionar Alumnado, garantiza la hoja, cabeceras, checkbox nativo, formato y posición sin borrar filas de alumnado. Normaliza los booleanos y los textos heredados `TRUE`/`FALSE`, asigna los UUID ausentes solo cuando Apellidos, Nombre y Grupo están completos y es idempotente. Preparar nuevo curso limpia también REACA, Medidas y los UUID después del backup.
 
@@ -259,6 +265,8 @@ La zona inferior conserva exactamente 15 filas editables con `UT | Nombre | Hora
 La evaluación visible es una fórmula basada en el fin acumulado de sesiones de cada UT y en el número de sesiones reales hasta cada fecha final de evaluación. La UT queda en la evaluación de su última sesión; si excede la capacidad total, figura en la última evaluación configurada. Las UT de cero horas no reciben evaluación.
 
 El `RESUMEN DE HORAS Y PONDERACIONES` incluye `Peso UTs`, `Peso final` y `Estado`. `Peso UTs` suma los pesos de las UT activas cuya evaluación final coincide; una evaluación sin UT muestra `—` y `Sin UT`, sin exigir 100 %. Una evaluación con UT debe sumar 100 %. `Peso final` es editable de 0 a 100 en cada evaluación, y todas las evaluaciones deben tenerlo configurado y sumar 100 % para completar la ponderación del módulo. El total de `Peso UTs` muestra `—`; el total de `Peso final` muestra su suma y el estado global. Los campos vacíos necesarios aparecen en ámbar, los configurados que cuadran en verde y los importes erróneos en rojo. Las fórmulas y los formatos se actualizan al editar Horas, Peso (%) o Peso final, sin triggers ni Recalcular.
+
+El estado de cada evaluación prioriza los errores de Peso UT; con Peso UT correcto, muestra «⚠ Falta peso final» si está vacío, «—» mientras el total global no cuadra y «✓ Correcto» cuando todas las ponderaciones cierran. La fila TOTAL muestra «⚠ Ponderaciones pendientes» para pesos finales ausentes, «❌ Peso final incorrecto» si la suma no es 100 y «✓ Ponderaciones completas» al completarse.
 
 ## 11.5. Recálculo explícito
 
@@ -339,13 +347,15 @@ Al preparar otro curso, cada seguimiento activo se materializa y archiva como `5
 
 # 13. Evaluación
 
-`6 Eval <SIGLA> · <GRUPO>` usa tres filas de cabecera, congela A:C y las tres primeras filas, y muestra Apellidos, Nombre y Medidas a la izquierda. Cada evaluación configurada forma un bloque con sus UT activas en orden, `Media nª` y `Educa nª`; el bloque FINAL contiene `Media final` y `Educa final`. Los nombres de evaluaciones proceden de Calendario. La fila 1 usa los colores primario y de acento del tema; la fila 2 usa el secundario salvo las UT, que conservan su color propio. La fila 3 referencia directamente el peso de cada UT en Config y se actualiza al cambiarlo. La Note de cada UT contiene su nombre completo. La celda Medidas muestra `REACA` si corresponde o queda vacía, y tiene una Note con el texto de Medidas con independencia de REACA. Grupo, Email y el UUID técnico no son visibles.
+`6 Eval <SIGLA> · <GRUPO>` usa tres filas de cabecera, congela A:C y las tres primeras filas, y muestra Apellidos, Nombre e Información / Medidas a la izquierda. Cada evaluación configurada forma un bloque con sus UT activas en orden, `Media nª` y `Educa nª`; el bloque FINAL contiene `Media final` y `Educa final`. Los nombres de evaluaciones proceden de Calendario. La fila 1 usa los colores primario y de acento del tema; la fila 2 usa el secundario salvo las UT, que conservan su color propio. La fila 3 referencia directamente el peso de cada UT en Config y se actualiza al cambiarlo. La Note de cada UT contiene su nombre completo. La celda Información / Medidas muestra `REACA` si corresponde o queda vacía, y tiene una Note con el texto de Medidas con independencia de REACA. Grupo, Email y el UUID técnico no son visibles.
 
 Las notas UT son entradas de 0 a 10 con hasta dos decimales, visibles como `0,00`; la celda vacía queda visualmente vacía y cuenta como cero en el cálculo. Cada media de evaluación redondea a dos decimales la suma de `nota UT × Peso (%) / 100`, referenciando directamente M28:M42 de su `4 Config`. La media final redondea a dos decimales la suma de `Media nª × Peso final / 100` y referencia AH29:AH(28+n) de Config. Cambiar pesos actualiza las medias sin Repair. Educa por evaluación y final son entradas manuales independientes: entero 1–10 o `MH`, con vacío permitido. `MH` se muestra literalmente y equivale a 10 para el semáforo; Educa no interviene en Media final.
 
+Educa se conserva como texto discreto al ordenar o reparar: los números y formatos heredados inequívocos como `3,00` pasan a `3`, mientras la fila MEDIA DEL GRUPO mantiene formato numérico. Reparar solo 6 Eval asigna antes UUID a filas válidas de Alumnado, sin reformatearla. Las filas de alumnos ausentes se conservan y se muestran grises; si vuelve un ID, se recupera el estilo normal.
+
 Todas las notas visibles no vacías muestran solo color de texto: menos de 5 rojo `#C62828`, de 5 a menos de 7 azul `#1565C0`, de 7 a menos de 9 verde `#2E7D32`, desde 9 o `MH` dorado `#B26A00`. Una media cero muestra `0,00` rojo; una UT vacía no se colorea. Media y Medidas usan fondo gris suave; toda celda Educa mantiene fondo amarillo suave y negrita incluso rellena. Las columnas de notas son compactas y los bordes entre alumnos y columnas son finos, con mayor separación entre bloques.
 
-Cada fila de Eval conserva `alumno_id` oculto. Al crear o reparar, el alumnado queda ordenado por Apellidos y Nombre mediante ese ID: notas UT, Educa, Notes y filas históricas siguen asociadas al alumno correcto; los alumnos nuevos se intercalan en su lugar. `Reparar estructura`, al seleccionar 6 Eval, migra las Eval de 1.7.0 con sus notas a la cabecera de tres filas, actualiza Medidas y reinstala fórmulas, validaciones y formato. Reparar es el mecanismo explícito de sincronización de alumnado; no hay trigger. Si la estructura de UT ya no coincide, preserva Eval y avisa sin reconstruirla. Si se borró la hoja, puede crear una nueva sin alterar `5 Seg`; las notas perdidas solo están en el backup. Preparar nuevo curso elimina Eval tras el backup.
+Cada fila de Eval conserva `alumno_id` oculto. Al crear o reparar, el alumnado queda ordenado por Apellidos y Nombre mediante ese ID: notas UT, Educa, Notes y filas históricas siguen asociadas al alumno correcto; los alumnos nuevos se intercalan en su lugar. `Reparar estructura`, al seleccionar 6 Eval, migra las Eval de 1.7.0 con sus notas a la cabecera de tres filas, actualiza Información / Medidas y reinstala fórmulas, validaciones y formato. Reparar es el mecanismo explícito de sincronización de alumnado; no hay trigger. Si la estructura de UT ya no coincide, preserva Eval y avisa sin reconstruirla. Si se borró la hoja, puede crear una nueva sin alterar `5 Seg`; las notas perdidas solo están en el backup. Preparar nuevo curso elimina Eval tras el backup.
 
 Una fila final `MEDIA DEL GRUPO` muestra con dos decimales la media de cada UT (vacío = 0), de cada Media de evaluación y de Media final. En las columnas Educa promedia solo los valores rellenos y trata `MH` como 10; si no hay valores muestra vacío. Sus fórmulas se actualizan al editar notas sin triggers y aplican el mismo semáforo, conservando fondo gris.
 

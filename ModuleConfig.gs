@@ -796,6 +796,7 @@ function installModuleConfigFormatRules_(sheet, evaluationCount) {
     [
       { text: '✓', background: '#DCFCE7', color: theme.colors.success },
       { text: '⚠', background: '#FEF3C7', color: '#1F2937' },
+      { text: '—', background: '#FEF3C7', color: '#1F2937' },
       { text: '❌', background: '#FEE2E2', color: theme.colors.danger },
     ].forEach(function(style) {
       rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextContains(style.text)
@@ -956,8 +957,8 @@ function renderModuleHoursSummary_(sheet, activity, context, startRow, finalWeig
       'IF(AH' + row + '=""' + separator + '"⚠ Falta peso final"' + separator +
       'IF(COUNTBLANK($AH$' + firstEvaluationRow + ':$AH$' +
       (firstEvaluationRow + context.evaluations.length - 1) + ')>0' + separator +
-      '"⚠ Peso final pendiente"' + separator +
-      'IF(' + finalTotal + '<>100' + separator + '"❌ Peso final incorrecto"' +
+      '"—"' + separator +
+      'IF(' + finalTotal + '<>100' + separator + '"—"' +
       separator + '"✓ Correcto"))))))';
     sheet.getRange(row, columns.STATUS, 1, 4).merge()
       .setFormula('=IF(' + weight.count + '=0' + separator + '"Sin UT"' +
@@ -984,7 +985,7 @@ function renderModuleHoursSummary_(sheet, activity, context, startRow, finalWeig
     'IF(COUNTIF(' + statusRange + separator + '"⚠*")>0' + separator +
     '"⚠ Ponderaciones pendientes"' + separator +
     'IF(COUNTBLANK(' + finalRange + ')>0' + separator +
-    '"⚠ Falta peso final"' + separator +
+    '"⚠ Ponderaciones pendientes"' + separator +
     'IF(AH' + row + '=100' + separator + '"✓ Ponderaciones completas"' + separator +
     '"❌ Peso final incorrecto"))))';
   sheet.getRange(row, columns.STATUS, 1, 4).merge().setFormula(totalStatus)
@@ -1004,8 +1005,9 @@ function renderModuleHoursSummary_(sheet, activity, context, startRow, finalWeig
     '"Quedan "&' + pending + '&" sesiones reales sin distribuir"))';
   sheet.getRange(row, 23, 2, 17).merge().setFormula(statusFormula)
     .setBackground(theme.colors.surface).setFontColor(theme.colors.warning)
-    .setFontWeight('bold').setWrap(true).setHorizontalAlignment('center');
-  row += 3;
+    .setFontWeight('bold').setWrap(true).setHorizontalAlignment('center')
+    .setVerticalAlignment('middle');
+  row += 2;
   sheet.getRange(row, 23, 1, 17).merge().setValue('Resultado del último recálculo')
     .setBackground(theme.colors.muted).setFontWeight('bold');
   sheet.getRange(row + 1, 23, 5, 17).merge().setValue('Todavía no se ha recalculado.')
@@ -1065,7 +1067,7 @@ function recalcularConfiguracionModulo() {
   setCommonUiTemplateData_(template);
   const output = template.evaluate()
     .setWidth(CP.UI.PROGRESS_DIALOG_WIDTH)
-    .setHeight(430);
+    .setHeight(300);
   SpreadsheetApp.getUi().showModalDialog(output, CP.MENU.MODULE_CONFIG_RECALCULATE);
 }
 
@@ -1309,7 +1311,7 @@ function applyCalculatedEvaluationsToModuleUnits_(units, assignments, context) {
   });
 }
 function updateModuleRecalculationSummary_(sheet, context, available, assigned, warnings) {
-  const row = CP_MODULE_CONFIG_LAYOUT.UT_HEADER_ROW + context.evaluations.length + 7;
+  const row = CP_MODULE_CONFIG_LAYOUT.UT_HEADER_ROW + context.evaluations.length + 6;
   const text = 'Sesiones asignadas: ' + assigned + ' de ' + available + '.' +
     (warnings.length ? '\n' + warnings.join('\n') : '\nSin avisos de distribución.');
   sheet.getRange(row, 23, 5, 17).setValue(text).setWrap(true);

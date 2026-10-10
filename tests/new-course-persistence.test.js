@@ -40,6 +40,7 @@ const context = {
   initializeCoverStructure_: () => calls.push('cover'),
   initializeMetaStructure_: () => calls.push('meta'),
   installAllManagedProtections_: () => calls.push('protect'),
+  syncStudentGroupValidation_: () => calls.push('groups'),
 };
 vm.createContext(context);
 const generalSource = fs.readFileSync('GeneralConfig.gs', 'utf8');
@@ -91,6 +92,6 @@ context.finalizarCalendarioNuevoCurso();
 context.finalizarHorarioNuevoCurso();
 context.finalizarEstructuraNuevoCurso();
 assert.deepStrictEqual(calls, ['backup', 'annualReset', 'general', 'calendarData', 'scheduleData', 'calendarView',
-  'scheduleView', 'hide', 'order', 'cover', 'meta', 'protect', 'toast']);
+  'scheduleView', 'hide', 'order', 'cover', 'meta', 'protect', 'groups', 'toast']);
 assert.strictEqual(store.size, 0, 'el borrador se limpia tras finalizar');
 console.log('borrador persistente y generación final diferida: ok');

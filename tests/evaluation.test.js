@@ -25,7 +25,7 @@ const blocks = [
 ];
 const layout = context.getEvaluationLayout_(blocks);
 assert.strictEqual(JSON.stringify(context.getEvaluationHeaders_(layout)), JSON.stringify([
-  'Apellidos', 'Nombre', 'Medidas', 'UT1', 'UT2', 'Media 1ª', 'Educa 1ª',
+  'Apellidos', 'Nombre', 'Información / Medidas', 'UT1', 'UT2', 'Media 1ª', 'Educa 1ª',
   'Media 2ª', 'Educa 2ª', 'Media final', 'Educa final', 'alumno_id',
 ]));
 assert.strictEqual(layout.idColumn, 12);
@@ -84,6 +84,22 @@ assert.strictEqual(ordered.items[2].values[3], 8);
 assert.strictEqual(ordered.items[2].values[8], 'MH');
 assert.strictEqual(ordered.items[1].values[2], 'REACA');
 assert.strictEqual(ordered.items[1].notes[2], 'Tiempo');
+assert.strictEqual(ordered.items[0].inactive, true);
+assert.strictEqual(ordered.items[1].inactive, false);
+assert.strictEqual(context.normalizeEvaluationEducaValue_(3), '3');
+assert.strictEqual(context.normalizeEvaluationEducaValue_('3,00'), '3');
+assert.strictEqual(context.normalizeEvaluationEducaValue_('MH'), 'MH');
+assert.strictEqual(context.normalizeEvaluationEducaValue_(10), '10');
+const eduRows = [['Zamora', 'Ana', '', '', '', '', 3, '', '', '', '3,00', 'id-z']];
+const eduReordered = context.buildEvaluationStudentRows_(eduRows,
+  eduRows.map(row => row.map(() => '')),
+  eduRows.map(row => row.map(() => '')),
+  [{ surname: 'Abad', name: 'Eva', reaca: false, measures: '', id: 'id-a' },
+    { surname: 'Zamora', name: 'Ana', reaca: false, measures: '', id: 'id-z' }],
+  12, [7, 11]);
+assert.deepStrictEqual(Array.from(eduReordered.items, item => item.id), ['id-a', 'id-z']);
+assert.strictEqual(eduReordered.items[1].values[6], '3');
+assert.strictEqual(eduReordered.items[1].values[10], '3');
 const repairedAgain = context.buildEvaluationStudentRows_(
   ordered.items.map(item => item.values),
   ordered.items.map(item => item.values.map(() => '')),

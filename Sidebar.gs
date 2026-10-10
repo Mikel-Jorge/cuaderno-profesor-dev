@@ -143,7 +143,7 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'evaluation',
       title: 'Evaluación',
-      text: 'Introduce la nota final de cada UT. Revisa las medias calculadas y escribe manualmente las notas Educa.',
+      text: 'Introduce la nota final de cada UT. Revisa las medias calculadas y escribe manualmente las notas Educa. Si llega un alumno nuevo, añádelo en 3 Alumnado y repara solo 6 Eval.',
     },
     {
       id: 'new-course',
@@ -169,6 +169,7 @@ function getSidebarHelpSections_(contextSectionId) {
         ['¿Qué es MH?', 'Matrícula de Honor. Se muestra como MH y equivale a diez cuando se calcula una media.'],
         ['¿Qué significa OLD?', 'Es un Seguimiento histórico del curso anterior, que no se resincroniza.'],
         ['¿Por qué sigue un alumno ausente en Eval?', 'Las notas anteriores se conservan aunque esa persona deje de aparecer en Alumnado.'],
+        ['¿Qué hago si llega un alumno nuevo?', 'Añádelo en 3 Alumnado, selecciona su grupo y ejecuta Reparar estructura marcando Hojas 6 Eval. Las Evaluaciones del grupo incorporarán al alumno sin modificar las notas existentes.'],
         ['¿Qué hago si una media parece incorrecta?', 'Revisa las notas y los pesos de Config. Si la hoja tiene un problema de formato o cálculo, selecciona su bloque en Reparar estructura.'],
         ['¿Por qué Sheets avisa de una celda protegida?', 'Es una advertencia para evitar cambios accidentales en celdas derivadas. Puedes continuar si sabes lo que haces.'],
         ['¿Cambiar Config cambia Seguimiento?', 'No. Seg conserva la instantánea capturada al crearse.'],
@@ -211,7 +212,7 @@ function getSidebarHelpSections_(contextSectionId) {
       'general-data': ['Actualiza docente y centro cuando cambien.', 'Revisa el curso académico antes de configurar el calendario.'],
       calendar: ['Revisa festivos, Navidad y Semana Santa con el calendario oficial.', 'Indica FEOE y repaso cuando afecten a tus módulos.'],
       schedule: ['Crea los tramos y las actividades antes de asignar sesiones.', 'En un curso nuevo se conservan tramos y actividades; la semana empieza vacía.'],
-      students: ['Después de cambios en Alumnado, selecciona Alumnado y 6 Eval en Reparar estructura para actualizar las notas.'],
+      students: ['Después de añadir un alumno con grupo, selecciona solo 6 Eval en Reparar estructura para incorporarlo a sus evaluaciones.'],
       'module-config': ['Cada módulo + grupo se configura por separado.', 'Las UT se sitúan en la evaluación donde terminan. Si borras Config, se pierden sus UT.'],
       'module-tracking': ['Fecha y Total se calculan automáticamente.', 'Los cambios posteriores de Config no reescriben lo ya registrado en Seg.'],
       evaluation: ['Las notas UT admiten 0–10 con decimales; una casilla vacía cuenta como cero en la media.', 'Los pesos de Config actualizan las medias. Educa admite 1–10 o MH.', 'Las recuperaciones se gestionan en Moodle.'],

@@ -1,4 +1,4 @@
-# Guía de uso · Cuaderno del Profesor 1.8.8
+# Guía de uso · Cuaderno del Profesor 1.9.0
 
 ## Empezar un curso
 
@@ -6,7 +6,7 @@ El cuaderno se distribuye como copia de una plantilla inicializada. Usa el únic
 
 Para pasar de un curso a otro, abre **Preparar nuevo curso**. Un único diálogo guía siete pasos. Abrirlo no modifica el cuaderno. **Siguiente** guarda un borrador del paso actual sin redibujar las hojas. Puedes volver a pasos visitados desde el indicador superior; Atrás y el indicador descartan los cambios que aún no hayas guardado. Los pasos pendientes muestran un aviso ámbar con su motivo. **Cancelar** conserva el borrador para retomarlo. **Finalizar y generar cuaderno** crea la copia, prepara el nuevo curso y aplica las vistas en una espera final.
 
-1. **Seguridad:** indica el nuevo curso y elige dónde se creará la copia al finalizar.
+1. **Seguridad:** indica el nuevo curso y elige el destino del cuaderno activo. El histórico quedará en la carpeta actual.
 2. **Datos del docente y centro:** comprueba el curso propuesto, docente, centro, web y tema. El formato es `YYYY-YYYY`.
 3. **Calendario:** revisa tipos, fechas lectivas, evaluaciones, FEOE, repaso, festivos, Navidad y Semana Santa con el calendario del centro.
 4. **Tramos:** revisa los periodos consecutivos conservados del curso anterior.
@@ -26,9 +26,11 @@ Durante el curso puedes usar por separado **Configuración → Configurar datos 
 - **3 Alumnado** requiere Apellidos, Nombre y Grupo; Email es opcional. REACA es un checkbox y Medidas admite texto, que aparece como nota en Eval. El Cuaderno conserva internamente la identidad de cada persona para no mezclar notas al ordenar.
 - **4 Config** se crea desde **Cuaderno del Profesor → Módulos → Crear configuración de módulo** cuando la actividad es de categoría MODULO y tiene sesiones reales. Cada módulo + grupo es independiente. Introduce UT, horas, colores y pesos; usa **Cuaderno del Profesor → Módulos → Recalcular configuración del módulo** para aplicar cambios de planificación. Las horas se reparten cronológicamente; cada UT pertenece a la evaluación en la que termina. El resumen muestra disponibles, pendientes, Peso UTs y Peso final. El aviso marca cambios aún no aplicados. Los colores son presentación, nunca datos.
 - **5 Seg** se crea desde **Cuaderno del Profesor → Módulos → Crear seguimiento y evaluación**. Es una instantánea editable: Fecha y Total son derivados; registra UT, Plan previsto, Actividades realizadas, Actual y Mejoras. Acum. suma por UT incluso si aparece intercalada. Rojo señala que se superó el total inicial y el amarillo en Mejoras indica una propuesta. Cambios posteriores de Config no reescriben esta instantánea.
-- **6 Eval** recibe la nota final de cada UT calculada en Moodle, de 0–10 con decimales. Una UT vacía cuenta como cero en Media. Las medias y Media final leen en vivo los pesos de Config; Educa de cada evaluación y Educa final se introducen manualmente (1–10 o MH), con semáforo. MEDIA DEL GRUPO resume el grupo. Las recuperaciones se gestionan en Moodle. Tras cambios de Alumnado, selecciona Alumnado y 6 Eval en **Reparar estructura** para sincronizar.
+- **6 Eval** recibe la nota final de cada UT calculada en Moodle, de 0–10 con decimales. Una UT vacía cuenta como cero en Media. Las medias y Media final leen en vivo los pesos de Config; Educa de cada evaluación y Educa final se introducen manualmente (1–10 o MH), con semáforo. MEDIA DEL GRUPO resume el grupo. Las recuperaciones se gestionan en Moodle. Tras añadir alumnado válido, selecciona solo 6 Eval en **Reparar estructura** para sincronizar.
 
 **Dependencias:** Calendario + Horario → Config → Seg y Eval; Alumnado → Eval; ponderaciones de Config → medias de Eval. Seg es una instantánea inicial que luego refleja lo ocurrido, mientras Eval lee los pesos actuales de Config.
+
+Si llega un alumno nuevo, escribe Apellidos, Nombre y Grupo en **3 Alumnado** y ejecuta **Reparar estructura** marcando solo **Hojas 6 Eval**. Se añadirá a las evaluaciones de su grupo sin alterar las notas existentes. Grupo ofrece los grupos de actividades MODULO y permite conservar valores históricos. Las columnas Educa aceptan 1–10 o MH y mantienen esos valores al reordenar alumnos; una fila histórica ausente de Alumnado aparece gris.
 
 ## Reparar estructura
 
@@ -36,7 +38,7 @@ El menú **Reparar estructura** abre un selector. Los siete bloques visibles emp
 
 ## Preparar nuevo curso
 
-**Preparar nuevo curso** es una acción excepcional. Mientras recorres el diálogo solo se guarda un borrador que permanece si cancelas. En el selector de carpetas, un clic selecciona una carpeta para la copia y un doble clic la abre para ver sus subcarpetas; el breadcrumb y Atrás permiten volver. Si no seleccionas una hija, se usa la carpeta abierta. Al pulsar **Finalizar y generar cuaderno**, se crea y verifica una copia completa en la carpeta elegida (la actual por defecto). Solo entonces se mueve o renombra el cuaderno activo y se reinician alumnado, horario semanal y fechas del calendario. Se conservan docente, centro, tema, tramos y actividades; Seguimiento se archiva como OLD y se eliminan Config y Eval anteriores. El resumen muestra si Calendario, Tramos, Actividades y Horario están completos o pendientes y explica los pendientes.
+**Preparar nuevo curso** es una acción excepcional. Mientras recorres el diálogo solo se guarda un borrador que permanece si cancelas. En el selector de carpetas, un clic selecciona el destino del cuaderno nuevo y un doble clic abre una carpeta para ver sus subcarpetas; el breadcrumb y Atrás permiten volver. Si no seleccionas una hija, se usa la carpeta abierta. Al pulsar **Finalizar y generar cuaderno**, se crea y verifica una copia histórica completa en la carpeta original y se rehacen sus enlaces de Portada. Solo entonces se mueve el cuaderno activo a la carpeta elegida, si difiere, y se reinician alumnado, horario semanal, evaluaciones y fechas del calendario. Se conservan docente, centro, tema, tramos y actividades; Seguimiento se archiva como OLD y se eliminan Config y Eval anteriores. El resumen muestra si Calendario, Tramos, Actividades y Horario están completos o pendientes y explica los pendientes.
 
 ## Ayuda y estado
 

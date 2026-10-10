@@ -4,7 +4,7 @@ const CP_STUDENT_HEADERS = Object.freeze([
   'Grupo',
   'Email',
   'REACA',
-  'Medidas',
+  'Información / Medidas',
   'alumno_id',
 ]);
 
@@ -41,6 +41,7 @@ function createOrRepairStudentsSheet_() {
   }
 
   applyStudentsSheetTheme_(sheet, getActiveTheme_(spreadsheet), requiredRows);
+  syncStudentGroupValidation_(spreadsheet);
   const checkboxRange = sheet.getRange(2, 5, requiredRows - 1, 1);
   checkboxRange.setNumberFormat('General').insertCheckboxes();
   if (reacaValues.length) {
@@ -57,6 +58,43 @@ function createOrRepairStudentsSheet_() {
   trimSheetToBounds_(sheet, requiredRows, CP_STUDENT_HEADERS.length);
   installManagedSheetProtections_(sheet);
   return sheet;
+}
+
+function ensureStudentIdsForValidRows_(spreadsheet) {
+  const sheet = spreadsheet.getSheetByName(CP.SHEETS.STUDENTS);
+  if (!sheet || sheet.getLastRow() < 2) return 0;
+  const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 7).getValues();
+  let added = 0;
+  rows.forEach(function(row, index) {
+    if (row.slice(0, 3).every(function(value) { return String(value).trim(); }) &&
+        !String(row[6] || '').trim()) {
+      sheet.getRange(index + 2, 7).setValue(Utilities.getUuid());
+      added += 1;
+    }
+  });
+  return added;
+}
+
+function syncStudentGroupValidation_(spreadsheet) {
+  const book = spreadsheet || SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = book.getSheetByName(CP.SHEETS.STUDENTS);
+  if (!sheet || sheet.getMaxRows() < 2) return;
+  const activities = book.getSheetByName(CP.SHEETS.SCHEDULE_ACTIVITIES);
+  const groups = activities && activities.getLastRow() > 1
+    ? activities.getRange(2, 2, activities.getLastRow() - 1, 5).getValues()
+      .filter(function(row) { return normalizeScheduleActivityCategory_(row[0]) === 'MODULO'; })
+      .map(function(row) { return normalizeScheduleText_(row[4]).replace(/\s+/g, ' '); })
+      .filter(Boolean) : [];
+  const unique = Array.from(new Set(groups)).sort(function(a, b) {
+    return a.localeCompare(b, 'es', { sensitivity: 'base' });
+  });
+  const range = sheet.getRange(2, 3, sheet.getMaxRows() - 1, 1);
+  if (unique.length) {
+    range.setDataValidation(SpreadsheetApp.newDataValidation()
+      .requireValueInList(unique, true).setAllowInvalid(true).build());
+  } else {
+    range.clearDataValidations();
+  }
 }
 
 function applyStudentsSheetTheme_(sheet, theme, rowCount) {

@@ -2,7 +2,7 @@
 
 **Última actualización:** 2026-10-10
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.8.8`
+**Versión vigente:** `1.9.0`
 **Esquema vigente:** `11`
 
 ## Correctivo visual de Preparar nuevo curso 1.8.7
@@ -240,10 +240,18 @@ Pendiente de cierre del bloque:
 - Los colores nunca son fuente de verdad.
 - No hay triggers instalables, People API ni Google Calendar en V1.
 
-# Futuro / roadmap
+# Correctivo 1.9.0
 
-- Función global `Cambiar tema del cuaderno` cuando estén construidas las hojas principales.
-- Futuro bloque `7 Tutoría` para centralizar las funciones del docente tutor; todavía sin hoja ni estructura técnica.
+- El tema se aplica al guardar a las hojas visibles gestionadas, incluidos los Seg OLD, sin regenerar datos docentes; Apariencia y los diálogos principales se han compactado.
+- Calendario limita las fechas especiales a tipos activos, explicita su ámbito en Notes, centra estadísticas y propone finales de junio. Horario limita tipos nuevos a activos, ofrece defaults institucionales y reserva el apoyo para MODULO.
+- Alumnado ofrece Grupo desde actividades MODULO. Repair de Eval asigna IDs faltantes a alumnos válidos, mantiene Educa como texto discreto y distingue en gris filas históricas.
+- El nuevo curso limpia evaluaciones, deja el histórico en la carpeta original, mueve el activo al destino elegido y rehace los enlaces del índice histórico.
+
+# ROADMAP futuro
+
+- Contactos y posible integración con Google People: estudiar permisos, consentimiento, duplicados y mantenimiento antes de diseñarla.
+- Sincronización opcional con Google Calendar: estudiar permisos, conflictos y calendario de destino; no se han añadido scopes ni triggers.
+- `7 Tutoría` y control de faltas: definir primero datos, privacidad y flujos docentes. No hay hoja ni estructura técnica implementada.
 
 # Regla de actualización
 

@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <style id="active-theme"><?!= uiThemeCss ?></style>
     <?!= includeUiFile_('UiStyles'); ?>
+    <style>.module-prerequisite-warning{margin:9px 0 0;padding:9px 11px;border:1px solid #D97706;border-radius:7px;background:#FEF3C7;color:#78350F;font-size:12px;line-height:1.4}.module-prerequisite-warning:before{content:'⚠ ';font-weight:bold}</style>
   </head>
   <body>
     <main class="app">
@@ -130,16 +131,19 @@
 
       function updateSelection() {
         const module = moduleData.modules.find(function(item) { return item.id === select.value; });
+        selectionHelp.classList.remove('module-prerequisite-warning');
         if (module && module.configured) {
           selectionHelp.textContent = 'Este módulo ya tiene una configuración creada. Hoja: ' + module.sheetName + '.';
           submitButton.textContent = 'Abrir configuración';
           submitButton.disabled = false;
         } else if (module && module.prerequisiteError) {
           selectionHelp.textContent = module.prerequisiteError;
+          selectionHelp.classList.add('module-prerequisite-warning');
           submitButton.textContent = 'Configuración incompleta';
           submitButton.disabled = true;
         } else {
           selectionHelp.textContent = 'Se validarán Horario, periodo lectivo y evaluaciones antes de crearla.';
+          selectionHelp.classList.remove('module-prerequisite-warning');
           submitButton.textContent = 'Crear configuración';
           submitButton.disabled = false;
         }

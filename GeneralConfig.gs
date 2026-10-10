@@ -90,6 +90,8 @@ function saveGeneralConfig_(input, options) {
   if (structureError) throw new Error(structureError);
 
   const previousValues = getStoredConfigMap_(spreadsheet);
+  const previousTheme = saveOptions.includeTheme
+    ? getActiveTheme_(spreadsheet, previousValues) : null;
   const changedKeys = getPersistedConfigFields_(saveOptions).map(function(field) {
     return field.key;
   }).filter(function(key) {
@@ -98,17 +100,16 @@ function saveGeneralConfig_(input, options) {
 
   updateConfigValues_(configSheet, values, changedKeys);
 
+  const themeChanged = saveOptions.includeTheme && changedKeys.some(isThemeConfigKey_);
+  if (themeChanged) {
+    applyThemeToManagedWorkbook_(spreadsheet, previousTheme, getActiveTheme_(spreadsheet, values));
+  }
+
   const coverSheet = spreadsheet.getSheetByName(CP.SHEETS.COVER);
   if (saveOptions.updateCover !== false && coverSheet) {
     const changedGeneralKeys = changedKeys.filter(isGeneralDataConfigKey_);
     if (changedGeneralKeys.length) {
       updateCoverData_(coverSheet, values, changedGeneralKeys);
-    }
-    if (saveOptions.includeTheme && changedKeys.some(function(key) {
-      return [CP.CONFIG_KEYS.THEME_PRESET, CP.CONFIG_KEYS.THEME_PRIMARY,
-        CP.CONFIG_KEYS.THEME_SECONDARY, CP.CONFIG_KEYS.THEME_ACCENT].indexOf(key) !== -1;
-    })) {
-      applyCoverTheme_(coverSheet, getActiveTheme_(spreadsheet, values));
     }
   }
 
@@ -117,7 +118,7 @@ function saveGeneralConfig_(input, options) {
   }
   return {
     message: changedKeys.length
-      ? 'La configuración se ha guardado y la portada se ha actualizado.'
+      ? 'La configuración se ha guardado y sus vistas se han actualizado.'
       : 'No había cambios pendientes.',
     values: values,
   };

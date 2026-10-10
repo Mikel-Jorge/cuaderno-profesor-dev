@@ -136,9 +136,9 @@
       const expanded = Boolean(expandedEvents[calendarEvent.__uiKey]);
       const summary = getEventSummary(calendarEvent);
       const scopeOptions = calendarData.types.map(function(type) {
-        const checked = calendarEvent.typeIds.indexOf(type.id) !== -1;
+        const checked = !calendarEvent.appliesToAll && calendarEvent.typeIds.indexOf(type.id) !== -1;
         return '<label class="scope-option"><input type="checkbox" data-kind="event-scope" data-item-index="' + eventIndex + '" data-type-id="' + escapeAttribute(type.id) + '"' +
-          (checked ? ' checked' : '') + disabledAttribute(calendarEvent.appliesToAll) + '> ' + escapeHtml(type.name) + '</label>';
+          (checked ? ' checked' : '') + disabledAttribute(!type.active) + '> ' + escapeHtml(type.name) + '</label>';
       }).join('');
       return '<article class="calendar-event">' +
         '<div class="calendar-event-header"><button class="calendar-event-toggle" type="button" data-action="toggle-event" data-item-index="' + eventIndex + '" aria-expanded="' + expanded + '">' +
@@ -198,9 +198,15 @@
       const type = calendarData.types[typeIndex];
       type[field] = value;
       if (field === 'active' && domEvent.type === 'change') {
+        if (value && !type.endDate) type.endDate = getJuneDate(30);
         if (!value) expandedTypes[typeIndex] = false;
         renderTypes();
+        renderEvents();
       } else if ((field === 'configurePractices' || field === 'configureReview') && domEvent.type === 'change') {
+        if (field === 'configureReview' && value && !type.reviewStart && !type.reviewEnd) {
+          type.reviewStart = getJuneDate(1);
+          type.reviewEnd = getJuneDate(30);
+        }
         renderTypes();
       } else if (domEvent.type === 'change') {
         proposeTypeEndDate(type, field, target);
@@ -223,9 +229,18 @@
     } else if (kind === 'event-scope') {
       const calendarEvent = calendarData.events[Number(target.dataset.itemIndex)];
       const typeId = target.dataset.typeId;
+      if (calendarEvent.appliesToAll) {
+        calendarEvent.appliesToAll = false;
+        calendarEvent.typeIds = [];
+      }
       if (target.checked && calendarEvent.typeIds.indexOf(typeId) === -1) calendarEvent.typeIds.push(typeId);
       if (!target.checked) calendarEvent.typeIds = calendarEvent.typeIds.filter(function(id) { return id !== typeId; });
-      if (calendarEvent.typeIds.length) calendarEvent.appliesToAll = false;
+      const activeIds = calendarData.types.filter(function(type) { return type.active; })
+        .map(function(type) { return type.id; });
+      if (activeIds.length && activeIds.every(function(id) { return calendarEvent.typeIds.indexOf(id) !== -1; })) {
+        calendarEvent.appliesToAll = true;
+        calendarEvent.typeIds = [];
+      }
       renderEvents();
     }
     hideResult();
@@ -235,9 +250,14 @@
   function proposeTypeEndDate(type, field, target) {
     const endField = { startDate: 'endDate', practicesStart: 'practicesEnd', reviewStart: 'reviewEnd' }[field];
     if (!endField || !type[field] || type[endField]) return;
-    type[endField] = addOneDay(type[field]);
+    type[endField] = field === 'startDate' ? getJuneDate(30) : addOneDay(type[field]);
     const endInput = form.querySelector('[data-kind="type"][data-type-index="' + target.dataset.typeIndex + '"][data-field="' + endField + '"]');
     if (endInput) endInput.value = type[endField];
+  }
+
+  function getJuneDate(day) {
+    const years = /^(\d{4})-(\d{4})$/.exec(calendarData.academicYear || '');
+    return years ? years[2] + '-06-' + String(day).padStart(2, '0') : '';
   }
 
   function handleActionClick(domEvent) {

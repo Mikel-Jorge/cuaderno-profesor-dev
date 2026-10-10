@@ -107,6 +107,67 @@ function getThemeConfigForUi_(spreadsheet, configValues) {
   };
 }
 
+function applyThemeToManagedWorkbook_(spreadsheet, previousTheme, nextTheme) {
+  const oldColors = previousTheme.colors;
+  const newColors = nextTheme.colors;
+  const backgroundMap = {};
+  ['primary', 'secondary', 'accent'].forEach(function(key) {
+    if (oldColors[key].toUpperCase() !== newColors[key].toUpperCase()) {
+      backgroundMap[oldColors[key].toUpperCase()] = newColors[key];
+    }
+  });
+  const registeredIds = readModuleConfigRegistry_(spreadsheet).reduce(function(ids, record) {
+    [record.sheetId, record.trackingSheetId, record.evaluationSheetId].forEach(function(id) {
+      if (id) ids[id] = true;
+    });
+    return ids;
+  }, {});
+  const fixedNames = [CP.SHEETS.COVER, CP.SHEETS.CALENDAR,
+    CP.SHEETS.SCHEDULE, CP.SHEETS.STUDENTS];
+  spreadsheet.getSheets().forEach(function(sheet) {
+    if (sheet.isSheetHidden()) return;
+    const name = sheet.getName();
+    const isOldTracking = /^5 Seg\b.*\bOLD\b/.test(name) &&
+      isRegisteredModuleTrackingSheet_(sheet);
+    if (fixedNames.indexOf(name) === -1 && !registeredIds[sheet.getSheetId()] &&
+        !isOldTracking) return;
+    if (name === CP.SHEETS.COVER) {
+      applyCoverTheme_(sheet, nextTheme);
+      renderCoverIndex_(sheet);
+      return;
+    }
+    const rows = sheet.getLastRow();
+    const columns = sheet.getLastColumn();
+    if (!rows || !columns) return;
+    const range = sheet.getRange(1, 1, rows, columns);
+    const backgrounds = range.getBackgrounds();
+    const fontColors = range.getFontColors();
+    let changed = false;
+    backgrounds.forEach(function(row, rowIndex) {
+      row.forEach(function(background, columnIndex) {
+        const normalized = String(background).toUpperCase();
+        if (!backgroundMap[normalized]) return;
+        const role = ['primary', 'secondary', 'accent'].find(function(key) {
+          return oldColors[key].toUpperCase() === normalized;
+        });
+        row[columnIndex] = backgroundMap[normalized];
+        const oldText = oldColors['on' + role.charAt(0).toUpperCase() + role.slice(1)];
+        const newText = newColors['on' + role.charAt(0).toUpperCase() + role.slice(1)];
+        if (String(fontColors[rowIndex][columnIndex]).toUpperCase() === oldText.toUpperCase()) {
+          fontColors[rowIndex][columnIndex] = newText;
+        }
+        changed = true;
+      });
+    });
+    if (changed) range.setBackgrounds(backgrounds).setFontColors(fontColors);
+    if (name === CP.SHEETS.SCHEDULE) {
+      const slots = getScheduleTimeSlots_();
+      if (slots.length) applyScheduleCurrentTimeRules_(sheet,
+        { theme: nextTheme, slots: slots });
+    }
+  });
+}
+
 function validateThemeConfig_(values) {
   const presetId = normalizeThemePresetId_(values[CP.CONFIG_KEYS.THEME_PRESET]);
   if (!CP_THEME_PRESETS[presetId]) {

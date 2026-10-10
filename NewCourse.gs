@@ -78,6 +78,20 @@ function guardarHorarioNuevoCurso(input, step) {
   const draft = getNewCourseDraft_();
   assertNewCourseDraftEditable_(draft);
   const normalized = normalizeAndValidateScheduleConfig_(input);
+  if (section === 'activities') {
+    const activeIds = draft.calendar.types.filter(function(type) { return type.active; })
+      .map(function(type) { return type.id; });
+    const previous = draft.schedule.activities.reduce(function(map, activity) {
+      map[activity.id] = activity.teachingTypeId;
+      return map;
+    }, {});
+    normalized.activities.forEach(function(activity) {
+      if (activity.category === 'MODULO' && activeIds.indexOf(activity.teachingTypeId) === -1 &&
+          previous[activity.id] !== activity.teachingTypeId) {
+        throw new Error('El tipo de enseñanza de un módulo nuevo debe estar activo.');
+      }
+    });
+  }
   draft.schedule = normalized;
   draft.reviewed[step] = true;
   saveNewCourseDraft_(draft);
@@ -155,7 +169,7 @@ function createDefaultNewCourseCalendarConfig_(spreadsheet, academicYear) {
       .forEach(function(key) { type[key] = ''; });
     type.configurePractices = false;
     type.configureReview = false;
-    type.evaluations.forEach(function(item) { item.endDate = ''; });
+    type.evaluations = [];
   });
   calendar.events = buildDefaultCalendarEventsForAcademicYear_(
     calendar.academicYear, spreadsheet.getSpreadsheetTimeZone()).map(function(event) {
@@ -264,6 +278,7 @@ function finalizarEstructuraNuevoCurso() {
   initializeCoverStructure_();
   initializeMetaStructure_();
   installAllManagedProtections_();
+  syncStudentGroupValidation_(spreadsheet);
   clearNewCourseDraft_();
   spreadsheet.toast('Nuevo curso preparado.', CP.PROJECT_NAME, 5);
   return 'Cuaderno preparado.';
@@ -288,6 +303,9 @@ function obtenerFormularioPasoNuevoCurso(step) {
     template.wizardStep = 0;
   } else {
     template.scheduleConfig = Object.assign({}, getScheduleConfigForUi_(spreadsheet), draft.schedule);
+    template.scheduleConfig.teachingTypes = draft.calendar.types.map(function(type) {
+      return { id: type.id, label: type.name, active: type.active };
+    });
     template.wizardStep = step;
   }
   setCommonUiTemplateData_(template);
@@ -429,14 +447,31 @@ function createNewCourseBackup_(processInput) {
     );
   }
 
-  const backupFolder = getDriveFolderById_(processInput.destinationFolderId);
+  const backupFolder = getDriveFolderById_(processInput.originalFolderId);
   const backupFile = sourceFile.makeCopy(processInput.originalFileName, backupFolder);
   if (!backupFile || backupFile.isTrashed() ||
       backupFile.getName() !== processInput.originalFileName ||
-      !isFileInFolder_(backupFile, processInput.destinationFolderId)) {
-    throw new Error('No se ha podido verificar la copia de seguridad en la carpeta elegida.');
+      !isFileInFolder_(backupFile, processInput.originalFolderId)) {
+    throw new Error('No se ha podido verificar la copia histórica en la carpeta original.');
   }
-  return 'Copia de seguridad creada en ' + processInput.destinationFolderName + '.';
+  const backupBook = SpreadsheetApp.openById(backupFile.getId());
+  const backupCover = backupBook.getSheetByName(CP.SHEETS.COVER);
+  if (backupCover) {
+    const firstRow = 7;
+    const count = Math.max(0, backupCover.getLastRow() - firstRow + 1);
+    const labels = count ? backupCover.getRange(firstRow, 7, count, 1).getDisplayValues() : [];
+    try {
+      renderCoverIndex_(backupCover);
+    } catch (error) {
+      if (count) {
+        const index = backupCover.getRange(firstRow, 7, count, 1);
+        index.setRichTextValues(labels.map(function(row) {
+          return [SpreadsheetApp.newRichTextValue().setText(row[0]).build()];
+        }));
+      }
+    }
+  }
+  return 'Copia histórica creada en ' + processInput.originalFolderName + '.';
 }
 
 function moveNewCourseNotebook_(processInput) {

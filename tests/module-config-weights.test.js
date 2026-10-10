@@ -165,7 +165,7 @@ assert.ok(formatRules.some(rule => rule.range[1] === 13 && rule.formula.includes
 assert.ok(formatRules.some(rule => rule.range[1] === 13 &&
   rule.formula.includes('$C28<>"";$K28>0')));
 assert.ok(formatRules.some(rule => rule.range[1] === 34 && rule.formula.includes('COUNTBLANK')));
-assert.deepEqual(formatRules.filter(rule => rule.range[1] === 36).map(rule => rule.text), ['✓', '⚠', '❌']);
+assert.deepEqual(formatRules.filter(rule => rule.range[1] === 36).map(rule => rule.text), ['✓', '⚠', '—', '❌']);
 for (const formula of formulas.values()) {
   let depth = 0;
   let quoted = false;
@@ -270,9 +270,9 @@ weightedUnits[2].weight = 50;
 assert.equal(evaluateWeightFormulas(weightedUnits, [30, 30, '']).get('AJ32'),
   '⚠ Ponderaciones pendientes');
 assert.equal(evaluateWeightFormulas(weightedUnits, [40, 40, 30]).get('AJ32'),
-  '❌ Revisar ponderaciones');
+  '❌ Peso final incorrecto');
 assert.equal(evaluateWeightFormulas(weightedUnits, [20, 30, 40]).get('AJ32'),
-  '❌ Revisar ponderaciones');
+  '❌ Peso final incorrecto');
 
 // Migrating the 1.4.9 layout keeps all UT data and creates editable weight cells.
 values.set('28:1', 'UT1');

@@ -207,23 +207,7 @@ function resetCalendarForNewCourse_(academicYear) {
   assertCalendarStructureReady_(spreadsheet);
   validateAcademicYear_(academicYear);
   const timeZone = spreadsheet.getSpreadsheetTimeZone();
-  const supportedTypeIds = CP_CALENDAR_TYPE_DEFINITIONS.map(function(definition) {
-    return definition.id;
-  });
   const evaluationsSheet = spreadsheet.getSheetByName(CP.SHEETS.CALENDAR_EVALUATIONS);
-  const evaluationRows = readCalendarTableRows_(
-    evaluationsSheet,
-    CP_CALENDAR_HEADERS.EVALUATIONS.length
-  ).filter(function(row) {
-    return supportedTypeIds.indexOf(normalizeCalendarText_(row[1])) !== -1 &&
-      normalizeCalendarText_(row[0]) && normalizeCalendarText_(row[3]);
-  }).map(function(row) {
-    return [row[0], row[1], row[2], row[3], ''];
-  }).sort(function(first, second) {
-    const firstType = supportedTypeIds.indexOf(normalizeCalendarText_(first[1]));
-    const secondType = supportedTypeIds.indexOf(normalizeCalendarText_(second[1]));
-    return firstType - secondType || Number(first[2]) - Number(second[2]);
-  });
   const typeRows = CP_CALENDAR_TYPE_DEFINITIONS.map(function(definition) {
     return [definition.id, definition.name, false, '', '', '', '', '', ''];
   });
@@ -245,7 +229,7 @@ function resetCalendarForNewCourse_(academicYear) {
     typeRows,
     [4, 5, 6, 7, 8, 9]
   );
-  writeCalendarTable_(evaluationsSheet, CP_CALENDAR_HEADERS.EVALUATIONS, evaluationRows, [5]);
+  writeCalendarTable_(evaluationsSheet, CP_CALENDAR_HEADERS.EVALUATIONS, [], [5]);
   writeCalendarTable_(
     spreadsheet.getSheetByName(CP.SHEETS.CALENDAR_DATES),
     CP_CALENDAR_HEADERS.DATES,
@@ -578,8 +562,10 @@ function normalizeAndValidateCalendarConfig_(input, spreadsheet) {
   });
 
   const seenEventIds = {};
+  const activeTypeIds = types.filter(function(type) { return type.active; })
+    .map(function(type) { return type.id; });
   const events = input.events.map(function(event) {
-    return normalizeCalendarEvent_(event, timeZone);
+    return normalizeCalendarEvent_(event, timeZone, activeTypeIds);
   });
   events.forEach(function(event) {
     if (seenEventIds[event.id]) {
@@ -685,7 +671,7 @@ function validateOptionalCalendarRange_(startDate, endDate, type, label, timeZon
     'El periodo de ' + label + ' de ' + type.name + ' no es válido.', timeZone);
 }
 
-function normalizeCalendarEvent_(input, timeZone) {
+function normalizeCalendarEvent_(input, timeZone, activeTypeIds) {
   if (!input || typeof input !== 'object') {
     throw new Error('Hay una fecha especial incompleta.');
   }
@@ -696,7 +682,8 @@ function normalizeCalendarEvent_(input, timeZone) {
   const appliesToAll = input.appliesToAll === true;
   const inputTypeIds = Array.isArray(input.typeIds) ? input.typeIds : [];
   const typeIds = inputTypeIds.map(normalizeCalendarText_).filter(function(typeId, index, values) {
-    return typeId && values.indexOf(typeId) === index;
+    return typeId && values.indexOf(typeId) === index &&
+      (!activeTypeIds || activeTypeIds.indexOf(typeId) !== -1);
   });
   if (typeIds.some(function(typeId) { return !isSupportedCalendarTypeId_(typeId); })) {
     throw new Error('Uno de los tipos de enseñanza de una fecha especial no es válido.');
@@ -714,7 +701,8 @@ function normalizeCalendarEvent_(input, timeZone) {
     startDate: startDate,
     endDate: endDate,
     category: category,
-    typeIds: appliesToAll ? [] : typeIds,
+    typeIds: appliesToAll || (activeTypeIds && typeIds.length === activeTypeIds.length)
+      ? [] : typeIds,
     description: normalizeCalendarText_(input.description),
     priority: CP_CALENDAR_CATEGORIES[category].priority,
   };
@@ -1528,8 +1516,9 @@ function getCalendarLegendItems_(model) {
 
 function renderCalendarStats_(sheet, model, layout) {
   const colors = model.theme.colors;
-  const statsWidth = 33;
-  setMergedRangeValue_(sheet.getRange(layout.statsRow, 1, 1, statsWidth), 'ESTADÍSTICAS DE DÍAS LECTIVOS')
+  const statsWidth = 28;
+  const statsStart = Math.floor((layout.columns - statsWidth) / 2) + 1;
+  setMergedRangeValue_(sheet.getRange(layout.statsRow, statsStart, 1, statsWidth), 'ESTADÍSTICAS DE DÍAS LECTIVOS')
     .setBackground(colors.primary)
     .setFontColor(colors.onPrimary)
     .setFontWeight('bold')
@@ -1542,7 +1531,7 @@ function renderCalendarStats_(sheet, model, layout) {
   stats.forEach(function(item, index) {
     renderCalendarStatsRow_(sheet, model, firstDataRow + index, item, false);
   });
-  sheet.getRange(layout.statsRow, 1, stats.length + 3, statsWidth)
+  sheet.getRange(layout.statsRow, statsStart, stats.length + 3, statsWidth)
     .setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
     .setBorder(true, true, true, true, true, true, colors.border, SpreadsheetApp.BorderStyle.SOLID);
   sheet.getRange(firstDataRow, 25, stats.length, 3).setNumberFormat('0.0%');
@@ -1552,8 +1541,8 @@ function renderCalendarStats_(sheet, model, layout) {
 function renderCalendarStatsHeader_(sheet, model, row) {
   const colors = model.theme.colors;
   [
-    { column: 1, width: 7, value: 'Tipo', rows: 2 },
-    { column: 8, width: 11, value: 'Evaluación', rows: 2 },
+    { column: 6, width: 5, value: 'Tipo', rows: 2 },
+    { column: 11, width: 8, value: 'Evaluación', rows: 2 },
     { column: 19, width: 3, value: 'Lectivos', rows: 2 },
   ].forEach(function(segment) {
     setMergedRangeValue_(sheet.getRange(row, segment.column, segment.rows, segment.width), segment.value)
@@ -1576,8 +1565,8 @@ function renderCalendarStatsRow_(sheet, model, row, item, isHeader) {
   const background = isHeader ? colors.muted : colors.surface;
   const fontWeight = isHeader ? 'bold' : 'normal';
   const segments = [
-    { column: 1, width: 7, value: item.typeName, align: 'left' },
-    { column: 8, width: 11, value: item.evaluationName, align: 'left' },
+    { column: 6, width: 5, value: item.typeName, align: 'left' },
+    { column: 11, width: 8, value: item.evaluationName, align: 'left' },
     { column: 19, width: 3, value: item.total, align: 'center' },
     { column: 22, width: 3, value: item.elapsed, align: 'center' },
     { column: 25, width: 3, value: item.elapsedPercent, align: 'center' },
@@ -1714,7 +1703,10 @@ function buildCalendarDayNote_(date, model) {
     .forEach(function(event) {
       if (event.category !== 'REUNION' && event.category !== 'DESTACADO') return;
       const description = normalizeCalendarText_(event.description);
-      if (description) lines.push(description);
+      const appliedTypes = model.activeTypes.filter(function(type) {
+        return eventAppliesToTypeId_(event, type.id);
+      }).map(function(type) { return type.name; });
+      lines.push([description, 'Aplica a: ' + appliedTypes.join(', ')].filter(Boolean).join('\n'));
     });
   getEvaluationEndNotesForDate_(date, model)
     .forEach(function(line) { lines.push(line); });

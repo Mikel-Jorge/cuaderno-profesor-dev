@@ -2,7 +2,7 @@
 
 **Estado:** vigente
 **Última revisión:** 2026-10-10
-**Versión:** `1.8.8` / esquema `11`
+**Versión:** `1.9.0` / esquema `11`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -25,7 +25,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.8.8`, esquema `11` y paleta fija de pestañas.
+- `Config.gs`: constantes, nombres de hojas, versión `1.9.0`, esquema `11` y paleta fija de pestañas.
 - `Theme.gs`: tema global, presets, aliases de compatibilidad y colores semánticos. La lectura detecta tríos originales sin personalización para aplicar la nueva paleta; la reparación persiste el ID canónico y los colores resueltos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -87,6 +87,8 @@ Todas permanecen ocultas. No existen `_MODULOS`, `_MATRICULAS` ni `_UT`: las UT 
 
 `0 Portada` se genera desde `_CONFIG`. Su índice consulta las hojas visibles existentes, excluye nombres `_...` y crea enlaces por `gid`; por ello incorpora automáticamente `3 Alumnado` y, cuando existan, las familias 4/5/6.
 
+Al cambiar la apariencia, `Theme.gs` recolorea únicamente el tema en las hojas visibles gestionadas, sin reconstruir sus datos. `Students.gs` sincroniza la validación de Grupo desde `_HOR_ACTIVIDADES` y asigna UUID faltantes a filas válidas antes de sincronizar Eval. La copia histórica del nuevo curso se crea en la carpeta original y su índice se rehace con el Spreadsheet copiado como padre.
+
 Las hojas generadas usan `ensureSheetSize_()` antes de escribir y `trimSheetToBounds_()` después. `3 Alumnado` conserva un mínimo de filas editables y nunca borra datos en la reparación normal.
 
 `reorderManagedVisibleSheets_()` aplica este orden:
@@ -109,7 +111,7 @@ La utilidad mueve solo hojas con nombres gestionados, no borra ni renombra hojas
 
 El guardado valida el modelo completo, usa bloqueo de documento, conserva snapshots y escribe en bloque con intento de rollback. Fines de semana, lectividad, finales de evaluación y estadísticas se derivan en código.
 
-`resetCalendarForNewCourse_()` conserva los cuatro tipos estables y la estructura de evaluaciones, pero desactiva tipos, vacía todas sus fechas, elimina eventos y relaciones anteriores y genera propuestas globales para el nuevo curso. Navidad se deriva del par de años académicos y Pascua usa el algoritmo gregoriano de Meeus/Jones/Butcher; no hay consultas de red en ejecución. No se generan puentes o días de centro no verificables.
+`resetCalendarForNewCourse_()` conserva los cuatro tipos estables y la cabecera de `_CAL_EVALUACIONES`, pero vacía las evaluaciones del curso anterior, desactiva tipos, vacía sus fechas, elimina eventos y relaciones anteriores y genera propuestas globales para el nuevo curso. Navidad se deriva del par de años académicos y Pascua usa el algoritmo gregoriano de Meeus/Jones/Butcher; no hay consultas de red en ejecución. No se generan puentes o días de centro no verificables.
 
 La precarga de Semana Santa es un único evento `FESTIVO` de Jueves Santo al viernes posterior. `getCalendarConfigForUi_()` combina solo en su respuesta los dos eventos heredados con fechas y ámbito equivalentes; la lectura no escribe nada. Si el docente guarda, el modelo ya unificado reemplaza la pareja en `_FECHAS` y sus relaciones.
 

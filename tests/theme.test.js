@@ -20,7 +20,7 @@ const expected = [
   ['grafito-esmeralda', 'Grafito esmeralda', '#475569', '#2F7464', '#B9832F'],
 ];
 assert.strictEqual(evaluate('CP_DEFAULT_THEME_PRESET'), expected[0][0]);
-assert.strictEqual(evaluate('CP.NOTEBOOK_VERSION'), '1.8.8');
+assert.strictEqual(evaluate('CP.NOTEBOOK_VERSION'), '1.9.0');
 assert.strictEqual(evaluate('CP.SCHEMA_VERSION'), '11');
 const presets = evaluate('getThemeConfigForUi_(null, {}).presets');
 assert.strictEqual(presets.length, 10);
@@ -100,4 +100,31 @@ assert.deepStrictEqual(keys.map(key => migrated[key]), ['#2F6B4F', '#355C6D', '#
 
 assert(fs.readFileSync('UiDialogGeneralConfig.html', 'utf8').includes('THEME_CONFIG.presets.forEach'));
 assert(fs.readFileSync('UiDialogNewCourse.html', 'utf8').includes('THEME.presets.forEach'));
+const oldTheme = context.getActiveTheme_({}, { tema_preset: 'verde-profesional' });
+const newTheme = context.getActiveTheme_({}, { tema_preset: 'atlantico' });
+const managedBackgrounds = [[oldTheme.colors.primary, '#E5E7EB']];
+const managedFonts = [[oldTheme.colors.onPrimary, '#172033']];
+const userBackgrounds = [[oldTheme.colors.primary]];
+const createSheet = (name, id, backgrounds, fonts) => ({
+  getName: () => name, getSheetId: () => id, isSheetHidden: () => false,
+  getLastRow: () => 1, getLastColumn: () => backgrounds[0].length,
+  getRange: () => ({ getBackgrounds: () => backgrounds,
+    getFontColors: () => fonts,
+    setBackgrounds: values => { backgrounds[0] = values[0]; return {
+      setFontColors: colors => { fonts[0] = colors[0]; },
+    }; },
+  }),
+});
+context.readModuleConfigRegistry_ = () => [];
+const managed = createSheet('3 Alumnado', 1, managedBackgrounds, managedFonts);
+const user = createSheet('Mi hoja', 2, userBackgrounds, [['#FFFFFF']]);
+const oldBackgrounds = [[oldTheme.colors.accent]];
+const oldTracking = createSheet('5 Seg PMDM OLD 2627', 3, oldBackgrounds, [['#FFFFFF']]);
+context.isRegisteredModuleTrackingSheet_ = sheet => sheet === oldTracking;
+context.applyThemeToManagedWorkbook_({ getSheets: () => [managed, oldTracking, user] },
+  oldTheme, newTheme);
+assert.strictEqual(managedBackgrounds[0][0], newTheme.colors.primary);
+assert.strictEqual(managedBackgrounds[0][1], '#E5E7EB');
+assert.strictEqual(oldBackgrounds[0][0], newTheme.colors.accent);
+assert.strictEqual(userBackgrounds[0][0], oldTheme.colors.primary);
 console.log('ten theme presets, contrast, migration and custom colors: ok');

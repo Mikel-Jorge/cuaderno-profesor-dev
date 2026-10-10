@@ -29,9 +29,6 @@ context.writeCalendarTable_ = (sheet, headers, rows) => written.set(sheet, rows)
 context.resetCalendarForNewCourse_('2026-2027');
 
 const evaluations = written.get(sheets.evaluations);
-assert.strictEqual(evaluations.length, 4);
-assert.deepStrictEqual(Array.from(evaluations, row => row[1]), ['FP1', 'FP2', 'ONLINE', 'CE']);
-assert(evaluations.every(row => row[4] === ''));
-assert.strictEqual(evaluations[0][0], 'FP1-1');
+assert.strictEqual(evaluations.length, 0);
 assert(written.get(sheets.types).every(row => row[2] === false && row.slice(3).every(value => value === '')));
-console.log('new course clears evaluation dates for all four teaching types: ok');
+console.log('new course clears annual evaluations while retaining teaching types: ok');

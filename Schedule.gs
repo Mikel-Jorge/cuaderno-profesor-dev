@@ -17,10 +17,13 @@ const CP_SCHEDULE_SLOT_TYPES = Object.freeze({ SESION: 'Sesión', DESCANSO: 'Des
 const CP_SCHEDULE_ACTIVITY_CATEGORIES = Object.freeze([
   'MODULO', 'TUTORIA', 'GUARDIA', 'REUNION', 'DUAL', 'PPPP', 'P', 'OTRA',
 ]);
+const CP_SCHEDULE_INSTITUTIONAL_COLOR = '#E5E7EB';
 const CP_SCHEDULE_ACTIVITY_DEFAULTS = Object.freeze({
-  TUTORIA: Object.freeze({ name: 'Tutoría', acronym: 'T' }),
-  P: Object.freeze({ name: 'Labores propias del puesto de trabajo', acronym: 'P' }),
-  PPPP: Object.freeze({ name: 'Participación en proyectos, programas o planes de centro', acronym: 'PPPP' }),
+  TUTORIA: Object.freeze({ name: 'Tutoría', acronym: 'T', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
+  GUARDIA: Object.freeze({ name: 'Guardia', acronym: 'G', classroom: 'Sala de Profesores', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
+  REUNION: Object.freeze({ name: 'Reunión', acronym: 'R', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
+  P: Object.freeze({ name: 'Labores propias del puesto de trabajo', acronym: 'P', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
+  PPPP: Object.freeze({ name: 'Participación en proyectos, programas o planes de centro', acronym: 'PPPP', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
 });
 const CP_SCHEDULE_TEACHING_TYPE_IDS = Object.freeze(CP_CALENDAR_TYPE_DEFINITIONS.map(function(definition) { return definition.id; }));
 const CP_SCHEDULE_TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -176,7 +179,7 @@ function abrirConfiguracionHorario(wizardStep) {
       slotTypes: CP_SCHEDULE_SLOT_TYPES,
       categories: CP_SCHEDULE_ACTIVITY_CATEGORIES,
       activityDefaults: CP_SCHEDULE_ACTIVITY_DEFAULTS,
-      teachingTypes: CP_SCHEDULE_TEACHING_TYPE_IDS,
+      teachingTypes: getScheduleTeachingTypesForUi_(spreadsheet),
       supportMaxLength: CP_SCHEDULE_SUPPORT_MAX_LENGTH,
     };
   }
@@ -200,9 +203,21 @@ function getScheduleConfigForUi_(spreadsheet) {
     slotTypes: CP_SCHEDULE_SLOT_TYPES,
     categories: CP_SCHEDULE_ACTIVITY_CATEGORIES,
     activityDefaults: CP_SCHEDULE_ACTIVITY_DEFAULTS,
-    teachingTypes: CP_SCHEDULE_TEACHING_TYPE_IDS,
+    teachingTypes: getScheduleTeachingTypesForUi_(spreadsheet),
     supportMaxLength: CP_SCHEDULE_SUPPORT_MAX_LENGTH,
   };
+}
+
+function getScheduleTeachingTypesForUi_(spreadsheet) {
+  try {
+    return getCalendarConfigForUi_(spreadsheet).types.map(function(type) {
+      return { id: type.id, label: type.name, active: type.active };
+    });
+  } catch (error) {
+    return CP_CALENDAR_TYPE_DEFINITIONS.map(function(type) {
+      return { id: type.id, label: type.name, active: false };
+    });
+  }
 }
 
 function guardarConfiguracionHorario(input) {
@@ -214,6 +229,18 @@ function guardarConfiguracionHorario_(input, options) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   assertScheduleStructureReady_(spreadsheet);
   const normalized = normalizeAndValidateScheduleConfig_(input);
+  const activeTypes = getScheduleTeachingTypesForUi_(spreadsheet)
+    .filter(function(type) { return type.active; }).map(function(type) { return type.id; });
+  const previousTypes = getScheduleActivities_().reduce(function(map, activity) {
+    map[activity.id] = activity.teachingTypeId;
+    return map;
+  }, {});
+  normalized.activities.forEach(function(activity) {
+    if (activity.category === 'MODULO' && activeTypes.indexOf(activity.teachingTypeId) === -1 &&
+        previousTypes[activity.id] !== activity.teachingTypeId) {
+      throw new Error('El tipo de enseñanza de un módulo nuevo debe estar activo.');
+    }
+  });
   const lock = LockService.getDocumentLock();
   if (!lock.tryLock(30000)) throw new Error('No se ha podido bloquear el cuaderno para guardar. Inténtalo de nuevo.');
   const snapshots = captureScheduleSnapshots_(spreadsheet);
@@ -226,6 +253,9 @@ function guardarConfiguracionHorario_(input, options) {
     throw error;
   } finally {
     lock.releaseLock();
+  }
+  if (!saveOptions.section || saveOptions.section === 'activities') {
+    syncStudentGroupValidation_(spreadsheet);
   }
   if (saveOptions.renderViews !== false) {
     try {
@@ -359,7 +389,8 @@ function normalizeScheduleSessions_(rows, slotById, activityById) {
     const day = normalizeScheduleText_(raw.day || raw.dia_semana).toUpperCase();
     const slotId = normalizeScheduleText_(raw.slotId || raw.tramo_id);
     const activityId = normalizeScheduleText_(raw.activityId || raw.actividad_id);
-    const support = normalizeScheduleText_(raw.support || raw.apoyo_sigla);
+    const support = activityById[activityId] && activityById[activityId].category === 'MODULO'
+      ? normalizeScheduleText_(raw.support || raw.apoyo_sigla) : '';
     const slot = slotById[slotId];
     if (!CP_SCHEDULE_DAYS.some(function(item) { return item.id === day; })) throw new Error('El día de una sesión no es válido.');
     if (!slot) throw new Error('Una sesión referencia un tramo inexistente.');

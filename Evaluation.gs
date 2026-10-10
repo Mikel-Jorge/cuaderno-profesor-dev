@@ -61,7 +61,7 @@ function getEvaluationLayout_(blocks) {
 }
 
 function getEvaluationHeaders_(layout) {
-  const headers = ['Apellidos', 'Nombre', 'Medidas'];
+  const headers = ['Apellidos', 'Nombre', 'Información / Medidas'];
   layout.groups.forEach(function(group, index) {
     group.units.forEach(function(unit) { headers.push(unit.code); });
     const label = getEvaluationOrdinal_(index + 1);
@@ -93,7 +93,8 @@ function getEvaluationStudents_(spreadsheet, group) {
   const target = normalizeScheduleText_(group).replace(/\s+/g, ' ').toLocaleUpperCase();
   return sheet.getRange(2, 1, sheet.getLastRow() - 1, 7).getValues()
     .filter(function(row) {
-      return String(row[6]).trim() &&
+      return row.slice(0, 3).every(function(value) { return String(value).trim(); }) &&
+        String(row[6]).trim() &&
         normalizeScheduleText_(row[2]).replace(/\s+/g, ' ').toLocaleUpperCase() === target;
     }).map(function(row) {
       return { surname: row[0], name: row[1], reaca: row[4] === true,
@@ -128,7 +129,7 @@ function buildEvaluationFinalFormula_(row, layout, configName, separator) {
   return '=ROUND(' + terms.join('+') + separator + '2)';
 }
 
-function buildEvaluationStudentRows_(values, formulas, notes, students, width) {
+function buildEvaluationStudentRows_(values, formulas, notes, students, width, educaColumns) {
   const byId = {};
   const items = [];
   for (let index = 0; index < values.length; index += 1) {
@@ -149,7 +150,9 @@ function buildEvaluationStudentRows_(values, formulas, notes, students, width) {
     byId[id] = item;
   }
   let additions = 0;
+  const activeIds = {};
   students.forEach(function(student) {
+    activeIds[student.id] = true;
     let item = byId[student.id];
     if (!item) {
       item = { id: student.id, values: Array(width).fill(''), notes: Array(width).fill('') };
@@ -166,7 +169,20 @@ function buildEvaluationStudentRows_(values, formulas, notes, students, width) {
   items.sort(function(first, second) {
     return compareEvaluationStudents_(first.values, second.values);
   });
+  items.forEach(function(item) {
+    item.inactive = !activeIds[item.id];
+    (educaColumns || []).forEach(function(column) {
+      item.values[column - 1] = normalizeEvaluationEducaValue_(item.values[column - 1]);
+    });
+  });
   return { items: items, additions: additions };
+}
+
+function normalizeEvaluationEducaValue_(value) {
+  if (value === '' || value === null || value === undefined) return '';
+  if (String(value).trim().toUpperCase() === 'MH') return 'MH';
+  const match = /^(10|[1-9])(?:[.,]0+)?$/.exec(String(value).trim());
+  return match ? match[1] : value;
 }
 
 function repairEvaluationSheet_(sheet, configSheet, context, activity) {
@@ -178,7 +194,7 @@ function repairEvaluationSheet_(sheet, configSheet, context, activity) {
   if (!provisional) {
     const existing = sheet.getRange(2, 1, 1, headers.length).getDisplayValues()[0];
     legacy = existing[2] === 'REACA';
-    if (legacy) existing[2] = 'Medidas';
+    if (legacy || existing[2] === 'Medidas') existing[2] = 'Información / Medidas';
     if (existing.some(function(value, index) { return value !== headers[index]; })) {
       const warning = 'La estructura de UT de ' + sheet.getName() +
         ' no coincide con 4 Config. Se conservan todas sus notas; revisa la hoja manualmente.';
@@ -200,8 +216,12 @@ function repairEvaluationSheet_(sheet, configSheet, context, activity) {
   });
   const formulas = existingRange ? existingRange.getFormulas() : [];
   const notes = existingRange ? existingRange.getNotes() : [];
+  ensureStudentIdsForValidRows_(spreadsheet);
   const students = getEvaluationStudents_(spreadsheet, activity.group);
-  const rows = buildEvaluationStudentRows_(values, formulas, notes, students, layout.idColumn);
+  const educaColumns = layout.groups.map(function(group) { return group.educaColumn; })
+    .concat([layout.finalEducaColumn]);
+  const rows = buildEvaluationStudentRows_(values, formulas, notes, students,
+    layout.idColumn, educaColumns);
   if (rows.warning) {
     console.warn(rows.warning);
     spreadsheet.toast(rows.warning, CP.PROJECT_NAME, 12);
@@ -246,6 +266,10 @@ function repairEvaluationSheet_(sheet, configSheet, context, activity) {
   sheet.getRange(footerRow, 1, 1, 3).merge().setValue('MEDIA DEL GRUPO');
   installEvaluationGroupAverages_(sheet, layout, rows.items.length, footerRow);
   styleEvaluationSheet_(sheet, layout, rows.items.length, footerRow);
+  rows.items.forEach(function(item, index) {
+    if (item.inactive) sheet.getRange(index + 4, 1, 1, layout.lastVisibleColumn)
+      .setBackground('#E5E7EB');
+  });
   sheet.setFrozenRows(3);
   sheet.setFrozenColumns(3);
   sheet.setHiddenGridlines(true);
@@ -276,13 +300,15 @@ function installEvaluationRows_(sheet, configSheet, layout, count) {
       return [buildEvaluationMediaFormula_(index + 4, group, configSheet.getName(), separator)];
     });
     sheet.getRange(4, group.mediaColumn, count, 1).setFormulas(formulas).setNumberFormat('0.00');
-    sheet.getRange(4, group.educaColumn, count, 1).setDataValidation(educaValidation);
+    sheet.getRange(4, group.educaColumn, count, 1).setNumberFormat('@')
+      .setDataValidation(educaValidation);
   });
   sheet.getRange(4, layout.finalMediaColumn, count, 1)
     .setFormulas(Array.from({ length: count }, function(_, index) {
       return [buildEvaluationFinalFormula_(index + 4, layout, configSheet.getName(), separator)];
     })).setNumberFormat('0.00');
-  sheet.getRange(4, layout.finalEducaColumn, count, 1).setDataValidation(educaValidation);
+  sheet.getRange(4, layout.finalEducaColumn, count, 1).setNumberFormat('@')
+    .setDataValidation(educaValidation);
 }
 
 function buildEvaluationGroupFormula_(column, count, kind, separator) {
