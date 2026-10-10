@@ -1,4 +1,4 @@
-# Guía de uso · Cuaderno del Profesor 1.8.2
+# Guía de uso · Cuaderno del Profesor 1.8.3
 
 ## Empezar un curso
 
@@ -13,6 +13,8 @@ Para pasar de un curso a otro, abre **Preparar nuevo curso**. Un único diálogo
 5. **Actividades:** revisa nombre, sigla, grupo, aula, color, tipo y categoría. Sus IDs se conservan.
 6. **Horario semanal:** asigna actividades y apoyos. Las sesiones anteriores parten vacías.
 7. **Resumen:** consulta lo completado y lo pendiente. Los pasos pendientes aparecen en color neutro; puedes finalizar parcialmente. Después completa Alumnado y configura cada módulo.
+
+En **Configurar datos del docente y centro** y **Preparar nuevo curso** puedes elegir entre diez temas. **Verde profesional** es el inicial. Elegir un tema actualiza los tres colores visibles; después puedes ajustar Principal, Secundario y Acento por separado. Guarda y vuelve a abrir para comprobarlos. **Reparar estructura** conserva los colores personalizados.
 
 Durante el curso puedes usar por separado **Configuración → Configurar datos del docente y centro**, **Configuración → Configurar calendario** y **Configuración → Configurar horario**. Una sesión representa una hora docente aunque el tramo dure otro número de minutos.
 

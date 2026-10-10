@@ -1,22 +1,29 @@
-const CP_DEFAULT_THEME_PRESET = 'oceano';
+const CP_DEFAULT_THEME_PRESET = 'verde-profesional';
 
 const CP_THEME_PRESETS = Object.freeze({
-  oceano: createThemePreset_('oceano', 'Océano', '#004E64', '#006E8A', '#167D70'),
-  'turquesa-naranja': createThemePreset_(
-    'turquesa-naranja', 'Turquesa naranja', '#0A656A', '#087987', '#B85D02'
-  ),
-  'verde-natural': createThemePreset_(
-    'verde-natural', 'Verde natural', '#507255', '#3F773F', '#C5E063'
-  ),
-  'coral-menta': createThemePreset_(
-    'coral-menta', 'Coral menta', '#B94F46', '#377771', '#4CE0B3'
-  ),
-  'burdeos-lavanda': createThemePreset_(
-    'burdeos-lavanda', 'Burdeos lavanda', '#A30B37', '#734649', '#BBB6DF'
-  ),
-  'azul-clasico': createThemePreset_(
-    'azul-clasico', 'Azul clásico', '#1D4ED8', '#075985', '#0F766E'
-  ),
+  'verde-profesional': createThemePreset_('verde-profesional', 'Verde profesional', '#2F6B4F', '#355C6D', '#D07A32'),
+  'bosque-sereno': createThemePreset_('bosque-sereno', 'Bosque sereno', '#3F6B45', '#68705C', '#C59A45'),
+  atlantico: createThemePreset_('atlantico', 'Atlántico', '#1F6E8C', '#355070', '#A65B7C'),
+  'petroleo-coral': createThemePreset_('petroleo-coral', 'Petróleo coral', '#0F6674', '#3F556B', '#A85D46'),
+  'indigo-ambar': createThemePreset_('indigo-ambar', 'Índigo ámbar', '#4454A6', '#56657A', '#C98732'),
+  'burdeos-piedra': createThemePreset_('burdeos-piedra', 'Burdeos piedra', '#8A3D52', '#5F6878', '#D0A64A'),
+  'terracota-salvia': createThemePreset_('terracota-salvia', 'Terracota salvia', '#A6553D', '#496D6A', '#3A8276'),
+  'ciruela-arena': createThemePreset_('ciruela-arena', 'Ciruela arena', '#6E477B', '#596579', '#C57E42'),
+  'azul-profesional': createThemePreset_('azul-profesional', 'Azul profesional', '#2D5F9A', '#4D647A', '#2F7E7A'),
+  'grafito-esmeralda': createThemePreset_('grafito-esmeralda', 'Grafito esmeralda', '#475569', '#2F7464', '#B9832F'),
+});
+
+const CP_LEGACY_THEME_PRESETS = Object.freeze({
+  oceano: { id: 'atlantico', colors: ['#004E64', '#006E8A', '#167D70'] },
+  'turquesa-naranja': { id: 'petroleo-coral', colors: ['#0A656A', '#087987', '#B85D02'] },
+  'verde-natural': { id: 'verde-profesional', colors: ['#507255', '#3F773F', '#C5E063'] },
+  'coral-menta': { id: 'terracota-salvia', colors: ['#B94F46', '#377771', '#4CE0B3'] },
+  'burdeos-lavanda': { id: 'burdeos-piedra', colors: ['#A30B37', '#734649', '#BBB6DF'] },
+  'azul-clasico': { id: 'azul-profesional', colors: ['#1D4ED8', '#075985', '#0F766E'] },
+  'claro-azul': { id: 'azul-profesional' },
+  'oscuro-azul': { id: 'azul-profesional' },
+  'claro-verde': { id: 'verde-profesional' },
+  'oscuro-verde': { id: 'verde-profesional' },
 });
 
 function createThemePreset_(id, label, primary, secondary, accent) {
@@ -53,6 +60,12 @@ function getActiveTheme_(spreadsheet, configValues) {
   const requestedPreset = normalizeThemePresetId_(values[CP.CONFIG_KEYS.THEME_PRESET]);
   const preset = CP_THEME_PRESETS[requestedPreset] || CP_THEME_PRESETS[CP_DEFAULT_THEME_PRESET];
   const colors = Object.assign({}, preset.colors);
+  const legacyPreset = CP_LEGACY_THEME_PRESETS[String(values[CP.CONFIG_KEYS.THEME_PRESET] || '').trim()];
+  const storedColors = [CP.CONFIG_KEYS.THEME_PRIMARY, CP.CONFIG_KEYS.THEME_SECONDARY,
+    CP.CONFIG_KEYS.THEME_ACCENT].map(function(key) { return normalizeThemeColor_(values[key]); });
+  const isLegacyDefault = legacyPreset && legacyPreset.colors && storedColors.every(function(color, index) {
+    return color === legacyPreset.colors[index];
+  });
 
   [
     [CP.CONFIG_KEYS.THEME_PRIMARY, 'primary'],
@@ -60,7 +73,7 @@ function getActiveTheme_(spreadsheet, configValues) {
     [CP.CONFIG_KEYS.THEME_ACCENT, 'accent'],
   ].forEach(function(mapping) {
     const color = normalizeThemeColor_(values[mapping[0]]);
-    if (color) {
+    if (color && !isLegacyDefault) {
       colors[mapping[1]] = color;
     }
   });
@@ -113,13 +126,8 @@ function validateThemeConfig_(values) {
 
 function normalizeThemePresetId_(value) {
   const presetId = value === null || value === undefined ? '' : String(value).trim();
-  const legacyPresets = {
-    'claro-azul': 'azul-clasico',
-    'oscuro-azul': 'azul-clasico',
-    'claro-verde': 'verde-natural',
-    'oscuro-verde': 'verde-natural',
-  };
-  const migratedPresetId = legacyPresets[presetId] || presetId;
+  const legacyPreset = CP_LEGACY_THEME_PRESETS[presetId];
+  const migratedPresetId = legacyPreset ? legacyPreset.id : presetId;
   return CP_THEME_PRESETS[migratedPresetId] ? migratedPresetId : CP_DEFAULT_THEME_PRESET;
 }
 

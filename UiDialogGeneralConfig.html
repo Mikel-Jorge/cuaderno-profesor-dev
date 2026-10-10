@@ -57,18 +57,16 @@
             </div>
           </section>
 
-          <? if (wizardStep) { ?>
-            <section class="form-section">
-              <h2>Apariencia</h2>
-              <div class="form-field"><label for="tema_preset">Tema</label>
-                <select id="tema_preset"></select></div>
-              <div class="theme-colors">
-                <label class="color-field">Principal <input id="tema_primary" type="color"></label>
-                <label class="color-field">Secundario <input id="tema_secondary" type="color"></label>
-                <label class="color-field">Acento <input id="tema_accent" type="color"></label>
-              </div>
-            </section>
-          <? } ?>
+          <section class="form-section">
+            <h2>Apariencia</h2>
+            <div class="form-field"><label for="tema_preset">Tema</label>
+              <select id="tema_preset"></select></div>
+            <div class="theme-colors">
+              <label class="color-field">Principal <input id="tema_primary" type="color"></label>
+              <label class="color-field">Secundario <input id="tema_secondary" type="color"></label>
+              <label class="color-field">Acento <input id="tema_accent" type="color"></label>
+            </div>
+          </section>
 
           <section class="form-section" aria-labelledby="school-section-title">
             <h2 id="school-section-title">Centro educativo</h2>
@@ -141,7 +139,7 @@
       let baseline = '';
       let isSaving = false;
 
-      if (WIZARD_STEP) {
+      {
         const preset = document.getElementById('tema_preset');
         THEME_CONFIG.presets.forEach(function(item) {
           const option = document.createElement('option');
@@ -232,11 +230,9 @@
           config[fieldName] = document.getElementById(fieldName).value.trim();
           return config;
         }, {});
-        if (WIZARD_STEP) {
-          ['preset', 'primary', 'secondary', 'accent'].forEach(function(key) {
-            values['tema_' + key] = document.getElementById('tema_' + key).value;
-          });
-        }
+        ['preset', 'primary', 'secondary', 'accent'].forEach(function(key) {
+          values['tema_' + key] = document.getElementById('tema_' + key).value;
+        });
         return values;
       }
 

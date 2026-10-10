@@ -1,9 +1,13 @@
 # Estado del proyecto
 
-**Última actualización:** 2026-10-09
+**Última actualización:** 2026-10-10
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.8.2`
+**Versión vigente:** `1.8.3`
 **Esquema vigente:** `11`
+
+## Correctivo visual 1.8.3
+
+- Diez presets claros en Configuración general y Preparar nuevo curso, con Verde profesional como opción inicial. Los IDs anteriores se resuelven por alias y sus colores originales sin personalización adoptan la nueva paleta; los colores personalizados permanecen. El esquema sigue en `11`.
 
 ## Correctivo UX 1.8.2
 

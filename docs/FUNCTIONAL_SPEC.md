@@ -11,7 +11,7 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 
 **Estado:** especificación funcional vigente
 **Versión del documento:** 3.2
-**Versión del cuaderno:** `1.8.2`
+**Versión del cuaderno:** `1.8.3`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.8.2
+# 2. Estado funcional de la versión 1.8.3
 
 Están cerrados funcionalmente:
 
@@ -369,6 +369,8 @@ También explicará que los festivos y vacaciones precargados son propuestas edi
 El Sidebar muestra estado real de Datos generales, Calendario, Horario y Alumnado, y por impartición los estados de Configuración y del par Seguimiento/Evaluación. La ayuda contextual prioriza la hoja activa. La actualización es manual, sin polling ni triggers, y no duplica botones del menú.
 
 La UI usa tema centralizado, branding común, confirmaciones explícitas y progreso para operaciones largas. Las acciones destructivas se identifican con `danger`.
+
+Configurar datos del docente y centro y Preparar nuevo curso ofrecen los mismos diez presets visuales, en orden: Verde profesional (predeterminado), Bosque sereno, Atlántico, Petróleo coral, Índigo ámbar, Burdeos piedra, Terracota salvia, Ciruela arena, Azul profesional y Grafito esmeralda. Elegir uno carga los tres colores y cada color puede modificarse después. Los IDs anteriores se asocian a un preset vigente; las personalizaciones guardadas se conservan. Solo los tres colores que coincidan exactamente con los valores originales del preset antiguo adoptan los nuevos valores por defecto.
 
 Los diálogos de configuración leen sin crear, reparar, ocultar, reordenar ni regenerar hojas. El saneamiento de Config huérfanas ocurre al confirmar una creación o al ejecutar Reparar estructura. Las demás reparaciones son explícitas y los guardados solo actualizan el modelo afectado y las vistas derivadas necesarias.
 

@@ -19,6 +19,7 @@ function guardarDatosGenerales(input) {
   return saveGeneralConfig_(input, {
     updateCover: true,
     showToast: true,
+    includeTheme: true,
   });
 }
 
@@ -141,16 +142,22 @@ function initializeConfigSheet_(sheet) {
   }).map(function(row) {
     return [row[0], row[1]];
   });
+  const theme = getActiveTheme_(sheet.getParent(), currentValues);
+  const themeValues = {};
+  themeValues[CP.CONFIG_KEYS.THEME_PRESET] = theme.id;
+  themeValues[CP.CONFIG_KEYS.THEME_PRIMARY] = theme.colors.primary;
+  themeValues[CP.CONFIG_KEYS.THEME_SECONDARY] = theme.colors.secondary;
+  themeValues[CP.CONFIG_KEYS.THEME_ACCENT] = theme.colors.accent;
 
   const configuredRows = fields.map(function(field) {
     const hasValue = Object.prototype.hasOwnProperty.call(currentValues, field.key);
-    const value = hasValue ? currentValues[field.key] : field.defaultValue || '';
+    const value = isThemeConfigKey_(field.key) ? themeValues[field.key]
+      : hasValue ? currentValues[field.key] : field.defaultValue || '';
     return [field.key, normalizeConfigFieldValue_(field.key, value)];
   });
   const values = [['Clave', 'Valor']].concat(configuredRows, unknownRows);
   const rowsToClear = Math.max(sheet.getLastRow(), values.length);
   const columnsToClear = Math.max(sheet.getLastColumn(), 3);
-  const theme = getActiveTheme_(sheet.getParent(), currentValues);
 
   sheet.clearFormats();
   sheet.getRange(1, 1, rowsToClear, columnsToClear).clearContent();
@@ -190,8 +197,7 @@ function getGeneralConfigForUi_(spreadsheet) {
 
 function getGeneralConfigValues_(spreadsheet) {
   const storedValues = getStoredConfigMap_(spreadsheet);
-
-  return getConfigFields_().reduce(function(values, field) {
+  const values = getConfigFields_().reduce(function(values, field) {
     const storedValue = storedValues[field.key];
     const value = storedValue === null || storedValue === undefined
       ? field.defaultValue || ''
@@ -199,6 +205,12 @@ function getGeneralConfigValues_(spreadsheet) {
     values[field.key] = normalizeConfigFieldValue_(field.key, value);
     return values;
   }, {});
+  const theme = getActiveTheme_(spreadsheet, storedValues);
+  values[CP.CONFIG_KEYS.THEME_PRESET] = theme.id;
+  values[CP.CONFIG_KEYS.THEME_PRIMARY] = theme.colors.primary;
+  values[CP.CONFIG_KEYS.THEME_SECONDARY] = theme.colors.secondary;
+  values[CP.CONFIG_KEYS.THEME_ACCENT] = theme.colors.accent;
+  return values;
 }
 
 function proponerCursoAcademico_(date, timeZone) {
