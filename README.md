@@ -239,7 +239,7 @@ appsscript.json
 
 no existe un paso de compilación.
 
-El flujo normal es simplemente:
+El proyecto se sincroniza directamente, sin compilación:
 
 ```powershell
 clasp push
@@ -254,7 +254,8 @@ Si en el futuro se utiliza TypeScript u otro proceso de build, se documentará p
 Al empezar a trabajar:
 
 ```powershell
-git pull
+git status
+git pull --ff-only
 ```
 
 Editar el proyecto con VS Code / Codex.
@@ -266,35 +267,35 @@ git status
 git diff
 ```
 
-Sincronizar con Apps Script:
+Después de las verificaciones, crear un commit descriptivo:
+
+```powershell
+git add <archivos-de-la-tarea>
+git commit -m "tipo(área): descripción"
+```
+
+Sincronizar con Apps Script, verificar el contenido remoto y probar en `CP_DEV`:
 
 ```powershell
 clasp push
+clasp status
 ```
 
-Probar los cambios en `CP_DEV`.
-
-Si funcionan:
+Solo si la sincronización es correcta:
 
 ```powershell
-git add .
-git commit -m "Descripción del cambio"
 git push
 ```
 
 Flujo resumido:
 
 ```text
-git pull
+git status → git pull --ff-only
 ↓
-editar
+editar → verificar → commit
 ↓
-clasp push
+clasp push → verificar remoto
 ↓
-probar CP_DEV
-↓
-git add .
-git commit
 git push
 ```
 
@@ -348,7 +349,7 @@ clasp open-script
 A partir de ese momento:
 
 ```powershell
-git pull
+git pull --ff-only
 ```
 
 trae el código más reciente de GitHub y:
@@ -372,22 +373,27 @@ No editar simultáneamente los mismos archivos en Apps Script web y VS Code.
 Antes de empezar a trabajar en cualquiera de los ordenadores:
 
 ```powershell
-git pull
+git pull --ff-only
 ```
 
-Antes de considerar terminado un cambio:
+Antes de sincronizar un cambio, comprueba las pruebas y crea el commit según `AGENTS.md`:
+
+```powershell
+git status
+git add <archivos-de-la-tarea>
+git commit -m "tipo(área): descripción"
+```
+
+Después sincroniza y verifica el contenido remoto de `CP_DEV`:
 
 ```powershell
 clasp push
+clasp status
 ```
 
-y probarlo en `CP_DEV`.
-
-Después guardar la versión:
+Si la sincronización es correcta, publica el commit:
 
 ```powershell
-git add .
-git commit -m "..."
 git push
 ```
 
@@ -397,28 +403,29 @@ git push
 
 ```powershell
 # Descargar cambios desde GitHub
-git pull
+git pull --ff-only
 
 # Ver cambios locales
 git status
 git diff
 
-# Subir código a Apps Script
+# Guardar cambios en Git antes de clasp push
+git add <archivos-de-la-tarea>
+git commit -m "tipo(área): descripción"
+
+# Subir código a Apps Script y verificarlo
 clasp push
+clasp status
 
-# Descargar código desde Apps Script
-clasp pull
+# Publicar solo después de verificar Apps Script
+git push
 
-# Abrir Apps Script
+# Consultas de clasp
 clasp open-script
-
-# Ver archivos gestionados por clasp
 clasp show-file-status
 
-# Guardar cambios en Git
-git add .
-git commit -m "Descripción"
-git push
+# Recuperar cambios deliberados del editor web
+clasp pull
 ```
 
 ---

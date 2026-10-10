@@ -11,7 +11,7 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 
 **Estado:** especificación funcional vigente
 **Versión del documento:** 3.2
-**Versión del cuaderno:** `1.8.3`
+**Versión del cuaderno:** `1.8.4`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.8.3
+# 2. Estado funcional de la versión 1.8.4
 
 Están cerrados funcionalmente:
 
@@ -117,7 +117,7 @@ El índice se construye desde las hojas visibles existentes y excluye todas las 
 
 # 6. Preparar nuevo curso
 
-La acción abre un único diálogo HTML de siete pasos. Al abrirse no modifica el cuaderno. El botón explícito `Crear copia y preparar` del paso Seguridad inicia la copia obligatoria del Spreadsheet en su carpeta original, con el nombre original; no se requiere checkbox adicional. Si el backup no puede crearse y verificarse, no se ejecuta ninguna mutación posterior.
+La acción abre un único diálogo HTML de siete pasos. Al abrirse no modifica el cuaderno. El botón explícito `Crear copia y preparar` del paso Seguridad inicia la copia obligatoria del Spreadsheet en la carpeta elegida (la actual por defecto), con el nombre original; no se requiere checkbox adicional. Si el backup no puede crearse y verificarse, no se ejecuta ninguna mutación posterior.
 
 Después del backup verificado puede mover el cuaderno activo dentro de Mi unidad, renombrarlo como `CuadernoProfesor_XXXX` y actualizar curso, profesor, centro y apariencia. La copia conserva el contenido anterior íntegro.
 
@@ -129,11 +129,11 @@ El cuaderno activo conserva profesor, centro, tema, tramos horarios y catálogo 
 - fechas finales de `_CAL_EVALUACIONES` para 1º, 2º, Online y Curso de Especialización, conservando ID, nombre y orden;
 - todos los eventos anuales de `_FECHAS` y sus asociaciones en `_CAL_FECHA_TIPOS`.
 
-La transición anual conserva snapshots en memoria para restaurar Alumnado, Horario y Calendario si falla antes de finalizar; el backup verificado sigue siendo la garantía completa. Finalmente regenera Calendario, Horario, Portada, estados, metadatos e índice.
+La transición anual conserva snapshots en memoria para restaurar Alumnado, Horario y Calendario si falla; el backup verificado sigue siendo la garantía completa. La generación de Calendario, Horario, Portada, metadatos e índice se difiere hasta finalizar el diálogo.
 
 `Reparar estructura` nunca aplica esta política anual, no borra datos ni repone festivos eliminados por el docente.
 
-Tras la transición anual se continúa dentro del mismo diálogo por Datos del docente y centro, Calendario, Tramos, Actividades, Horario semanal y Resumen. Tramos, Actividades y Horario muestran solo su apartado. Cada paso se guarda con los modelos y validadores actuales al avanzar; cancelar conserva los pasos guardados. Es válido finalizar con configuración parcial: el stepper y el resumen distinguen completado de pendiente según el estado real, sin tratar los pendientes como errores. Abrir el Spreadsheet no inicia el proceso ni escribe datos. El paso Seguridad no puede ejecutarse dos veces dentro del mismo flujo.
+Tras la transición anual se continúa dentro del mismo diálogo por Datos del docente y centro, Calendario, Tramos, Actividades, Horario semanal y Resumen. Tramos, Actividades y Horario muestran solo su apartado, con un único scroll vertical. Siguiente valida y guarda los datos técnicos de cada paso sin regenerar las vistas visibles. Atrás o la navegación por pasos ya visitados descarta los cambios que no se hayan guardado. Los pasos no visitados no se pueden abrir directamente; un paso revisado se marca como completo o pendiente según sus datos, con motivo legible para los pendientes. Es válido finalizar con configuración parcial. Finalizar y generar cuaderno aplica una vez las vistas derivadas y el mantenimiento final; cancelar después de Seguridad conserva lo guardado y ejecuta la misma fase para dejar el libro coherente. Cancelar antes de Seguridad cierra sin cambios. Abrir el Spreadsheet no inicia el proceso ni escribe datos. El paso Seguridad no puede ejecutarse dos veces dentro del mismo flujo.
 
 Tras el backup se materializan y renombran las `5 Seg ...` activas como `OLD AACC`, se eliminan las `6 Eval ...` y las `4 Config ...` gestionadas del curso anterior y se vacían sus registros en `_MOD_CONFIG` y `_MOD_PLAN`. Los históricos conservan valores, textos, colores, separadores y aspecto sin referencias rotas.
 
@@ -409,7 +409,7 @@ No todo debe completarse al principio del curso.
 - Completado: núcleo, Portada, Calendario y Horario.
 - Completado: Alumnado y primera fase de Configuración individual de módulo.
 - Completado: ponderaciones de `4 Config`, Seguimiento y Evaluación.
-- Siguiente: validaciones finales, ayuda ampliada, accesibilidad, rendimiento y pruebas; `7 Tutoría` permanece en el roadmap futuro.
+- Futuro: validaciones finales, ayuda ampliada, accesibilidad y pruebas adicionales; `7 Tutoría` permanece en el roadmap futuro.
 
 # 19. Decisiones cerradas
 

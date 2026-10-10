@@ -15,6 +15,10 @@
       .general-dialog .form-field input,.general-dialog .form-field select{min-height:38px;border-radius:6px}
       .general-dialog .form-field label{font-size:12px;font-weight:600}
       .general-dialog .form-help{margin:3px 0 0;font-size:11px}
+      .general-theme-grid{display:grid;grid-template-columns:minmax(170px,1.3fr) repeat(3,minmax(90px,.8fr));gap:10px;align-items:end}
+      .general-theme-grid .form-field,.general-theme-grid .color-field{min-width:0}
+      .general-theme-grid select,.general-theme-grid input[type=color]{width:100%;height:38px}
+      @media(max-width:560px){.general-theme-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     </style>
   </head>
   <body>
@@ -59,9 +63,8 @@
 
           <section class="form-section">
             <h2>Apariencia</h2>
-            <div class="form-field"><label for="tema_preset">Tema</label>
-              <select id="tema_preset"></select></div>
-            <div class="theme-colors">
+            <div class="general-theme-grid">
+              <div class="form-field"><label for="tema_preset">Tema</label><select id="tema_preset"></select></div>
               <label class="color-field">Principal <input id="tema_primary" type="color"></label>
               <label class="color-field">Secundario <input id="tema_secondary" type="color"></label>
               <label class="color-field">Acento <input id="tema_accent" type="color"></label>

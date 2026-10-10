@@ -5,7 +5,8 @@ const CP_SCHEDULE_VIEW = Object.freeze({
   FIRST_SLOT_ROW: 4,
 });
 
-function createOrRepairScheduleSheet_() {
+function createOrRepairScheduleSheet_(options) {
+  const renderOptions = options || {};
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   assertScheduleStructureReady_(spreadsheet);
   const slots = getScheduleTimeSlots_();
@@ -24,7 +25,7 @@ function createOrRepairScheduleSheet_() {
 
   installManagedSheetProtections_(sheet, 'HORARIO');
 
-  actualizarIndicePortada();
+  if (!renderOptions.skipIndex) actualizarIndicePortada();
   SpreadsheetApp.flush();
 }
 

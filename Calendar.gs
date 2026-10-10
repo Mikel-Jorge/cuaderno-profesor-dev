@@ -377,6 +377,11 @@ function abrirConfiguracionCalendario(wizardStep) {
 }
 
 function guardarConfiguracionCalendario(input) {
+  return guardarConfiguracionCalendario_(input, {});
+}
+
+function guardarConfiguracionCalendario_(input, options) {
+  const saveOptions = options || {};
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   assertCalendarStructureReady_(spreadsheet);
   const normalized = normalizeAndValidateCalendarConfig_(input, spreadsheet);
@@ -404,8 +409,8 @@ function guardarConfiguracionCalendario(input) {
     lock.releaseLock();
   }
 
-  createOrRepairCalendarSheet_();
-  spreadsheet.toast('Configuración del calendario guardada.', CP.PROJECT_NAME, 4);
+  if (saveOptions.renderViews !== false) createOrRepairCalendarSheet_();
+  if (saveOptions.showToast !== false) spreadsheet.toast('Configuración del calendario guardada.', CP.PROJECT_NAME, 4);
   return {
     message: 'La configuración del calendario se ha guardado.',
     data: getCalendarConfigForUi_(spreadsheet),
@@ -1082,7 +1087,8 @@ const CP_CALENDAR_SEMANTIC_COLORS = Object.freeze({
   REUNION: '#DDD6FE',
 });
 
-function actualizarCalendario_() {
+function actualizarCalendario_(options) {
+  const renderOptions = options || {};
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   assertCalendarStructureReady_(spreadsheet);
   const sheet = getOrCreateSheet_(spreadsheet, CP.SHEETS.CALENDAR);
@@ -1095,18 +1101,18 @@ function actualizarCalendario_() {
       ? error.message
       : 'No se ha podido generar el calendario visible.');
     installManagedSheetProtections_(sheet, 'CALENDARIO');
-    actualizarIndicePortada();
-    spreadsheet.toast('Calendario pendiente de configuración.', CP.PROJECT_NAME, 4);
+    if (!renderOptions.skipIndex) actualizarIndicePortada();
+    if (renderOptions.showToast !== false) spreadsheet.toast('Calendario pendiente de configuración.', CP.PROJECT_NAME, 4);
     return;
   }
   renderCalendarSheet_(sheet, model);
   installManagedSheetProtections_(sheet, 'CALENDARIO');
-  actualizarIndicePortada();
-  spreadsheet.toast('Calendario actualizado.', CP.PROJECT_NAME, 4);
+  if (!renderOptions.skipIndex) actualizarIndicePortada();
+  if (renderOptions.showToast !== false) spreadsheet.toast('Calendario actualizado.', CP.PROJECT_NAME, 4);
 }
 
-function createOrRepairCalendarSheet_() {
-  actualizarCalendario_();
+function createOrRepairCalendarSheet_(options) {
+  actualizarCalendario_(options);
 }
 
 function buildCalendarRenderModel_(spreadsheet) {

@@ -1,18 +1,18 @@
-# Guía de uso · Cuaderno del Profesor 1.8.3
+# Guía de uso · Cuaderno del Profesor 1.8.4
 
 ## Empezar un curso
 
 El cuaderno se distribuye como copia de una plantilla inicializada. Usa el único menú **📘 Cuaderno del Profesor 📘**. Sus submenús son **Configuración** (🪪 Configurar datos del docente y centro, 📅 Configurar calendario, 🕒 Configurar horario) y **Módulos** (Crear configuración, Recalcular, Crear seguimiento y evaluación). Después aparecen **Reparar estructura**, **Preparar nuevo curso** y **Ayuda**. No hay un asistente de configuración independiente.
 
-Para pasar de un curso a otro, abre **Preparar nuevo curso**. Un único diálogo guía siete pasos. Abrirlo no modifica el cuaderno; la copia y el reinicio comienzan al pulsar **Crear copia y preparar** en Seguridad. **Siguiente** guarda el paso actual. Si cancelas, los pasos guardados permanecen y puedes continuar con los configuradores individuales.
+Para pasar de un curso a otro, abre **Preparar nuevo curso**. Un único diálogo guía siete pasos. Abrirlo no modifica el cuaderno; la copia y el reinicio comienzan al pulsar **Crear copia y preparar** en Seguridad. **Siguiente** guarda el paso actual sin redibujar todavía las hojas. Puedes volver a pasos visitados desde el indicador superior; Atrás y el indicador descartan los cambios que aún no hayas guardado. Los pasos pendientes muestran un aviso ámbar con su motivo. **Finalizar y generar cuaderno** aplica todas las vistas en una espera final.
 
 1. **Seguridad:** indica el nuevo curso y crea una copia verificada antes de reiniciar datos anuales.
 2. **Datos del docente y centro:** comprueba el curso propuesto, docente, centro, web y tema. El formato es `YYYY-YYYY`.
 3. **Calendario:** revisa tipos, fechas lectivas, evaluaciones, FEOE, repaso, festivos, Navidad y Semana Santa con el calendario del centro.
 4. **Tramos:** revisa los periodos consecutivos conservados del curso anterior.
-5. **Actividades:** revisa nombre, sigla, grupo, aula, color, tipo y categoría. Sus IDs se conservan.
+5. **Actividades:** revisa nombre, sigla, grupo, aula, color, tipo y categoría.
 6. **Horario semanal:** asigna actividades y apoyos. Las sesiones anteriores parten vacías.
-7. **Resumen:** consulta lo completado y lo pendiente. Los pasos pendientes aparecen en color neutro; puedes finalizar parcialmente. Después completa Alumnado y configura cada módulo.
+7. **Resumen:** consulta lo completado y lo pendiente. Los pasos revisados pendientes aparecen en ámbar; puedes finalizar aunque falten apartados. Después completa Alumnado y configura cada módulo.
 
 En **Configurar datos del docente y centro** y **Preparar nuevo curso** puedes elegir entre diez temas. **Verde profesional** es el inicial. Elegir un tema actualiza los tres colores visibles; después puedes ajustar Principal, Secundario y Acento por separado. Guarda y vuelve a abrir para comprobarlos. **Reparar estructura** conserva los colores personalizados.
 
@@ -36,7 +36,7 @@ El menú **Reparar estructura** abre un selector. Los siete bloques visibles emp
 
 ## Preparar nuevo curso
 
-**Preparar nuevo curso** es una acción excepcional. Dentro del mismo diálogo, primero crea y verifica una copia completa en la carpeta original. Solo entonces mueve o renombra el cuaderno activo y reinicia datos anuales: alumnado, horario semanal y fechas del calendario. Conserva docente, centro, tema, tramos y actividades; archiva Seguimiento como OLD y elimina Config y Eval anteriores. Puedes cancelar después del reinicio: el curso preparado y los pasos guardados siguen disponibles.
+**Preparar nuevo curso** es una acción excepcional. Dentro del mismo diálogo, primero crea y verifica una copia completa en la carpeta elegida (la actual por defecto). Solo entonces mueve o renombra el cuaderno activo y reinicia datos anuales: alumnado, horario semanal y fechas del calendario. Conserva docente, centro, tema, tramos y actividades; archiva Seguimiento como OLD y elimina Config y Eval anteriores. Si cancelas después de Seguridad, los datos guardados permanecen y el diálogo aplica automáticamente las vistas antes de cerrarse. Cancelar antes de Seguridad no cambia nada.
 
 ## Ayuda y estado
 

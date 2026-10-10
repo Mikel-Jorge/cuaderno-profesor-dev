@@ -45,7 +45,38 @@ function iniciarPreparacionNuevoCurso(input) {
 function guardarDatosGeneralesNuevoCurso(input) {
   const values = normalizeGeneralConfigInput_(input);
   validateThemeConfig_(values);
-  return saveGeneralConfig_(values, { updateCover: true, showToast: false, includeTheme: true });
+  return saveGeneralConfig_(values, { updateCover: false, showToast: false, includeTheme: true });
+}
+
+function guardarCalendarioNuevoCurso(input) {
+  return guardarConfiguracionCalendario_(input, { renderViews: false, showToast: false });
+}
+
+function guardarHorarioNuevoCurso(input, step) {
+  const section = { 3: 'slots', 4: 'activities', 5: 'sessions' }[step];
+  if (!section) throw new Error('El paso de horario no existe.');
+  return guardarConfiguracionHorario_(input, { section: section, renderViews: false, showToast: false });
+}
+
+function finalizarCalendarioNuevoCurso() {
+  createOrRepairCalendarSheet_({ skipIndex: true, showToast: false });
+  return 'Calendario preparado.';
+}
+
+function finalizarHorarioNuevoCurso() {
+  createOrRepairScheduleSheet_({ skipIndex: true });
+  return 'Horario preparado.';
+}
+
+function finalizarEstructuraNuevoCurso() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  hideTechnicalSheets_(spreadsheet);
+  reorderManagedVisibleSheets_(spreadsheet);
+  initializeCoverStructure_();
+  initializeMetaStructure_();
+  installAllManagedProtections_();
+  spreadsheet.toast('Nuevo curso preparado.', CP.PROJECT_NAME, 5);
+  return 'Cuaderno preparado.';
 }
 
 function obtenerResumenNuevoCurso() {
@@ -71,9 +102,14 @@ function obtenerFormularioPasoNuevoCurso(step) {
   }
   setCommonUiTemplateData_(template);
   let html = template.evaluate().getContent();
-  const bridge = '<style>.brand-header,.author-footer,.config-feedback,.save-loading,.wizard-progress{display:none!important}.app{padding:8px!important}.config-scroll{max-height:none!important}</style>' +
+  const bridge = '<style>html,body,.app,.config-form,.config-scroll{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important}' +
+    '.brand-header,.author-footer,.config-feedback,.save-loading,.wizard-progress,.app>.form-help{display:none!important}.app{padding:4px!important}' +
+    (isCalendar ? '' : '.schedule-accordion-toggle{display:none!important}.schedule-accordion-panel{display:block!important;border-top:0!important;padding:0!important}' +
+      '.schedule-accordion{border:0!important}.schedule-accordion.is-hidden{display:none!important}') + '</style>' +
     '<script>document.addEventListener("submit",function(event){event.preventDefault();event.stopImmediatePropagation()},true);' +
-    'window.addEventListener("message",function(event){if(!event.data||event.data.type!=="course-wizard-request")return;' +
+    'var heightObserver=new ResizeObserver(function(){parent.postMessage({type:"course-wizard-height",step:' + step + ',height:document.documentElement.scrollHeight},"*")});' +
+    'heightObserver.observe(document.body);window.addEventListener("load",function(){parent.postMessage({type:"course-wizard-ready",step:' + step + ',height:document.documentElement.scrollHeight},"*")});' +
+    'window.addEventListener("message",function(event){if(event.source!==parent||!event.data)return;if(event.data.type==="course-wizard-measure"){parent.postMessage({type:"course-wizard-height",step:' + step + ',height:document.documentElement.scrollHeight},"*");return}if(event.data.type!=="course-wizard-request")return;' +
     'var error="";if(isBlocked)error=blockingErrorElement.textContent;' +
     'else if(isDirty()&&!form.reportValidity())error="Revisa los campos obligatorios.";' +
     (isCalendar ? 'else if(isDirty()&&!validateEventScopes())error="Revisa las fechas especiales.";' : 'else if(isDirty())error=validateSlots()||"";') +
@@ -179,18 +215,8 @@ function getNewCourseProcessDefinition_(input) {
       run: updateNewCourseAcademicYear_,
     },
     {
-      label: 'Actualizando profesor y centro...',
-      completedMessage: 'Datos del profesor y del centro actualizados.',
-      run: updateNewCoursePeopleAndSchool_,
-    },
-    {
-      label: 'Aplicando apariencia...',
-      completedMessage: 'Apariencia actualizada.',
-      run: updateNewCourseAppearance_,
-    },
-    {
-      label: 'Reiniciando datos anuales y regenerando vistas...',
-      completedMessage: 'Datos anuales reiniciados y vistas del nuevo curso preparadas.',
+      label: 'Reiniciando datos anuales...',
+      completedMessage: 'Datos anuales reiniciados.',
       run: prepareNewCourseAnnualData_,
     }
   );
@@ -198,7 +224,7 @@ function getNewCourseProcessDefinition_(input) {
   return {
     id: CP.UI.NEW_COURSE_PROCESS_ID,
     title: CP.MENU.NEW_COURSE,
-    successMessage: 'El curso se ha preparado y la portada está actualizada.',
+    successMessage: 'La copia está creada y los datos anuales se han preparado.',
     input: processInput,
     steps: steps,
   };
@@ -213,14 +239,14 @@ function createNewCourseBackup_(processInput) {
     );
   }
 
-  const originalFolder = getDriveFolderById_(processInput.originalFolderId);
-  const backupFile = sourceFile.makeCopy(processInput.originalFileName, originalFolder);
+  const backupFolder = getDriveFolderById_(processInput.destinationFolderId);
+  const backupFile = sourceFile.makeCopy(processInput.originalFileName, backupFolder);
   if (!backupFile || backupFile.isTrashed() ||
       backupFile.getName() !== processInput.originalFileName ||
-      !isFileInFolder_(backupFile, processInput.originalFolderId)) {
-    throw new Error('No se ha podido verificar la copia de seguridad en la carpeta original.');
+      !isFileInFolder_(backupFile, processInput.destinationFolderId)) {
+    throw new Error('No se ha podido verificar la copia de seguridad en la carpeta elegida.');
   }
-  return 'Copia de seguridad creada en ' + processInput.originalFolderName + '.';
+  return 'Copia de seguridad creada en ' + processInput.destinationFolderName + '.';
 }
 
 function moveNewCourseNotebook_(processInput) {
@@ -272,27 +298,6 @@ function updateNewCourseAcademicYear_(processInput) {
   applyNewCourseConfigKeys_(processInput, [CP.CONFIG_KEYS.ACADEMIC_YEAR]);
 }
 
-function updateNewCoursePeopleAndSchool_(processInput) {
-  applyNewCourseConfigKeys_(processInput, [
-    CP.CONFIG_KEYS.TEACHER,
-    CP.CONFIG_KEYS.TEACHER_EMAIL,
-    CP.CONFIG_KEYS.SCHOOL,
-    CP.CONFIG_KEYS.SCHOOL_ADDRESS,
-    CP.CONFIG_KEYS.SCHOOL_PHONE,
-    CP.CONFIG_KEYS.SCHOOL_EMAIL,
-    CP.CONFIG_KEYS.SCHOOL_WEB,
-  ]);
-}
-
-function updateNewCourseAppearance_(processInput) {
-  applyNewCourseConfigKeys_(processInput, [
-    CP.CONFIG_KEYS.THEME_PRESET,
-    CP.CONFIG_KEYS.THEME_PRIMARY,
-    CP.CONFIG_KEYS.THEME_SECONDARY,
-    CP.CONFIG_KEYS.THEME_ACCENT,
-  ], { includeTheme: true });
-}
-
 function applyNewCourseConfigKeys_(processInput, keys, options) {
   try {
     const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
@@ -322,16 +327,7 @@ function prepareNewCourseAnnualData_(processInput) {
       clearStudentsForNewCourse_();
       clearWeeklyScheduleForNewCourse_();
       resetCalendarForNewCourse_(processInput.config[CP.CONFIG_KEYS.ACADEMIC_YEAR]);
-      createOrRepairCalendarSheet_();
-      createOrRepairScheduleSheet_();
-      initializeCoverStructure_();
-      initializeMetaStructure_();
-      hideTechnicalSheets_(spreadsheet);
       archiveTrackingAndDeleteModuleSheetsForNewCourse_(spreadsheet);
-      reorderManagedVisibleSheets_(spreadsheet);
-      actualizarIndicePortada();
-      installAllManagedProtections_();
-      spreadsheet.toast('Nuevo curso preparado.', CP.PROJECT_NAME, 5);
     } catch (error) {
       let annualDataRestored = true;
       try {
@@ -357,7 +353,7 @@ function prepareNewCourseAnnualData_(processInput) {
     }
     rollbackNewCoursePreparation_(processInput, error);
   }
-  return 'Alumnado, asignaciones, configuraciones de módulo y calendario anual reiniciados; vistas actualizadas.';
+  return 'Datos anuales reiniciados; las vistas se aplicarán al finalizar.';
 }
 
 function captureNewCourseAnnualSnapshots_(spreadsheet) {

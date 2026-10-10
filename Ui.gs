@@ -17,12 +17,26 @@ function abrirPrepararNuevoCurso() {
 function getCourseWizardSummary_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const config = getGeneralConfigValues_(spreadsheet);
+  const activeTypes = getCalendarTeachingTypes_().filter(function(type) { return type.active; });
+  const calendarReady = activeTypes.length > 0 && activeTypes.every(function(type) {
+    return type.startDate instanceof Date && type.endDate instanceof Date;
+  });
+  const slots = getScheduleTimeSlots_().length;
+  const activities = getScheduleActivities_().length;
+  const sessions = getWeeklySchedule_().length;
   return {
     academicYear: config[CP.CONFIG_KEYS.ACADEMIC_YEAR] || 'Pendiente',
-    calendar: isCalendarConfiguredForSidebar_(),
-    slots: getScheduleTimeSlots_().length,
-    activities: getScheduleActivities_().length,
-    sessions: getWeeklySchedule_().length,
+    calendar: calendarReady,
+    slots: slots,
+    activities: activities,
+    sessions: sessions,
+    reasons: {
+      calendar: !activeTypes.length ? 'No hay ningún tipo de enseñanza activo.'
+        : !calendarReady ? 'Faltan fechas en los tipos de enseñanza activos.' : '',
+      slots: slots ? '' : 'No hay tramos horarios.',
+      activities: activities ? '' : 'No hay actividades.',
+      sessions: sessions ? '' : 'No hay sesiones asignadas.',
+    },
   };
 }
 

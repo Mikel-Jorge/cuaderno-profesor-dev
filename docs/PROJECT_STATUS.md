@@ -2,8 +2,15 @@
 
 **Última actualización:** 2026-10-10
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.8.3`
+**Versión vigente:** `1.8.4`
 **Esquema vigente:** `11`
+
+## Correctivo de Preparar nuevo curso 1.8.4
+
+- Seguridad conserva backup verificado, transición anual y recuperación defensiva. Los pasos de configuración guardan datos técnicos sin reconstruir hojas visibles; Finalizar o Cancelar después de Seguridad aplica una fase automática única de vistas y mantenimiento.
+- Stepper navegable por pasos visitados: completado solo tras revisión, warnings ámbar con motivo y errores reales en rojo. Resumen en cards con el mismo estado. Loading central y formularios embebidos con altura dinámica y un único scroll.
+- Seguridad y Apariencia compactas; selector de temas actualiza los tres colores. Actividades expande una sola ficha; Horario usa «Docente de apoyo».
+- Pendiente de validación manual en `CP_DEV`: recorrido visual, cancelación tras guardados, scroll con muchas actividades y vistas finales con calendario u horario pendientes.
 
 ## Correctivo visual 1.8.3
 
@@ -13,7 +20,7 @@
 
 - Menú con icono a ambos lados y nombres claros en las tres opciones de Configuración.
 - Seguridad del nuevo curso con texto breve y acción explícita; Datos del docente y centro mejor maquetados. Tramos, Actividades y Horario muestran solo su sección.
-- Stepper y resumen del curso reflejan datos guardados: verde para completos, neutro para pendientes.
+- En 1.8.2, stepper y resumen reflejaban datos guardados; 1.8.4 separa ese estado de la revisión del paso.
 - Ayuda sin tarjeta «Estás en»; el detalle del estado sustituye a los pendientes y la búsqueda oculta el estado. Textos breves con acciones y viñetas.
 - Se verifica por prueba que el reinicio anual vacía las fechas finales de evaluación en los cuatro tipos.
 
@@ -77,7 +84,7 @@ Pendiente de cierre del bloque:
 # Configuración de módulo — PONDERACIONES IMPLEMENTADAS
 
 - Menú `Módulos` con creación y recálculo desde la hoja activa.
-- Selector tematizado, limitado a actividades `MODULO` sin `4 Config` ya creada; al abrir sanea referencias huérfanas.
+- Selector tematizado, limitado a actividades `MODULO` sin `4 Config` ya creada; la creación confirmada sanea referencias huérfanas.
 - Validación explícita de grupo, tipo, sesiones semanales, periodo lectivo y evaluaciones.
 - Una sola configuración por `actividad_id`, enlazada por `sheet_id` en `_MOD_CONFIG`.
 - `4 Config <SIGLA> · <GRUPO>` con calendario septiembre-junio homogéneo y tabla de 15 UT editables.
@@ -160,7 +167,7 @@ Pendiente de cierre del bloque:
 
 ## Correctivo 1.6.1
 
-- El selector explica los requisitos de elegibilidad y el asistente de nuevo curso avisa del destino de Config, Eval y Seg OLD.
+- El selector de creación explica los requisitos de elegibilidad.
 - `5 Seg` incorpora separadores de evaluación en mayúsculas, bordes discretos, alineación numérica y campos de escritura más anchos; sus reglas de color UT y exceso se reinstalan al crear o reparar.
 - `4 Config` muestra el color de cada UT en la celda Color tras Recalcular y Reparar, y conserva gris cuando está vacía.
 - Pestañas por familia con paleta fija; las hojas ajenas conservan su color. Esquema 10 sin cambios y `6 Eval` permanece vacía.
@@ -196,9 +203,9 @@ Pendiente de cierre del bloque:
 
 - Reparar estructura ofrece selección de siete bloques visibles y progreso dinámico; el mantenimiento técnico se ejecuta siempre. Se separan las reparaciones de Config, Seg y Eval y las protecciones de hojas no elegidas se respetan.
 - Eval alinea explícitamente nombre y apellidos después de ordenar, integra la cabecera final con el accent del tema y ensancha las dos columnas finales.
-- El asistente explícito de seis pasos usa los configuradores de datos generales, Calendario y Horario; después de Preparar nuevo curso se abre al terminar el backup y reinicio anual. Tramos y actividades siguen conservándose.
+- Historial 1.8.0: el asistente explícito de seis pasos usaba los configuradores de datos generales, Calendario y Horario. Fue sustituido por el diálogo único de siete pasos en 1.8.1.
 - Menús reordenados, nombre visible Reparar estructura y ayuda ampliada en Sidebar y `USER_GUIDE.md`.
-- Abrir el asistente o Crear configuración de módulo es solo lectura; el primer guardado prepara la estructura inicial y la creación confirmada sanea Config huérfanas.
+- Abrir los configuradores o Crear configuración de módulo es solo lectura; la creación confirmada sanea Config huérfanas.
 - Pendiente de validación manual en `CP_DEV`: recorrido de asistente, Repair con combinaciones de selección, protección e inspección visual de Eval.
 
 # Decisiones vigentes
@@ -211,7 +218,7 @@ Pendiente de cierre del bloque:
 - Los colores nunca son fuente de verdad.
 - No hay triggers instalables, People API ni Google Calendar en V1.
 
-# Mejora aplazada
+# Futuro / roadmap
 
 - Función global `Cambiar tema del cuaderno` cuando estén construidas las hojas principales.
 - Futuro bloque `7 Tutoría` para centralizar las funciones del docente tutor; todavía sin hoja ni estructura técnica.

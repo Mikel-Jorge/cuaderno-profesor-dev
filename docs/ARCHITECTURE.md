@@ -2,7 +2,7 @@
 
 **Estado:** vigente
 **Última revisión:** 2026-10-10
-**Versión:** `1.8.3` / esquema `11`
+**Versión:** `1.8.4` / esquema `11`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -25,7 +25,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.8.3`, esquema `11` y paleta fija de pestañas.
+- `Config.gs`: constantes, nombres de hojas, versión `1.8.4`, esquema `11` y paleta fija de pestañas.
 - `Theme.gs`: tema global, presets, aliases de compatibilidad y colores semánticos. La lectura detecta tríos originales sin personalización para aplicar la nueva paleta; la reparación persiste el ID canónico y los colores resueltos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -152,11 +152,11 @@ No existe matrícula por módulo. Evaluación filtra por coincidencia de Grupo y
 
 # 10. Preparar nuevo curso
 
-`UiDialogNewCourse.html` mantiene los siete pasos en un único diálogo. El paso Seguridad llama a `iniciarPreparacionNuevoCurso()`, que valida la ubicación y ejecuta secuencialmente el backup verificado y la transición anual en una sola llamada. No se ejecuta ninguna mutación al abrir el diálogo. Los pasos posteriores usan `guardarDatosGeneralesNuevoCurso()`, `guardarConfiguracionCalendario()` y `guardarConfiguracionHorario()`. Calendario y Horario se renderizan dentro del diálogo como formularios aislados y devuelven DTO por `postMessage`; el padre controla navegación, validación y guardado. No se encadenan diálogos. Los configuradores individuales conservan sus propios puntos de entrada.
+`UiDialogNewCourse.html` mantiene los siete pasos en un único diálogo. Seguridad llama a `iniciarPreparacionNuevoCurso()`, que valida la ubicación y ejecuta backup verificado y transición anual en una sola llamada. No se ejecuta ninguna mutación al abrir el diálogo. Los pasos posteriores usan entradas específicas del wizard para `_CONFIG`, Calendario y las tres tablas de Horario: comparten validación y persistencia con los configuradores normales, pero omiten el renderizado visible. Cada paso de Horario escribe solo su tabla. Calendario y Horario se muestran como formularios embebidos; `postMessage` entrega DTO y altura, y `ResizeObserver` ajusta el iframe al contenido para mantener un único scroll. El padre distingue pasos visitados de pasos revisados y consulta el estado canónico para warnings y resumen. Los configuradores individuales mantienen guardado y actualización visible inmediatos.
 
 Los datos se separan en reutilizables y anuales. `_CONFIG` conserva profesor, centro y tema; `_HOR_TRAMOS` y `_HOR_ACTIVIDADES` conservan estructura, catálogo e IDs. Alumnado, `_HOR_SESIONES` y todos los valores anuales del Calendario se reinician.
 
-Tras actualizar configuración, `prepareNewCourseAnnualData_()` captura snapshots de Alumnado y de las tablas de Horario y Calendario. En una única transición limpia Alumnado, vacía sesiones y apoyos, reinicia el calendario, precarga propuestas y regenera vistas. Como paso destructivo posterior al backup, materializa y renombra por identidad cada `5 Seg` como OLD, elimina `6 Eval` y `4 Config`, y vacía `_MOD_CONFIG` y `_MOD_PLAN`; nunca decide la identidad por el nombre de pestaña. El backup completo permanece como garantía de la transición anual.
+Tras actualizar configuración, `prepareNewCourseAnnualData_()` captura snapshots de Alumnado y de las tablas de Horario y Calendario. En una única transición limpia Alumnado, vacía sesiones y apoyos, reinicia el calendario y precarga propuestas. Como paso destructivo posterior al backup, materializa y renombra por identidad cada `5 Seg` como OLD, elimina `6 Eval` y `4 Config`, y vacía `_MOD_CONFIG` y `_MOD_PLAN`; nunca decide la identidad por el nombre de pestaña. El backup completo permanece como garantía de la transición anual. Al finalizar o cancelar después de Seguridad, tres llamadas secuenciales regeneran Calendario y Horario sin actualizar repetidamente el índice; después ocultan y ordenan hojas, generan Portada e índice una vez, actualizan `_META` e instalan protecciones. Si una fase falla, el diálogo permanece abierto y el reintento continúa desde la fase pendiente.
 
 `Reparar estructura` no llama a estas funciones anuales. Por tanto, una reparación conserva datos y no recupera propuestas que el docente haya eliminado.
 

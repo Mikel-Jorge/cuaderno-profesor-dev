@@ -210,6 +210,11 @@ function getScheduleConfigForUi_(spreadsheet) {
 }
 
 function guardarConfiguracionHorario(input) {
+  return guardarConfiguracionHorario_(input, {});
+}
+
+function guardarConfiguracionHorario_(input, options) {
+  const saveOptions = options || {};
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   assertScheduleStructureReady_(spreadsheet);
   const normalized = normalizeAndValidateScheduleConfig_(input);
@@ -217,7 +222,7 @@ function guardarConfiguracionHorario(input) {
   if (!lock.tryLock(30000)) throw new Error('No se ha podido bloquear el cuaderno para guardar. Inténtalo de nuevo.');
   const snapshots = captureScheduleSnapshots_(spreadsheet);
   try {
-    persistScheduleConfig_(spreadsheet, normalized);
+    persistScheduleConfig_(spreadsheet, normalized, saveOptions.section);
   } catch (error) {
     try { restoreScheduleSnapshots_(spreadsheet, snapshots); } catch (rollbackError) {
       throw new Error('No se ha podido guardar el horario ni restaurar las tablas técnicas.');
@@ -226,15 +231,17 @@ function guardarConfiguracionHorario(input) {
   } finally {
     lock.releaseLock();
   }
-  try {
-    createOrRepairScheduleSheet_();
-  } catch (error) {
-    throw new Error(
-      'La configuración se ha guardado, pero no se ha podido actualizar ' + CP.SHEETS.SCHEDULE + ': ' +
-      (error && error.message ? error.message : 'error de renderizado.')
-    );
+  if (saveOptions.renderViews !== false) {
+    try {
+      createOrRepairScheduleSheet_();
+    } catch (error) {
+      throw new Error(
+        'La configuración se ha guardado, pero no se ha podido actualizar ' + CP.SHEETS.SCHEDULE + ': ' +
+        (error && error.message ? error.message : 'error de renderizado.')
+      );
+    }
   }
-  spreadsheet.toast('Configuración del horario guardada.', CP.PROJECT_NAME, 4);
+  if (saveOptions.showToast !== false) spreadsheet.toast('Configuración del horario guardada.', CP.PROJECT_NAME, 4);
   return { message: 'La configuración del horario se ha guardado.' };
 }
 
@@ -372,10 +379,10 @@ function normalizeScheduleSessions_(rows, slotById, activityById) {
   });
 }
 
-function persistScheduleConfig_(spreadsheet, config) {
-  writeScheduleTable_(spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_SLOTS), CP_SCHEDULE_HEADERS.SLOTS, config.slots.map(function(slot) { return [slot.id, slot.type, slot.name, slot.startTime, slot.durationMinutes]; }));
-  writeScheduleTable_(spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_ACTIVITIES), CP_SCHEDULE_HEADERS.ACTIVITIES, config.activities.map(function(activity) { return [activity.id, activity.category, activity.name, activity.acronym, activity.teachingTypeId, activity.group, activity.classroom, activity.color]; }));
-  writeScheduleTable_(spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_SESSIONS), CP_SCHEDULE_HEADERS.SESSIONS, config.sessions.map(function(session) { return [session.id, session.day, session.slotId, session.activityId, session.support]; }));
+function persistScheduleConfig_(spreadsheet, config, section) {
+  if (!section || section === 'slots') writeScheduleTable_(spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_SLOTS), CP_SCHEDULE_HEADERS.SLOTS, config.slots.map(function(slot) { return [slot.id, slot.type, slot.name, slot.startTime, slot.durationMinutes]; }));
+  if (!section || section === 'activities') writeScheduleTable_(spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_ACTIVITIES), CP_SCHEDULE_HEADERS.ACTIVITIES, config.activities.map(function(activity) { return [activity.id, activity.category, activity.name, activity.acronym, activity.teachingTypeId, activity.group, activity.classroom, activity.color]; }));
+  if (!section || section === 'sessions') writeScheduleTable_(spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_SESSIONS), CP_SCHEDULE_HEADERS.SESSIONS, config.sessions.map(function(session) { return [session.id, session.day, session.slotId, session.activityId, session.support]; }));
 }
 
 function writeScheduleTable_(sheet, headers, rows) {
