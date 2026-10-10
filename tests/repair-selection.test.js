@@ -15,9 +15,10 @@ const context = {
   'cleanupOrphanModuleConfigsWithLock_', 'initializeCoverStructure_',
   'createOrRepairCalendarSheet_', 'createOrRepairScheduleSheet_',
   'createOrRepairStudentsSheet_', 'repairExistingModuleConfigSheets_',
-  'repairTrackingSheets_', 'repairEvaluationSheets_', 'initializeMetaStructure_',
+  'initializeMetaStructure_',
   'finishSelectiveRepair_',
 ].forEach(name => { context[name] = () => { calls.push(name); }; });
+context.repairManagedModuleConsumerSheets_ = options => { calls.push('repairManagedModuleConsumerSheets_'); calls.push(JSON.stringify(options)); return { trackingRepaired: options.tracking ? 2 : 0, evaluationsRepaired: options.evaluation ? 1 : 0, evaluationsRecreated: 0 }; };
 vm.createContext(context);
 vm.runInContext(fs.readFileSync('Ui.gs', 'utf8'), context);
 
@@ -28,20 +29,22 @@ const process = context.getUiProcessDefinition_('initialize-notebook', selected)
 assert.strictEqual(process.steps.length, 5);
 assert.strictEqual(JSON.stringify(process.steps.map(step => step.completedMessage)), JSON.stringify([
   'Estructura técnica comprobada.', 'Alumnado reparado.',
-  'Hojas de Evaluación reparadas.', 'Metadatos actualizados.',
+  'Reparación de Seguimiento y Evaluación finalizada.', 'Metadatos actualizados.',
   'Mantenimiento finalizado.',
 ]));
 process.steps.forEach(step => step.run(selected));
-assert(calls.includes('repairEvaluationSheets_'));
-assert(!calls.includes('repairTrackingSheets_'));
+assert(calls.includes('repairManagedModuleConsumerSheets_'));
+assert(calls.includes(JSON.stringify({ tracking: false, evaluation: true })));
+assert.strictEqual(context.formatRepairConsumerResult_({ trackingRepaired: 0, evaluationsRepaired: 0, evaluationsRecreated: 0 }, all), 'No hay Seguimientos ni Evaluaciones que reparar.');
+assert.strictEqual(context.formatRepairConsumerResult_({ trackingRepaired: 0, evaluationsRepaired: 0, evaluationsRecreated: 1 }, all), '1 Evaluación recreada.');
 assert(!calls.includes('initializeCoverStructure_'));
 assert.strictEqual(context.getUiProcessDefinition_('initialize-notebook', none).steps.length, 3);
-assert.strictEqual(context.getUiProcessDefinition_('initialize-notebook', all).steps.length, 10);
+assert.strictEqual(context.getUiProcessDefinition_('initialize-notebook', all).steps.length, 9);
 const visibleRunners = {
   cover: 'initializeCoverStructure_', calendar: 'createOrRepairCalendarSheet_',
   schedule: 'createOrRepairScheduleSheet_', students: 'createOrRepairStudentsSheet_',
-  config: 'repairExistingModuleConfigSheets_', tracking: 'repairTrackingSheets_',
-  evaluation: 'repairEvaluationSheets_',
+  config: 'repairExistingModuleConfigSheets_', tracking: 'repairManagedModuleConsumerSheets_',
+  evaluation: 'repairManagedModuleConsumerSheets_',
 };
 keys.forEach(key => {
   calls.length = 0;
@@ -55,6 +58,11 @@ for (const pair of [['config', 'evaluation'], ['students', 'evaluation']]) {
   const count = context.getUiProcessDefinition_('initialize-notebook', choice).steps.length;
   assert.strictEqual(count, 5);
 }
+calls.length = 0;
+const both = context.getUiProcessDefinition_('initialize-notebook', all);
+both.steps.forEach(step => step.run(all));
+assert.strictEqual(calls.filter(name => name === 'repairManagedModuleConsumerSheets_').length, 1);
+assert(calls.includes(JSON.stringify({ tracking: true, evaluation: true })));
 assert.throws(() => context.normalizeRepairSelection_({ cover: true }), /no válida/);
 assert.throws(() => context.normalizeRepairSelection_(null), /Selecciona/);
 

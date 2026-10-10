@@ -137,10 +137,6 @@ function normalizeLegacyScheduleActivityCategories_(sheet) {
   if (changed) range.setValues(values);
 }
 
-function initializeScheduleStructure_() {
-  ensureScheduleTechnicalStructure_();
-}
-
 function initializeScheduleTable_(sheet, headers) {
   initializeCalendarTableSheet_(sheet, headers, []);
   sheet.getRange(2, 1, Math.max(1, sheet.getMaxRows() - 1), headers.length).setNumberFormat('@');

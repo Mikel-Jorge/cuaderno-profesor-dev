@@ -1,5 +1,6 @@
 var CP_REPAIR_SKIP_COVER = false;
 
+// Manual legacy entrypoint kept for existing Apps Script executions.
 function inicializarCuaderno() {
   initializeCoverStructure_();
   initializeConfigStructure_();

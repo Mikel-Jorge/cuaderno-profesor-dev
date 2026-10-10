@@ -27,13 +27,7 @@ function getSidebarData_() {
 }
 
 function getSidebarStateItems_(config) {
-  const generalDataComplete = [
-    CP.CONFIG_KEYS.ACADEMIC_YEAR,
-    CP.CONFIG_KEYS.TEACHER,
-    CP.CONFIG_KEYS.SCHOOL,
-  ].every(function(key) {
-    return Boolean(normalizeConfigValue_(config[key]));
-  });
+  const generalDataComplete = getGeneralConfigCompletion_(config).complete;
   const calendarConfigured = isCalendarConfiguredForSidebar_();
   const scheduleConfigured = isScheduleConfiguredForSidebar_();
   const studentsConfigured = isStudentsConfiguredForSidebar_();

@@ -536,8 +536,7 @@ function repairManagedModuleConsumerSheets_(options) {
   const repairTracking = !options || options.tracking !== false;
   const repairEvaluation = !options || options.evaluation !== false;
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  let repaired = 0;
-  let recreatedEvaluations = 0;
+  const result = { trackingRepaired: 0, evaluationsRepaired: 0, evaluationsRecreated: 0 };
   const records = readModuleConfigRegistry_(spreadsheet);
   records.forEach(function(record) {
     const trackingSheet = record.trackingSheetId
@@ -547,7 +546,7 @@ function repairManagedModuleConsumerSheets_(options) {
     let createdEvaluation = null;
     if (repairTracking && isRegisteredModuleTrackingSheet_(trackingSheet)) {
       formatAndRepairTrackingSheet_(trackingSheet);
-      repaired += 1;
+      result.trackingRepaired += 1;
     }
     if (repairEvaluation && isRegisteredModuleTrackingSheet_(trackingSheet) && !evaluationSheet) {
       const activity = getModuleActivityById_(record.activityId);
@@ -564,32 +563,24 @@ function repairManagedModuleConsumerSheets_(options) {
         throw error;
       }
       record.evaluationSheetId = created.getSheetId();
-      recreatedEvaluations += 1;
+      result.evaluationsRecreated += 1;
     }
-    const currentEvaluation = getSheetById_(spreadsheet, record.evaluationSheetId);
+    const currentEvaluation = createdEvaluation || evaluationSheet;
     if (repairEvaluation && currentEvaluation && currentEvaluation !== createdEvaluation) {
       const activity = getModuleActivityById_(record.activityId);
       const configSheet = getSheetById_(spreadsheet, record.sheetId);
       if (activity && configSheet) {
         const context = validateModuleConfigPrerequisites_(spreadsheet, activity);
         repairEvaluationSheet_(currentEvaluation, configSheet, context, activity);
+        result.evaluationsRepaired += 1;
       }
     }
   });
-  if (recreatedEvaluations) {
+  if (result.evaluationsRecreated) {
     writeModuleTable_(spreadsheet.getSheetByName(CP.SHEETS.MODULE_CONFIG),
       CP_MODULE_CONFIG_HEADERS, records.map(moduleConfigRecordToRow_));
   }
-  return repaired + ' Seguimientos reparados; ' + recreatedEvaluations +
-    ' hojas de Evaluación recreadas.';
-}
-
-function repairTrackingSheets_() {
-  return repairManagedModuleConsumerSheets_({ tracking: true, evaluation: false });
-}
-
-function repairEvaluationSheets_() {
-  return repairManagedModuleConsumerSheets_({ tracking: false, evaluation: true });
+  return result;
 }
 
 function getModuleConsumerActivityIdForSheet_(sheet) {

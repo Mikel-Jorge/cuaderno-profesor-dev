@@ -15,7 +15,8 @@ const calendar = { academicYear: '2027-2028', types: [{ id: 'FP1', active: false
 const schedule = { slots: [{ id: 'T1', type: 'SESION', startTime: '08:00', durationMinutes: 60 }],
   activities: [{ id: 'A1', name: 'Actividad' }], sessions: [] };
 const context = {
-  CP: { CONFIG_KEYS: { ACADEMIC_YEAR: 'curso_academico' } },
+  CP: { CONFIG_KEYS: { ACADEMIC_YEAR: 'curso_academico', TEACHER: 'profesor', SCHOOL: 'centro' } },
+  normalizeConfigValue_: value => String(value || '').trim(),
   PropertiesService: { getDocumentProperties: () => properties },
   SpreadsheetApp: { getActiveSpreadsheet: () => ({ getSpreadsheetTimeZone: () => 'Europe/Madrid',
     getId: () => 'BOOK', toast: () => calls.push('toast') }) },
@@ -41,16 +42,22 @@ const context = {
   installAllManagedProtections_: () => calls.push('protect'),
 };
 vm.createContext(context);
+const generalSource = fs.readFileSync('GeneralConfig.gs', 'utf8');
+vm.runInContext(generalSource.match(/function getGeneralConfigCompletion_\(config\) \{[\s\S]*?\n\}/)[0], context);
 vm.runInContext(fs.readFileSync('NewCourse.gs', 'utf8'), context);
 context.normalizeNewCourseProcessInput_ = value => value;
 context.validateNotebookOriginalLocation_ = () => {};
 const first = context.getNewCourseDraft_();
 assert.strictEqual(store.size, 0, 'abrir el borrador no escribe');
 assert.strictEqual(first.schedule.sessions.length, 0);
+assert.strictEqual(context.getNewCourseDraftSummary_(first).steps[1].visited, false);
+assert.strictEqual(context.getNewCourseDraftSummary_(first).steps[1].reason, '');
 context.guardarSeguridadNuevoCurso({ config, originalFileName: 'Cuaderno',
   originalFolderId: 'ORIGIN', destinationFolderId: 'DEST' });
 context.guardarVisitaNuevoCurso(1);
 context.guardarDatosGeneralesNuevoCurso(config);
+assert.strictEqual(context.getNewCourseDraftSummary_(context.getNewCourseDraft_()).steps[1].reason,
+  'Falta el centro.');
 context.guardarVisitaNuevoCurso(2);
 context.guardarCalendarioNuevoCurso({ types: calendar.types, events: [] });
 context.guardarVisitaNuevoCurso(3);

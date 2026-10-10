@@ -4,17 +4,17 @@
 .course-wizard{height:100vh;display:flex;flex-direction:column;min-width:0}.course-wizard .brand-header{padding:8px 16px}.course-wizard .brand-logo{width:30px;height:38px}
 .course-stepper{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;padding:12px 18px 4px;list-style:none;margin:0}.course-stepper li{text-align:center;min-width:0;color:var(--muted-text);font-size:11px}.course-stepper b{display:grid;place-items:center;width:26px;height:26px;margin:auto auto 4px;border-radius:50%;background:var(--muted);color:var(--text);font-size:12px}.course-stepper .done b{background:var(--success);color:#fff}.course-stepper .current b{background:var(--accent);color:#fff}.course-stepper .warning b{background:var(--warning);color:var(--text)}.course-stepper span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .course-step-title{margin:4px 18px 8px;font-size:17px;color:var(--text)}.course-body{flex:1;overflow:auto;padding:0 18px 12px;min-height:0}.course-step{display:none}.course-step.current{display:block}.course-note{margin:6px 0 14px;color:var(--muted-text);font-size:13px;line-height:1.5}.course-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.course-grid label{display:grid;gap:3px;font-size:12px;font-weight:600}.course-grid input,.course-grid select{width:100%;min-width:0}.course-security{padding:13px;background:var(--muted);border:1px solid var(--border);border-radius:8px}.course-security p{margin:4px 0 10px}.course-frame{width:100%;border:0;background:var(--surface)}.course-feedback{padding:4px 18px;color:var(--danger);font-size:12px}.course-feedback:empty{display:none}.course-footer{display:flex;align-items:center;gap:8px;padding:10px 18px;border-top:1px solid var(--border)}.course-footer .spacer{flex:1}.course-summary{display:grid;gap:8px}
-.folder-picker{position:fixed;inset:0;z-index:5;background:#0008;display:grid;place-items:center;padding:16px}.folder-picker[hidden]{display:none}.folder-picker-dialog{background:var(--surface);padding:16px;border-radius:8px;width:min(480px,100%);max-height:90vh;overflow:auto}.folder-list{max-height:280px;overflow:auto}.folder-list button{display:block;width:100%;text-align:left;padding:8px;background:transparent;border:0;border-bottom:1px solid var(--border);color:var(--text);cursor:pointer}@media(max-width:680px){.course-stepper li span{display:none}.course-grid{grid-template-columns:1fr}.course-frame{height:auto}}
+.folder-picker{position:fixed;inset:0;z-index:5;background:#0008;display:grid;place-items:center;padding:16px}.folder-picker[hidden]{display:none}.folder-picker-dialog{background:var(--surface);padding:16px;border-radius:10px;width:min(480px,100%);max-height:90vh;overflow:auto}.folder-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.folder-head h2{margin:0;font-size:18px}.folder-close{border:0;background:transparent;color:var(--muted-text);font-size:22px;cursor:pointer}.folder-path{margin:8px 0 4px;color:var(--muted-text);font-size:12px;overflow-wrap:anywhere}.folder-toolbar{min-height:28px}.folder-back{border:0;background:transparent;color:var(--primary);padding:3px 0;font:inherit;font-size:12px;cursor:pointer}.folder-list-region{min-height:170px;max-height:280px;overflow:auto;border:1px solid var(--border);border-radius:7px}.folder-list{display:grid}.folder-list button{display:flex;align-items:center;width:100%;text-align:left;padding:8px 10px;background:transparent;border:0;border-bottom:1px solid var(--border);color:var(--text);cursor:pointer;font:inherit;font-size:13px}.folder-list button:hover,.folder-list button:focus-visible{background:var(--muted);outline:2px solid var(--accent);outline-offset:-2px}.folder-loading{min-height:170px;display:grid;place-content:center;justify-items:center;gap:10px;color:var(--muted-text);font-size:13px}.folder-loading .spinner{width:32px;height:32px;border-width:4px}.folder-empty{padding:45px 12px;text-align:center;color:var(--muted-text);font-size:13px}.folder-loading[hidden],.folder-empty[hidden],.folder-list[hidden],.folder-back[hidden]{display:none}.folder-error{color:var(--danger);font-size:12px}.folder-error:empty{display:none}.folder-retry[hidden]{display:none}@media(max-width:680px){.course-stepper li span{display:none}.course-grid{grid-template-columns:1fr}.course-frame{height:auto}}
 .course-group{border:1px solid var(--border);border-radius:9px;background:var(--surface);padding:16px;margin-bottom:12px}.course-group h2{margin:0 0 4px;color:var(--primary);font-size:15px}.course-group p{margin:0 0 14px;color:var(--muted-text);font-size:12px}.course-grid input,.course-grid select{height:38px;padding:7px 9px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)}.course-grid input:focus-visible,.course-grid select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}.course-grid input[type=color]{padding:3px;width:100%;min-height:38px}.course-grid label{gap:5px;color:var(--text)}
 .course-stepper button{display:grid;justify-items:center;gap:3px;width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer}.course-stepper button:disabled{cursor:default}.course-stepper button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:5px}.course-stepper .done b{background:var(--success);color:#fff}.course-stepper .warning b{background:var(--warning);color:#fff}.course-stepper .error b{background:var(--danger);color:#fff}.course-stepper .current b{background:var(--primary);color:var(--on-primary)}
 .course-title-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:4px 18px 8px}.course-title-row .course-step-title{margin:0}.course-save-hint{font-size:11px;color:var(--muted-text);text-align:right}.course-warning{margin:0 18px 8px;padding:7px 10px;border-radius:6px;background:#FFF4D6;color:#76520B;font-size:12px}
 .course-security{max-width:690px;margin:12px auto;padding:22px;border-radius:12px;background:var(--surface);box-shadow:0 4px 22px #17203312}.course-security h2{margin:0 0 5px;font-size:20px}.course-security p{margin:0;color:var(--muted-text)}.course-year-flow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:15px;margin:20px 0}.course-year-box{display:grid;gap:5px;min-height:80px;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--background)}.course-year-box span,.course-backup span{font-size:12px;color:var(--muted-text)}.course-year-box strong{font-size:18px}.course-year-box input{width:100%;min-width:0;height:38px;padding:7px 9px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit}.course-year-box input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}.course-year-arrow{font-size:22px;color:var(--primary)}.course-backup{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:8px}.course-backup div{display:grid;gap:3px}.course-backup strong{font-size:13px;overflow-wrap:anywhere}.course-backup button{white-space:nowrap}
 .course-appearance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:530px}.course-appearance-grid label{display:grid;gap:5px;font-size:12px;font-weight:600}.course-appearance-grid label:first-child{grid-column:1/-1}.course-appearance-grid select,.course-appearance-grid input{width:100%;min-width:0;height:38px;padding:4px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)}.course-appearance-grid input[type=color]{cursor:pointer}.course-frame{display:block;width:100%;height:1px;min-height:0;border:0;overflow:hidden;background:transparent}.course-loading{display:grid;flex:1;place-content:center;justify-items:center;gap:12px;min-height:280px;text-align:center}.course-loading[hidden],.course-body[hidden]{display:none!important}.course-loading .spinner{width:42px;height:42px;border-width:5px}.course-loading strong{font-size:16px}.course-loading span{color:var(--muted-text);font-size:13px}
-.course-summary{display:grid;gap:14px;max-width:760px;margin:0 auto}.course-summary-course,.course-summary-card,.course-summary-callout{border:1px solid var(--border);border-radius:10px;padding:16px;background:var(--surface)}.course-summary-course{background:var(--muted)}.course-summary-course small{display:block;color:var(--muted-text)}.course-summary-course strong{display:block;font-size:24px;color:var(--primary)}.course-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.course-summary-card h3{margin:0 0 8px;font-size:15px}.course-summary-card p{margin:0;font-size:13px}.course-summary-card .done{color:var(--success);font-weight:700}.course-summary-card .warning{color:#8A5A08;font-weight:700}.course-summary-callout{background:var(--background);font-size:13px}
+.course-summary{display:grid;gap:14px;max-width:760px;margin:0 auto}.course-summary-course,.course-summary-card,.course-summary-callout{border:1px solid var(--border);border-radius:10px;padding:16px;background:var(--surface)}.course-summary-course{background:var(--muted)}.course-summary-course small{display:block;color:var(--muted-text)}.course-summary-course strong{display:block;font-size:24px;color:var(--primary)}.course-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.course-summary-card{display:block;width:100%;text-align:left;color:var(--text);font:inherit;cursor:pointer}.course-summary-card:hover{border-color:var(--accent);background:var(--muted)}.course-summary-card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.course-summary-card .card-title{display:block;margin:0 0 8px;font-size:15px;font-weight:700}.course-summary-card .card-line{display:block;margin:0;font-size:13px}.course-summary-card .done{color:var(--success);font-weight:700}.course-summary-card .warning{color:#8A5A08;font-weight:700}.course-summary-card .visited{color:var(--muted-text);font-weight:700}.course-summary-card .review-link{display:block;margin-top:9px;color:var(--primary);font-size:12px;font-weight:700;text-align:right}.course-summary-callout{background:var(--background);font-size:13px}
 @media(max-width:680px){.course-appearance-grid,.course-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.course-backup{align-items:flex-start;flex-direction:column}.course-title-row{align-items:flex-start;flex-direction:column;gap:1px}.course-year-flow{gap:6px}}
 </style></head><body>
 <main class="course-wizard"><header class="brand-header"><img class="brand-logo" src="<?!= branding.icon ?>" alt=""><div class="brand-copy"><p class="brand-name"><?= uiConfig.projectName ?></p><span class="version-label"><?= uiConfig.versionLabel ?></span></div></header>
-<ol class="course-stepper" id="stepper" aria-label="Pasos para preparar el curso"></ol><div class="course-title-row"><h1 class="course-step-title" id="step-title">Seguridad</h1><span class="course-save-hint" id="save-hint">Los cambios se guardan al pulsar Siguiente. Atrás descarta los cambios sin guardar.</span></div><p class="course-warning" id="step-warning" hidden></p><div class="course-loading" id="course-loading" role="status" aria-live="polite" hidden><span class="spinner" aria-hidden="true"></span><strong id="loading-title"></strong><span id="loading-detail"></span></div><div class="course-body" id="course-body">
+<ol class="course-stepper" id="stepper" aria-label="Pasos para preparar el curso"></ol><div class="course-title-row"><h1 class="course-step-title" id="step-title">Seguridad</h1><span class="course-save-hint" id="save-hint" hidden>ℹ Los cambios de este paso se guardan al pulsar Siguiente.</span></div><p class="course-warning" id="step-warning" hidden></p><div class="course-loading" id="course-loading" role="status" aria-live="polite" hidden><span class="spinner" aria-hidden="true"></span><strong id="loading-title"></strong><span id="loading-detail"></span></div><div class="course-body" id="course-body">
 <section class="course-step current" data-step="0"><div class="course-security"><h2>Nuevo curso</h2><p>La copia se creará al finalizar el asistente.</p><div class="course-year-flow"><div class="course-year-box"><span>Curso actual</span><strong id="current-year"></strong></div><span class="course-year-arrow" aria-hidden="true">→</span><label class="course-year-box" for="new-year"><span>Nuevo curso</span><input id="new-year" type="text" required pattern="[0-9]{4}-[0-9]{4}" placeholder="2027-2028" inputmode="numeric"></label></div><div class="course-backup"><div><span>Carpeta de la copia</span><strong id="destination-folder"></strong></div><button class="button button-secondary" type="button" id="choose-folder">📁 Elegir otra carpeta</button></div></div></section>
 <section class="course-step" data-step="1"><form id="general-form"><div class="course-group"><h2>Curso y docente</h2><p>Estos datos aparecen en la Portada.</p><div class="course-grid"><label>Curso académico<input name="curso_academico" readonly></label><label>Nombre y apellidos del docente<input name="profesor" autocomplete="name"></label><label>Correo del docente<input name="profesor_email" type="email" autocomplete="email"></label></div></div><div class="course-group"><h2>Centro educativo</h2><p>Completa solo los datos que quieras mostrar.</p><div class="course-grid"><label>Nombre del centro<input name="centro" autocomplete="organization"></label><label>Dirección<input name="centro_direccion" autocomplete="street-address"></label><label>Teléfono<input name="centro_telefono" type="tel"></label><label>Correo del centro<input name="centro_email" type="email"></label><label>Web del centro<input name="centro_web" inputmode="url"></label></div></div><div class="course-group"><h2>Apariencia</h2><div class="course-appearance-grid"><label>Tema<select name="tema_preset" id="theme-preset"></select></label><label>Principal<input name="tema_primary" type="color"></label><label>Secundario<input name="tema_secondary" type="color"></label><label>Acento<input name="tema_accent" type="color"></label></div></div></form></section>
 <section class="course-step" data-step="2"><p class="course-note">Revisa tipos, periodos, evaluaciones y fechas especiales. Puedes continuar con elementos pendientes.</p><div id="calendar-host"></div></section>
@@ -23,18 +23,18 @@
 <section class="course-step" data-step="5"><div id="weekly-host"></div></section>
 <section class="course-step" data-step="6"><div class="course-summary" id="course-summary"></div></section></div>
 <div class="course-feedback" id="course-error" role="alert"></div><footer class="course-footer" id="course-wizard-controls"><button class="button button-secondary" id="cancel" type="button">Cancelar</button><span class="spacer"></span><button class="button button-secondary" id="back" type="button" hidden>Atrás</button><button class="button" id="next" type="button">Siguiente</button></footer></main>
-<div class="folder-picker" id="folder-picker" hidden><div class="folder-picker-dialog" role="dialog" aria-modal="true" aria-label="Elegir carpeta"><h2>Elegir carpeta</h2><p id="folder-path"></p><button class="button button-secondary" id="folder-back" type="button">← Volver</button><div class="folder-list" id="folder-list"></div><p id="folder-error" role="alert"></p><div class="actions"><button class="button button-secondary" id="folder-cancel" type="button">Cancelar</button><button class="button" id="folder-select" type="button">Usar esta carpeta</button></div></div></div>
+<div class="folder-picker" id="folder-picker" hidden><div class="folder-picker-dialog" role="dialog" aria-modal="true" aria-label="Elegir carpeta"><header class="folder-head"><h2>📁 Elegir carpeta</h2><button class="folder-close" id="folder-close" type="button" aria-label="Cerrar selector">×</button></header><nav class="folder-path" id="folder-path" aria-label="Ruta de carpetas"></nav><div class="folder-toolbar"><button class="folder-back" id="folder-back" type="button" hidden>← Atrás</button></div><div class="folder-list-region"><div class="folder-loading" id="folder-loading" role="status" hidden><span class="spinner" aria-hidden="true"></span><span>Cargando carpetas…</span></div><div class="folder-list" id="folder-list"></div><p class="folder-empty" id="folder-empty" hidden>Esta carpeta no contiene subcarpetas.</p></div><p class="folder-error" id="folder-error" role="alert"></p><button class="folder-back folder-retry" id="folder-retry" type="button" hidden>Reintentar</button><div class="actions"><button class="button button-secondary" id="folder-cancel" type="button">Cancelar</button><button class="button" id="folder-select" type="button">Usar esta carpeta</button></div></div></div>
 <script>
 const INITIAL_CONFIG=<?!= JSON.stringify(wizardConfig) ?>,CURRENT_YEAR=<?!= JSON.stringify(currentAcademicYear) ?>,CURRENT_LOCATION=<?!= JSON.stringify(currentLocation) ?>,CURRENT_FILE_NAME=<?!= JSON.stringify(currentFileName) ?>,THEME=<?!= JSON.stringify(themeConfig) ?>,DRAFT=<?!= JSON.stringify(courseDraft) ?>,INITIAL_SUMMARY=<?!= JSON.stringify(courseSummary) ?>;
 const LABELS=['Seguridad','Docente y centro','Calendario','Tramos','Actividades','Horario','Resumen'],form=document.getElementById('general-form');
-let currentStep=0,busy=false,selectedFolder={id:DRAFT.destinationFolderId||CURRENT_LOCATION.id,name:CURRENT_LOCATION.name},pickerFolder=null,requestId=0,summary=null,finalPhase=DRAFT.generationPhase||0,errorStep=null;
-const visited=DRAFT.visited.slice(),reviewed=DRAFT.reviewed.slice(),frames={};
+let currentStep=0,busy=false,selectedFolder={id:DRAFT.destinationFolderId||CURRENT_LOCATION.id,name:CURRENT_LOCATION.name},pickerFolder=null,requestedFolderId=null,requestId=0,summary=INITIAL_SUMMARY,finalPhase=DRAFT.generationPhase||0;
+const frames={};
 let savedGeneral=Object.assign({},DRAFT.config);
 let savedSecurity={year:DRAFT.config.curso_academico,folderId:DRAFT.destinationFolderId||CURRENT_LOCATION.id,folderName:CURRENT_LOCATION.name};
 document.getElementById('current-year').textContent=CURRENT_YEAR||'Sin configurar';document.getElementById('new-year').value=DRAFT.config.curso_academico||'';document.getElementById('destination-folder').textContent=selectedFolder.name;
 THEME.presets.forEach(function(item){const option=document.createElement('option');option.value=item.id;option.textContent=item.label;document.getElementById('theme-preset').appendChild(option)});
 setGeneral(savedGeneral);
-if(DRAFT.destinationFolderId&&DRAFT.destinationFolderId!==CURRENT_LOCATION.id){callServer('obtenerVistaSelectorCarpetas',DRAFT.destinationFolderId).then(function(folder){selectedFolder={id:folder.id,name:folder.name};document.getElementById('destination-folder').textContent=folder.name}).catch(function(){})}
+if(DRAFT.destinationFolderId&&DRAFT.destinationFolderId!==CURRENT_LOCATION.id){callServer('obtenerVistaSelectorCarpetas',DRAFT.destinationFolderId).then(function(folder){selectedFolder={id:folder.id,name:folder.name};savedSecurity.folderName=folder.name;document.getElementById('destination-folder').textContent=folder.name}).catch(function(){})}
 document.getElementById('theme-preset').addEventListener('change',applySelectedTheme);
 form.addEventListener('submit',function(event){event.preventDefault()});
 document.getElementById('cancel').addEventListener('click',cancelWizard);
@@ -42,36 +42,40 @@ document.getElementById('back').addEventListener('click',function(){if(!busy&&cu
 document.getElementById('next').addEventListener('click',advance);
 document.getElementById('choose-folder').addEventListener('click',openFolderPicker);
 document.getElementById('folder-cancel').addEventListener('click',function(){document.getElementById('folder-picker').hidden=true});
+document.getElementById('folder-close').addEventListener('click',function(){document.getElementById('folder-picker').hidden=true});
 document.getElementById('folder-back').addEventListener('click',function(){if(pickerFolder&&pickerFolder.parentId)loadFolder(pickerFolder.parentId)});
+document.getElementById('folder-retry').addEventListener('click',function(){loadFolder(requestedFolderId)});
 document.getElementById('folder-select').addEventListener('click',function(){if(!pickerFolder)return;selectedFolder={id:pickerFolder.id,name:pickerFolder.name};document.getElementById('destination-folder').textContent=selectedFolder.name;document.getElementById('folder-picker').hidden=true});
 window.addEventListener('message',receiveFrameLayout);
-summary=INITIAL_SUMMARY;renderStepper();if(finalPhase>0&&visited[6])showStep(6);
+renderCurrentStepChrome();if(finalPhase>0&&summary.steps[6].visited)showStep(6);
 function callServer(name,arg,secondArg){return new Promise(function(resolve,reject){const runner=google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);if(secondArg===undefined)runner[name](arg);else runner[name](arg,secondArg)})}
 function setBusy(value,title,detail){busy=value;document.getElementById('course-body').hidden=value;document.getElementById('course-loading').hidden=!value;document.getElementById('loading-title').textContent=title||'Preparando…';document.getElementById('loading-detail').textContent=detail||'';document.getElementById('course-wizard-controls').hidden=value;['cancel','back','next','choose-folder'].forEach(function(id){document.getElementById(id).disabled=value});renderStepper()}
 function errorText(error){return error&&error.message?error.message:String(error)}
-function showError(error){errorStep=currentStep;setBusy(false);document.getElementById('course-error').textContent=errorText(error);renderStepper()}
-function clearError(){errorStep=null;document.getElementById('course-error').textContent=''}
+function showError(error){setBusy(false);document.getElementById('course-error').textContent=errorText(error)}
+function clearError(){document.getElementById('course-error').textContent=''}
 function setGeneral(values){Object.keys(values).forEach(function(key){if(form.elements[key])form.elements[key].value=values[key]||''})}
 function readGeneral(){const values={};Array.from(form.elements).forEach(function(control){if(control.name)values[control.name]=control.value.trim()});return values}
 function applySelectedTheme(){const preset=THEME.presets.find(function(item){return item.id===form.elements.tema_preset.value});if(!preset)return;['primary','secondary','accent'].forEach(function(key){const input=form.elements['tema_'+key];input.value=preset.colors[key].toLowerCase();input.title=preset.colors[key]})}
 function validYear(value){const m=/^(\d{4})-(\d{4})$/.exec(value);return m&&Number(m[2])===Number(m[1])+1}
-function stepComplete(step){if(step===0)return reviewed[0];if(step===1)return reviewed[1];if(!summary||!reviewed[step])return false;return step===2?Boolean(summary.calendar):step===3?summary.slots>0:step===4?summary.activities>0:step===5?summary.sessions>0:false}
-function stepReason(step){if(!reviewed[step])return 'Revisa este paso antes de finalizar.';if(!summary||!summary.reasons)return '';return summary.reasons[({2:'calendar',3:'slots',4:'activities',5:'sessions'})[step]]||''}
-function stepState(step){if(step===currentStep)return 'current';if(!visited[step])return 'unvisited';if(!reviewed[step])return 'warning';return stepComplete(step)?'done':'warning'}
-function showStep(step){
-  if(busy||(finalPhase>0&&step!==6)||(!visited[step]&&step!==currentStep+1))return;
-  if(currentStep===1&&step!==1)setGeneral(savedGeneral);
-  if(currentStep===0&&step!==0){document.getElementById('new-year').value=savedSecurity.year;selectedFolder={id:savedSecurity.folderId,name:savedSecurity.folderName};document.getElementById('destination-folder').textContent=selectedFolder.name}
-  currentStep=step;visited[step]=true;
-  document.querySelectorAll('.course-step').forEach(function(node,index){node.classList.toggle('current',index===step)});
+function stepState(step){const state=summary.steps[step];if(step===currentStep)return 'current';if(!state.visited)return 'unvisited';if(!state.reviewed)return 'visited';return state.complete?'done':'warning'}
+function renderCurrentStepChrome(){
+  const step=currentStep,state=summary.steps[step],warning=document.getElementById('step-warning');
   document.getElementById('step-title').textContent=step===6?(finalPhase>0?'Completar preparación del cuaderno':'Todo listo para generar el cuaderno'):LABELS[step];
   document.getElementById('save-hint').hidden=step===0||step===6;
   document.getElementById('back').hidden=step===0||finalPhase>0;
   document.getElementById('next').textContent=step===6?(finalPhase>0?'Continuar generación':'Finalizar y generar cuaderno'):'Siguiente';
+  warning.hidden=!state.reviewed||state.complete||!state.reason;
+  warning.textContent=warning.hidden?'':'⚠ Pendiente: '+state.reason;
+  renderStepper();
+}
+function showStep(step){
+  if(busy||(finalPhase>0&&step!==6)||(!summary.steps[step].visited&&step!==currentStep+1))return;
+  if(currentStep===1&&step!==1)setGeneral(savedGeneral);
+  if(currentStep===0&&step!==0){document.getElementById('new-year').value=savedSecurity.year;selectedFolder={id:savedSecurity.folderId,name:savedSecurity.folderName};document.getElementById('destination-folder').textContent=selectedFolder.name}
+  currentStep=step;
+  document.querySelectorAll('.course-step').forEach(function(node,index){node.classList.toggle('current',index===step)});
   document.getElementById('course-body').scrollTop=0;
-  const warning=document.getElementById('step-warning'),reason=visited[step]&&step>=2&&!stepComplete(step)?stepReason(step):'';
-  warning.hidden=!reason;warning.textContent=reason?'⚠ Pendiente: '+reason:'';
-  clearError();renderStepper();
+  clearError();renderCurrentStepChrome();
   if(step>=2&&step<=5)loadFrame(step);
   if(step===6)loadSummary();
 }
@@ -79,8 +83,8 @@ function renderStepper(){
   const list=document.getElementById('stepper');list.replaceChildren();
   LABELS.forEach(function(label,index){
     const state=stepState(index),li=document.createElement('li'),button=document.createElement('button'),badge=document.createElement('b'),name=document.createElement('span');
-    li.className=state;button.type='button';button.disabled=busy||finalPhase>0||!visited[index];
-    button.setAttribute('aria-label',label+(state==='warning'?', pendiente: '+stepReason(index):''));
+    li.className=state;button.type='button';button.disabled=busy||finalPhase>0||!summary.steps[index].visited;
+    button.setAttribute('aria-label',label+(state==='warning'?', pendiente: '+summary.steps[index].reason:''));
     if(index===currentStep)button.setAttribute('aria-current','step');
     badge.textContent=state==='done'?'✓':state==='warning'?'!':String(index+1);
     name.textContent=label;button.append(badge,name);button.addEventListener('click',function(){if(index!==currentStep)showStep(index)});
@@ -101,8 +105,6 @@ async function advance(){
       const result=await callServer('guardarSeguridadNuevoCurso',input);
       form.elements.curso_academico.value=year;
       savedGeneral=readGeneral();summary=result;
-      result.reviewed.forEach(function(value,index){reviewed[index]=value});
-      reviewed[0]=true;
       savedSecurity={year:year,folderId:selectedFolder.id,folderName:selectedFolder.name};
       await visitNextStep();setBusy(false);showStep(1);return;
     }
@@ -113,24 +115,22 @@ async function advance(){
       setBusy(true,'Guardando datos del docente y centro…');
       const response=await callServer('guardarDatosGeneralesNuevoCurso',general);
       savedGeneral=response.values||general;setGeneral(savedGeneral);
-      await refreshCompletion();
-      reviewed[1]=true;
+      summary=response.summary;
       await visitNextStep();setBusy(false);showStep(2);return;
     }
     setBusy(true,'Guardando '+LABELS[currentStep]+'…');
     const response=await requestFrame(currentStep);
     if(response.error)throw new Error(response.error);
-    if(currentStep===2)await callServer('guardarCalendarioNuevoCurso',response.payload);
-    else await callServer('guardarHorarioNuevoCurso',response.payload,currentStep);
-    await refreshCompletion();
-    reviewed[currentStep]=true;
+    summary=currentStep===2
+      ?await callServer('guardarCalendarioNuevoCurso',response.payload)
+      :await callServer('guardarHorarioNuevoCurso',response.payload,currentStep);
     await visitNextStep();setBusy(false);showStep(currentStep+1);
   }catch(error){showError(error)}
 }
-async function visitNextStep(){await callServer('guardarVisitaNuevoCurso',currentStep+1);visited[currentStep+1]=true}
+async function visitNextStep(){summary=await callServer('guardarVisitaNuevoCurso',currentStep+1)}
 async function refreshCompletion(){
   const data=await callServer('obtenerResumenNuevoCurso',null);
-  summary=data;data.reviewed.forEach(function(value,index){reviewed[index]=value});renderStepper();
+  summary=data;renderCurrentStepChrome();
   return data;
 }
 function loadFrame(step){
@@ -152,17 +152,20 @@ function loadSummary(){
 function renderSummary(data){
   const box=document.getElementById('course-summary');box.replaceChildren();
   const subtitle=document.createElement('p');subtitle.className='course-note';subtitle.textContent='Revisa la configuración. Los apartados pendientes pueden completarse después.';box.appendChild(subtitle);
-  const course=document.createElement('div');course.className='course-summary-course';
-  const courseLabel=document.createElement('small');courseLabel.textContent='Curso académico';const year=document.createElement('strong');year.textContent=data.academicYear||'Pendiente';
-  const saved=document.createElement('span');saved.textContent=reviewed[1]?'✓ Datos del docente y centro guardados':'⚠ Revisa los datos del docente y centro';course.append(courseLabel,year,saved);box.appendChild(course);
+  const course=document.createElement('button');course.type='button';course.className='course-summary-card course-summary-course';
+  const courseLabel=document.createElement('small');courseLabel.textContent='Curso · Docente y centro';const year=document.createElement('strong');year.textContent=data.academicYear||'Pendiente';
+  const general=data.steps[1],saved=document.createElement('span');saved.className='card-line '+(general.complete?'done':general.reviewed?'warning':'visited');saved.textContent=general.complete?'✓ Completo':general.reviewed?'⚠ Pendiente':'Sin revisar';course.append(courseLabel,year,saved);
+  if(general.reason){const reason=document.createElement('span');reason.className='card-line';reason.textContent=general.reason;course.appendChild(reason)}
+  const courseReview=document.createElement('span');courseReview.className='review-link';courseReview.textContent='Revisar →';course.appendChild(courseReview);course.addEventListener('click',function(){showStep(1)});box.appendChild(course);
   const grid=document.createElement('div');grid.className='course-summary-grid';
   [[2,'📅 Calendario',data.calendar?'Configurado':'Pendiente'],
     [3,'🕒 Tramos',data.slots?data.slots+' tramos':'Pendiente'],
     [4,'📚 Actividades',data.activities?data.activities+' actividades':'Pendiente'],
     [5,'🗓 Horario',data.sessions?data.sessions+' sesiones':'Pendiente']].forEach(function(item){
-    const card=document.createElement('article'),title=document.createElement('h3'),state=document.createElement('p');card.className='course-summary-card';title.textContent=item[1];
-    const complete=stepComplete(item[0]);state.className=complete?'done':'warning';state.textContent=(complete?'✓ ':'⚠ ')+(complete?item[2]:'Pendiente');card.append(title,state);
-    if(!complete){const reason=document.createElement('p');reason.textContent=stepReason(item[0]);card.appendChild(reason)}
+    const card=document.createElement('button'),title=document.createElement('span'),status=document.createElement('span'),step=data.steps[item[0]];card.type='button';card.className='course-summary-card';title.className='card-title';title.textContent=item[1];
+    status.className='card-line '+(step.complete?'done':step.reviewed?'warning':'visited');status.textContent=step.complete?'✓ '+item[2]:step.reviewed?'⚠ Pendiente':'Sin revisar';card.append(title,status);
+    if(step.reason){const reason=document.createElement('span');reason.className='card-line';reason.textContent=step.reason;card.appendChild(reason)}
+    const review=document.createElement('span');review.className='review-link';review.textContent='Revisar →';card.appendChild(review);card.addEventListener('click',function(){showStep(item[0])});
     grid.appendChild(card);
   });box.appendChild(grid);
   const callout=document.createElement('div');callout.className='course-summary-callout';callout.textContent='Después podrás completar cualquier apartado pendiente desde Cuaderno del Profesor → Configuración.';box.appendChild(callout);
@@ -178,5 +181,9 @@ async function applyFinalViews(){
 }
 async function finishWizard(){try{await applyFinalViews();google.script.host.close()}catch(error){showError(error)}}
 function cancelWizard(){if(!busy)google.script.host.close()}
-function openFolderPicker(){document.getElementById('folder-picker').hidden=false;setFolderLoading();callServer('obtenerRaizSelectorCarpetas',null).then(renderFolder).catch(folderError)}function loadFolder(id){setFolderLoading();callServer('obtenerVistaSelectorCarpetas',id).then(renderFolder).catch(folderError)}function setFolderLoading(){pickerFolder=null;document.getElementById('folder-list').textContent='Cargando carpetas…';document.getElementById('folder-select').disabled=true;document.getElementById('folder-back').disabled=true;document.getElementById('folder-error').textContent=''}function folderError(error){document.getElementById('folder-error').textContent=errorText(error);document.getElementById('folder-list').replaceChildren()}function renderFolder(view){pickerFolder=view;document.getElementById('folder-path').textContent=view.path.map(function(item){return item.name}).join(' / ');document.getElementById('folder-back').disabled=!view.parentId;document.getElementById('folder-select').disabled=false;const list=document.getElementById('folder-list');list.replaceChildren();if(!view.folders.length)list.textContent='No hay subcarpetas.';view.folders.forEach(function(folder){const button=document.createElement('button');button.type='button';button.textContent='📁 '+folder.name;button.addEventListener('click',function(){loadFolder(folder.id)});list.appendChild(button)})}
+function openFolderPicker(){document.getElementById('folder-picker').hidden=false;loadFolder(null)}
+function loadFolder(id){requestedFolderId=id;setFolderLoading();const method=id?'obtenerVistaSelectorCarpetas':'obtenerRaizSelectorCarpetas';callServer(method,id).then(renderFolder).catch(folderError)}
+function setFolderLoading(){document.getElementById('folder-loading').hidden=false;document.getElementById('folder-list').hidden=true;document.getElementById('folder-empty').hidden=true;document.getElementById('folder-select').disabled=true;document.getElementById('folder-back').disabled=true;document.getElementById('folder-retry').hidden=true;document.getElementById('folder-error').textContent=''}
+function folderError(error){document.getElementById('folder-loading').hidden=true;document.getElementById('folder-error').textContent=errorText(error);document.getElementById('folder-retry').hidden=false;document.getElementById('folder-back').disabled=!pickerFolder||!pickerFolder.parentId}
+function renderFolder(view){pickerFolder=view;document.getElementById('folder-loading').hidden=true;document.getElementById('folder-path').textContent=view.path.map(function(item){return item.name}).join(' / ');const back=document.getElementById('folder-back');back.hidden=!view.parentId;back.disabled=false;document.getElementById('folder-select').disabled=false;document.getElementById('folder-retry').hidden=true;const list=document.getElementById('folder-list');list.replaceChildren();list.hidden=!view.folders.length;document.getElementById('folder-empty').hidden=Boolean(view.folders.length);view.folders.forEach(function(folder){const button=document.createElement('button');button.type='button';button.textContent='📁 '+folder.name;button.addEventListener('click',function(){loadFolder(folder.id)});list.appendChild(button)})}
 </script></body></html>

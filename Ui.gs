@@ -14,54 +14,6 @@ function abrirPrepararNuevoCurso() {
   abrirAsistenteNuevoCurso();
 }
 
-function getCourseWizardSummary_() {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  const config = getGeneralConfigValues_(spreadsheet);
-  const activeTypes = getCalendarTeachingTypes_().filter(function(type) { return type.active; });
-  const calendarReady = activeTypes.length > 0 && activeTypes.every(function(type) {
-    return type.startDate instanceof Date && type.endDate instanceof Date;
-  });
-  const slots = getScheduleTimeSlots_().length;
-  const activities = getScheduleActivities_().length;
-  const sessions = getWeeklySchedule_().length;
-  return {
-    academicYear: config[CP.CONFIG_KEYS.ACADEMIC_YEAR] || 'Pendiente',
-    calendar: calendarReady,
-    slots: slots,
-    activities: activities,
-    sessions: sessions,
-    reasons: {
-      calendar: !activeTypes.length ? 'No hay ningún tipo de enseñanza activo.'
-        : !calendarReady ? 'Faltan fechas en los tipos de enseñanza activos.' : '',
-      slots: slots ? '' : 'No hay tramos horarios.',
-      activities: activities ? '' : 'No hay actividades.',
-      sessions: sessions ? '' : 'No hay sesiones asignadas.',
-    },
-  };
-}
-
-function showConfirmationDialog_(confirmationId) {
-  const confirmation = getUiConfirmationDefinition_(confirmationId);
-  const template = HtmlService.createTemplateFromFile('UiDialogConfirmation');
-  template.confirmation = confirmation;
-  setCommonUiTemplateData_(template);
-
-  const output = template.evaluate()
-    .setWidth(CP.UI.CONFIRMATION_DIALOG_WIDTH)
-    .setHeight(CP.UI.CONFIRMATION_DIALOG_HEIGHT);
-
-  SpreadsheetApp.getUi().showModalDialog(output, confirmation.title);
-}
-
-function ejecutarAccionConfirmadaUi(actionId) {
-  if (actionId === CP.UI.INIT_ACTION_ID) {
-    abrirDialogoInicializacion();
-    return;
-  }
-
-  throw new Error('La acci\u00f3n confirmada no existe.');
-}
-
 function showProgressDialog_(processId, processInput) {
   const process = getUiProcessDefinition_(processId, processInput);
   const template = HtmlService.createTemplateFromFile('UiDialogProgress');
@@ -85,34 +37,6 @@ function showProgressDialog_(processId, processInput) {
   SpreadsheetApp.getUi().showModalDialog(output, process.title);
 }
 
-function getUiConfirmationDefinition_(confirmationId) {
-  if (confirmationId === CP.UI.INIT_CONFIRMATION_ID) {
-    return validateUiConfirmation_({
-      id: CP.UI.INIT_CONFIRMATION_ID,
-      title: CP.MENU.INIT,
-      message: 'Se comprobar\u00e1 y reparar\u00e1 la estructura base del cuaderno.',
-      helperText: 'Los datos existentes no se eliminar\u00e1n.',
-      confirmText: 'Continuar',
-      variant: CP.UI.CONFIRMATION_VARIANTS.NORMAL,
-      actionId: CP.UI.INIT_ACTION_ID,
-    });
-  }
-
-  throw new Error('La confirmacion solicitada no existe.');
-}
-
-function validateUiConfirmation_(confirmation) {
-  const variants = CP.UI.CONFIRMATION_VARIANTS;
-  const allowedVariants = [variants.NORMAL, variants.WARNING, variants.DANGER];
-  if (allowedVariants.indexOf(confirmation.variant) === -1) {
-    throw new Error('La variante de confirmaci\u00f3n no es v\u00e1lida.');
-  }
-  if (!confirmation.title || !confirmation.message || !confirmation.confirmText || !confirmation.actionId) {
-    throw new Error('La configuraci\u00f3n de confirmaci\u00f3n est\u00e1 incompleta.');
-  }
-  return confirmation;
-}
-
 function setCommonUiTemplateData_(template) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const theme = getActiveTheme_(spreadsheet);
@@ -134,7 +58,9 @@ function ejecutarPasoProcesoUi(processId, stepIndex, processInput) {
 
   const step = process.steps[stepIndex];
   const previousSkip = CP_REPAIR_SKIP_COVER;
-  if (processId === CP.UI.INIT_PROCESS_ID) CP_REPAIR_SKIP_COVER = !process.input.cover;
+  if (processId === CP.UI.INIT_PROCESS_ID) {
+    CP_REPAIR_SKIP_COVER = stepIndex < process.steps.length - 1;
+  }
   let resultMessage;
   try {
     resultMessage = step.run(process.input);
@@ -184,13 +110,27 @@ function getUiProcessDefinition_(processId, processInput) {
       ['schedule', 'Reparando Horario...', 'Horario reparado.', createOrRepairScheduleSheet_],
       ['students', 'Reparando Alumnado...', 'Alumnado reparado.', createOrRepairStudentsSheet_],
       ['config', 'Reparando hojas 4 Config...', 'Hojas de Configuración reparadas.', repairExistingModuleConfigSheets_],
-      ['tracking', 'Reparando hojas 5 Seg...', 'Hojas de Seguimiento reparadas.', repairTrackingSheets_],
-      ['evaluation', 'Reparando hojas 6 Eval...', 'Hojas de Evaluación reparadas.', repairEvaluationSheets_],
     ].forEach(function(item) {
       if (selection[item[0]]) steps.push({
         label: item[1], completedMessage: item[2], run: item[3],
       });
     });
+    if (selection.tracking || selection.evaluation) {
+      const consumerLabel = selection.tracking && selection.evaluation
+        ? 'Reparando Seguimiento y Evaluación...'
+        : selection.tracking ? 'Reparando Seguimiento...' : 'Reparando Evaluación...';
+      steps.push({
+        label: consumerLabel,
+        completedMessage: 'Reparación de Seguimiento y Evaluación finalizada.',
+        run: function() {
+          return formatRepairConsumerResult_(
+            repairManagedModuleConsumerSheets_({
+              tracking: selection.tracking,
+              evaluation: selection.evaluation,
+            }), selection);
+        },
+      });
+    }
     steps.push({
       label: 'Actualizando metadatos...', completedMessage: 'Metadatos actualizados.',
       run: initializeMetaStructure_,
@@ -209,6 +149,28 @@ function getUiProcessDefinition_(processId, processInput) {
   }
 
   throw new Error('El proceso solicitado no existe.');
+}
+
+function formatRepairConsumerResult_(result, selection) {
+  const parts = [];
+  if (selection.tracking && result.trackingRepaired) {
+    parts.push(result.trackingRepaired + ' ' +
+      (result.trackingRepaired === 1 ? 'Seguimiento reparado' : 'Seguimientos reparados'));
+  }
+  if (selection.evaluation && result.evaluationsRepaired) {
+    parts.push(result.evaluationsRepaired + ' ' +
+      (result.evaluationsRepaired === 1 ? 'Evaluación reparada' : 'Evaluaciones reparadas'));
+  }
+  if (selection.evaluation && result.evaluationsRecreated) {
+    parts.push(result.evaluationsRecreated + ' ' +
+      (result.evaluationsRecreated === 1 ? 'Evaluación recreada' : 'Evaluaciones recreadas'));
+  }
+  if (parts.length) return parts.join('; ') + '.';
+  if (selection.tracking && selection.evaluation) {
+    return 'No hay Seguimientos ni Evaluaciones que reparar.';
+  }
+  return selection.tracking
+    ? 'No hay Seguimientos que reparar.' : 'No hay Evaluaciones que reparar.';
 }
 
 function normalizeRepairSelection_(input) {

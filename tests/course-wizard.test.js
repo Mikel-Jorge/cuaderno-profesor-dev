@@ -46,24 +46,10 @@ assert.deepStrictEqual(menuCalls[0].items.at(-1), ['Ayuda', 'mostrarAyuda']);
 assert(!JSON.stringify(menuCalls).includes('Asistente de configuración'));
 ctx.abrirPrepararNuevoCurso();
 assert.strictEqual(ctx.opened, 1);
-const summary = ctx.getCourseWizardSummary_();
-assert.strictEqual(summary.academicYear, '2026-2027');
-assert.strictEqual(summary.calendar, true);
-assert.strictEqual(summary.slots, 2);
-assert.strictEqual(summary.activities, 1);
-assert.strictEqual(summary.sessions, 3);
-assert.deepStrictEqual(Object.values(summary.reasons), ['', '', '', '']);
-teachingTypes = [];
-assert.strictEqual(ctx.getCourseWizardSummary_().reasons.calendar,
-  'No hay ningún tipo de enseñanza activo.');
-teachingTypes = [{ active: true, startDate: null, endDate: null }];
-assert.strictEqual(ctx.getCourseWizardSummary_().reasons.calendar,
-  'Faltan fechas en los tipos de enseñanza activos.');
-
 const html = fs.readFileSync('UiDialogNewCourse.html', 'utf8');
 assert.strictEqual((html.match(/class="course-step(?: current)?"/g) || []).length, 7);
 assert(!html.includes('confirm-reset'));
-assert(html.includes('reviewed[currentStep]=true'));
+assert(html.includes('summary.steps[step]'));
 assert(html.includes('Finalizar y generar cuaderno'));
 assert(html.includes("callServer('guardarSeguridadNuevoCurso',input)"));
 assert(html.includes("if(finalPhase<1){await callServer('iniciarPreparacionNuevoCurso',null)"));

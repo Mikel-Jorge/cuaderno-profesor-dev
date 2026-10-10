@@ -2,8 +2,16 @@
 
 **Última actualización:** 2026-10-10
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.8.5`
+**Versión vigente:** `1.8.6`
 **Esquema vigente:** `11`
+
+## Correctivo de reparación, asistente y autoría 1.8.6
+
+- Reparar Seguimiento y Evaluación juntos usa un solo paso y una lectura del registro; comunica recuentos por familia y solo reescribe `_MOD_CONFIG` si recrea una Evaluación.
+- El asistente recibe del servidor los estados de visita, revisión, completitud y motivo. Datos generales comparte criterio con Ayuda; el resumen permite regresar a cada bloque. El selector de carpetas informa de carga, ruta, vacío y errores con reintento.
+- Ayuda cuenta los completados y mantiene los pendientes visibles. La autoría textual visible usa «Mikel Jorge Soteras»; el monograma del recurso gráfico se conserva.
+- Se retiraron el diálogo de confirmación sin invocadores, el resumen antiguo del asistente y envoltorios sin uso. `inicializarCuaderno` se conserva como entrada manual heredada.
+- Pendiente de prueba manual en `CP_DEV`: reparación combinada con hojas reales, navegación/cancelación del asistente y selector de carpetas, y revisión visual de Ayuda y créditos.
 
 ## Correctivo UX y flujo 1.8.5
 

@@ -1,6 +1,6 @@
 const CP = Object.freeze({
   PROJECT_NAME: 'Cuaderno del Profesor',
-  NOTEBOOK_VERSION: '1.8.5',
+  NOTEBOOK_VERSION: '1.8.6',
   SCHEMA_VERSION: '11',
   TAB_COLORS: Object.freeze({
     GENERAL: '#546E7A',
@@ -55,14 +55,10 @@ const CP = Object.freeze({
     HELP: '❓ Ayuda',
   }),
   UI: Object.freeze({
-    AUTHOR: 'Mikel Aingeru Jorge Soteras',
+    AUTHOR: 'Mikel Jorge Soteras',
     AUTHOR_EMAIL: 'mjorgesote@educacion.navarra.es',
-    INIT_CONFIRMATION_ID: 'confirm-initialize-notebook',
     INIT_PROCESS_ID: 'initialize-notebook',
-    INIT_ACTION_ID: 'open-initialize-progress',
     NEW_COURSE_PROCESS_ID: 'prepare-new-course',
-    CONFIRMATION_DIALOG_WIDTH: 460,
-    CONFIRMATION_DIALOG_HEIGHT: 430,
     REPAIR_DIALOG_WIDTH: 520,
     REPAIR_DIALOG_HEIGHT: 460,
     GENERAL_CONFIG_DIALOG_WIDTH: 620,
@@ -79,10 +75,5 @@ const CP = Object.freeze({
     NEW_COURSE_DIALOG_HEIGHT: 850,
     PROGRESS_DIALOG_WIDTH: 480,
     PROGRESS_DIALOG_HEIGHT: 560,
-    CONFIRMATION_VARIANTS: Object.freeze({
-      NORMAL: 'normal',
-      WARNING: 'warning',
-      DANGER: 'danger',
-    }),
   }),
 });

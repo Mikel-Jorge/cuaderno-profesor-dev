@@ -23,6 +23,18 @@ function guardarDatosGenerales(input) {
   });
 }
 
+function getGeneralConfigCompletion_(config) {
+  const missing = [];
+  if (!normalizeConfigValue_(config[CP.CONFIG_KEYS.ACADEMIC_YEAR])) missing.push('el curso académico');
+  if (!normalizeConfigValue_(config[CP.CONFIG_KEYS.TEACHER])) missing.push('el nombre del docente');
+  if (!normalizeConfigValue_(config[CP.CONFIG_KEYS.SCHOOL])) missing.push('el centro');
+  if (!missing.length) return { complete: true, reason: '' };
+  const reason = missing.length === 1
+    ? 'Falta ' + missing[0] + '.'
+    : 'Faltan ' + missing.slice(0, -1).join(', ') + ' y ' + missing[missing.length - 1] + '.';
+  return { complete: false, reason: reason };
+}
+
 function guardarDatosGeneralesAsistente(input) {
   const values = normalizeGeneralConfigInput_(input);
   validateAcademicYear_(values[CP.CONFIG_KEYS.ACADEMIC_YEAR]);

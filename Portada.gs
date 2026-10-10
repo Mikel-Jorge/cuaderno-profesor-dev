@@ -15,10 +15,6 @@ function createOrRepairCover_(sheet) {
   installManagedSheetProtections_(sheet, 'PORTADA');
 }
 
-function renderPortada_(sheet) {
-  createOrRepairCover_(sheet);
-}
-
 function actualizarIndicePortada() {
   if (typeof CP_REPAIR_SKIP_COVER !== 'undefined' && CP_REPAIR_SKIP_COVER) return;
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();

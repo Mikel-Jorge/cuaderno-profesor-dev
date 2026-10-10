@@ -27,12 +27,6 @@ function abrirAsistenteNuevoCurso() {
   SpreadsheetApp.getUi().showModalDialog(output, CP.MENU.NEW_COURSE);
 }
 
-function validarPreparacionNuevoCurso(input) {
-  const processInput = normalizeNewCourseProcessInput_(input);
-  validateNotebookOriginalLocation_(processInput);
-  return processInput;
-}
-
 function iniciarPreparacionNuevoCurso(input) {
   const draft = getNewCourseDraft_();
   if (!draft.reviewed[0]) throw new Error('Completa el paso Seguridad antes de generar.');
@@ -118,6 +112,7 @@ function guardarVisitaNuevoCurso(step) {
   assertNewCourseDraftEditable_(draft);
   draft.visited[step] = true;
   saveNewCourseDraft_(draft);
+  return getNewCourseDraftSummary_(draft);
 }
 
 function assertNewCourseDraftEditable_(draft) {
@@ -199,21 +194,32 @@ function clearNewCourseDraft_() {
 }
 
 function getNewCourseDraftSummary_(draft) {
+  const general = getGeneralConfigCompletion_(draft.config);
   const types = draft.calendar.types.filter(function(type) { return type.active; });
   const calendarReady = types.length > 0 && types.every(function(type) { return type.startDate && type.endDate; });
   const slots = draft.schedule.slots.length;
   const activities = draft.schedule.activities.length;
   const sessions = draft.schedule.sessions.length;
+  const reasons = {
+    general: general.reason,
+    calendar: !types.length ? 'No hay ningún tipo de enseñanza activo.' :
+      calendarReady ? '' : 'Faltan fechas en los tipos de enseñanza activos.',
+    slots: slots ? '' : 'No hay tramos horarios.',
+    activities: activities ? '' : 'No hay actividades.',
+    sessions: sessions ? '' : 'No hay sesiones asignadas.',
+  };
+  const complete = [Boolean(draft.reviewed[0] && draft.destinationFolderId),
+    general.complete, calendarReady, slots > 0, activities > 0, sessions > 0, false];
+  const keys = ['', 'general', 'calendar', 'slots', 'activities', 'sessions', ''];
+  const steps = complete.map(function(value, index) {
+    const reviewed = Boolean(draft.reviewed[index]);
+    return { visited: Boolean(draft.visited[index]), reviewed: reviewed,
+      complete: reviewed && value,
+      reason: reviewed && !value ? reasons[keys[index]] || '' : '' };
+  });
   return { academicYear: draft.config[CP.CONFIG_KEYS.ACADEMIC_YEAR], calendar: calendarReady,
     slots: slots, activities: activities, sessions: sessions,
-    visited: draft.visited, reviewed: draft.reviewed,
-    reasons: {
-      calendar: !types.length ? 'No hay ningún tipo de enseñanza activo.' :
-        calendarReady ? '' : 'Faltan fechas en los tipos de enseñanza activos.',
-      slots: slots ? '' : 'No hay tramos horarios.',
-      activities: activities ? '' : 'No hay actividades.',
-      sessions: sessions ? '' : 'No hay sesiones asignadas.',
-    } };
+    steps: steps, reasons: reasons };
 }
 
 function aplicarBorradorNuevoCurso() {

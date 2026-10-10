@@ -2,7 +2,7 @@
 
 **Estado:** vigente
 **Última revisión:** 2026-10-10
-**Versión:** `1.8.5` / esquema `11`
+**Versión:** `1.8.6` / esquema `11`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -17,15 +17,15 @@ Este documento describe la arquitectura técnica. El comportamiento esperado se 
 
 La apertura de configuradores no crea, repara, oculta, reordena ni renderiza hojas. Crear configuración de módulo muestra los registros huérfanos como disponibles sin mutarlos; el backend de creación limpia esas referencias después de confirmar. Un guardado solo persiste el modelo afectado y actualiza sus vistas derivadas necesarias.
 
-`UiDialogRepair.html` recoge siete booleanos serializables. `Ui.gs` normaliza la selección y construye los pasos visibles del progreso. El mantenimiento de tablas técnicas y huérfanos se ejecuta siempre; `Setup.gs` cierra con metadatos, ocultación, orden y `Protections.gs` instala protecciones solo de los bloques seleccionados más hojas técnicas y OLD. Durante un paso de Repair sin Portada, `CP_REPAIR_SKIP_COVER` impide que los helpers de calendario, horario o módulos regeneren indirectamente su índice. `Tracking.gs` permite recorrer Seguimiento y Evaluación por separado. La selección viaja como DTO y nunca contiene objetos de Apps Script.
+`UiDialogRepair.html` recoge siete booleanos serializables. `Ui.gs` normaliza la selección y construye los pasos visibles del progreso. El mantenimiento de tablas técnicas y huérfanos se ejecuta siempre; `Setup.gs` cierra con metadatos, ocultación, orden y `Protections.gs` instala protecciones solo de los bloques seleccionados más hojas técnicas y OLD. Durante Repair, `CP_REPAIR_SKIP_COVER` impide que los pasos intermedios regeneren indirectamente el índice de Portada; el índice se actualiza al finalizar si se seleccionó Portada. `Tracking.gs` recorre una vez `_MOD_CONFIG` para reparar Seguimiento y Evaluación según la selección, y solo reescribe el registro si recrea una Evaluación ausente. La selección viaja como DTO y nunca contiene objetos de Apps Script.
 
-`UiDialogNewCourse.html` mantiene un solo popup. Calendario y Horario reutilizan sus formularios dentro de él, sin abrir otros diálogos. Los pasos de Horario ocultan y deshabilitan las secciones ajenas al paso actual. El stepper y el resumen consultan el borrador del nuevo curso para distinguir apartados configurados y pendientes. La apertura normal del libro sigue sin escrituras ni diálogos.
+`UiDialogNewCourse.html` mantiene un solo popup. Calendario y Horario reutilizan sus formularios dentro de él, sin abrir otros diálogos. Los pasos de Horario ocultan y deshabilitan las secciones ajenas al paso actual. `NewCourse.gs` entrega el estado de cada paso (`visited`, `reviewed`, `complete`, `reason`) desde el borrador; el stepper y el resumen usan ese mismo modelo. `GeneralConfig.gs` comparte con Sidebar el criterio de completitud de curso, docente y centro. La apertura normal del libro sigue sin escrituras ni diálogos.
 
 Los colores son siempre presentación. Ningún cálculo reconstruye datos desde fondos o estilos.
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.8.5`, esquema `11` y paleta fija de pestañas.
+- `Config.gs`: constantes, nombres de hojas, versión `1.8.6`, esquema `11` y paleta fija de pestañas.
 - `Theme.gs`: tema global, presets, aliases de compatibilidad y colores semánticos. La lectura detecta tríos originales sin personalización para aplicar la nueva paleta; la reparación persiste el ID canónico y los colores resueltos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.

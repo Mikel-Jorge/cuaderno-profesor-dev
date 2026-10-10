@@ -11,7 +11,7 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 
 **Estado:** especificación funcional vigente
 **Versión del documento:** 3.3
-**Versión del cuaderno:** `1.8.5`
+**Versión del cuaderno:** `1.8.6`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.8.5
+# 2. Estado funcional de la versión 1.8.6
 
 Están cerrados funcionalmente:
 
@@ -46,6 +46,8 @@ El selector de Reparar estructura presenta General y Módulos en dos columnas, c
 La Ayuda muestra un resumen de controles correcto/total calculado desde los elementos reales. Presenta pendientes por defecto y solo ofrece «Ver completados» cuando hay elementos completos adicionales. Ese detalle complementa los pendientes sin repetirlos. Durante una búsqueda se oculta el estado. La hoja activa puede destacarse en su sección, sin tarjeta de contexto independiente. Sus secciones son acordeones de primer nivel con una sola sección abierta fuera de búsqueda. El buscador local ignora tildes y mayúsculas, busca también FAQ y palabras clave, y abre las coincidencias. La Ayuda no duplica acciones ejecutables del menú.
 
 `Reparar estructura` abre un selector sin efectos al abrirse. Los siete bloques visibles (Portada, Calendario, Horario, Alumnado, todas las 4 Config, todas las 5 Seg y todas las 6 Eval) empiezan marcados; se pueden marcar o desmarcar todos. Una selección vacía ejecuta solo mantenimiento técnico. Al confirmar siempre se comprueban las estructuras técnicas, migraciones, referencias huérfanas, metadatos, ocultación, orden, colores de pestaña y protecciones técnicas. Solo los bloques elegidos se regeneran o reformatean; las dependencias no marcadas pueden leerse. Alumnado por sí solo no sincroniza Eval y Config por sí sola no repara Seg/Eval. Los OLD solo reciben orden, color de pestaña y protección de aviso. Las protecciones manuales se conservan. El progreso muestra únicamente los bloques elegidos y los pasos técnicos.
+
+Si se seleccionan Seguimiento y Evaluación juntos, la reparación muestra un solo paso y recorre una sola vez el registro de módulos. Comunica por separado cuántos Seguimientos y Evaluaciones se repararon y cuántas Evaluaciones se recrearon. La autoría textual visible, cuando se presente en créditos, es «Mikel Jorge Soteras».
 
 En 6 Eval, tras sincronizar y ordenar por `alumno_id`, Apellidos y Nombre de todas las filas de alumnado se alinean a la izquierda y Medidas al centro, incluida la última fila. La cabecera FINAL, Media final y Educa final usa la familia accent del tema; los datos Educa conservan su fondo amarillo, negrita y semáforo. Las dos columnas finales son ligeramente más anchas.
 
@@ -133,7 +135,7 @@ La transición anual conserva snapshots en memoria para restaurar Alumnado, Hora
 
 `Reparar estructura` nunca aplica esta política anual, no borra datos ni repone festivos eliminados por el docente.
 
-Tras Seguridad se continúa dentro del mismo diálogo por Datos del docente y centro, Calendario, Tramos, Actividades, Horario semanal y Resumen, sin modificar hojas. Tramos, Actividades y Horario muestran solo su apartado, con un único scroll vertical. Siguiente valida y guarda el borrador de cada paso sin regenerar vistas visibles. Atrás o la navegación por pasos ya visitados descarta los cambios que no se hayan guardado; Seguridad también se puede revisitar. Los pasos no visitados no se pueden abrir directamente ni muestran checks aunque contengan datos de partida. Un paso visitado y revisado se marca como completo o pendiente ámbar según sus datos, con motivo legible para los pendientes; Resumen usa esos mismos estados. Es válido finalizar con configuración parcial. Finalizar crea la copia, ejecuta la transición anual, aplica el borrador y genera las vistas derivadas y el mantenimiento final bajo un único indicador de espera. Cancelar conserva el borrador sin trabajo de generación. Abrir el Spreadsheet no inicia el proceso ni escribe datos.
+Tras Seguridad se continúa dentro del mismo diálogo por Datos del docente y centro, Calendario, Tramos, Actividades, Horario semanal y Resumen, sin modificar hojas. Tramos, Actividades y Horario muestran solo su apartado, con un único scroll vertical. Siguiente valida y guarda el borrador de cada paso sin regenerar vistas visibles. Atrás o la navegación por pasos ya visitados descarta los cambios que no se hayan guardado; Seguridad también se puede revisitar. Los pasos no visitados no se pueden abrir directamente ni muestran checks aunque contengan datos de partida. Un paso visitado sin revisar conserva un estado neutro. Solo tras revisarlo se marca como completo o pendiente ámbar, con un motivo concreto para los pendientes. Para Datos generales, la completitud exige curso académico, nombre del docente y centro; el correo es opcional, como en Ayuda. Resumen usa esos mismos estados y permite volver a cada apartado con sus tarjetas. El selector de carpeta muestra ruta, carga, carpeta vacía y reintento ante error. Es válido finalizar con configuración parcial. Finalizar crea la copia, ejecuta la transición anual, aplica el borrador y genera las vistas derivadas y el mantenimiento final bajo un único indicador de espera. Cancelar conserva el borrador sin trabajo de generación. Abrir el Spreadsheet no inicia el proceso ni escribe datos.
 
 Tras el backup se materializan y renombran las `5 Seg ...` activas como `OLD AACC`, se eliminan las `6 Eval ...` y las `4 Config ...` gestionadas del curso anterior y se vacían sus registros en `_MOD_CONFIG` y `_MOD_PLAN`. Los históricos conservan valores, textos, colores, separadores y aspecto sin referencias rotas.
 

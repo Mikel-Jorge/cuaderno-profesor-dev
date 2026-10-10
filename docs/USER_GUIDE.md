@@ -1,4 +1,4 @@
-# Guía de uso · Cuaderno del Profesor 1.8.5
+# Guía de uso · Cuaderno del Profesor 1.8.6
 
 ## Empezar un curso
 
@@ -32,7 +32,7 @@ Durante el curso puedes usar por separado **Configuración → Configurar datos 
 
 ## Reparar estructura
 
-El menú **Reparar estructura** abre un selector. Los siete bloques visibles empiezan marcados: Portada, Calendario, Horario, Alumnado, 4 Config, 5 Seg y 6 Eval. Puedes marcar o desmarcar todos. Con ninguno marcado se realiza solo mantenimiento técnico. Al confirmar se comprueban las tablas técnicas, referencias, metadatos, orden y protecciones; solo los bloques elegidos se regeneran. La reparación conserva los datos docentes. Si eliges solo Alumnado, Eval no cambia; si eliges solo Config, Seg y Eval no cambian. Los históricos **5 Seg OLD** solo reciben orden, color de pestaña y aviso de protección. Las protecciones `CUADERNO:` muestran advertencias; tus protecciones manuales permanecen.
+El menú **Reparar estructura** abre un selector. Los siete bloques visibles empiezan marcados: Portada, Calendario, Horario, Alumnado, 4 Config, 5 Seg y 6 Eval. Puedes marcar o desmarcar todos. Con ninguno marcado se realiza solo mantenimiento técnico. Al confirmar se comprueban las tablas técnicas, referencias, metadatos, orden y protecciones; solo los bloques elegidos se regeneran. Si eliges 5 Seg y 6 Eval juntos, verás un único paso con el número de hojas reparadas de cada tipo. La reparación conserva los datos docentes. Si eliges solo Alumnado, Eval no cambia; si eliges solo Config, Seg y Eval no cambian. Los históricos **5 Seg OLD** solo reciben orden, color de pestaña y aviso de protección. Las protecciones `CUADERNO:` muestran advertencias; tus protecciones manuales permanecen.
 
 ## Preparar nuevo curso
 
