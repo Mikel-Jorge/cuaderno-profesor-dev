@@ -154,7 +154,7 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'new-course',
       title: 'Preparar nuevo curso',
-      text: 'Sigue los siete pasos para crear una copia, preparar el nuevo curso y revisar calendario y horario.',
+      text: 'Completa los siete pasos a tu ritmo. El borrador se conserva al cancelar; la copia y el nuevo cuaderno se crean al finalizar.',
     },
     {
       id: 'initialize',
@@ -221,7 +221,7 @@ function getSidebarHelpSections_(contextSectionId) {
       'module-config': ['Cada módulo + grupo se configura por separado.', 'Las UT se sitúan en la evaluación donde terminan. Si borras Config, se pierden sus UT.'],
       'module-tracking': ['Fecha y Total se calculan automáticamente.', 'Los cambios posteriores de Config no reescriben lo ya registrado en Seg.'],
       evaluation: ['Las notas UT admiten 0–10 con decimales; una casilla vacía cuenta como cero en la media.', 'Los pesos de Config actualizan las medias. Educa admite 1–10 o MH.', 'Las recuperaciones se gestionan en Moodle.'],
-      'new-course': ['La copia se crea antes de reiniciar los datos anuales.', 'Se conservan docente, centro, tema, tramos y actividades; Seguimiento pasa a OLD.', 'Puedes terminar con pasos pendientes y completarlos más tarde.'],
+      'new-course': ['Atrás permite revisar pasos visitados; Siguiente guarda el paso actual.', 'Al finalizar se crea la copia antes de preparar el curso.', 'Puedes terminar con pasos pendientes y completarlos más tarde.'],
       initialize: ['Todos los bloques aparecen marcados al abrir; desmarca los que no necesites.', 'Si Sheets avisa al editar una celda protegida, comprueba antes si es un cálculo del cuaderno.'],
     }[section.id] || [];
     return {

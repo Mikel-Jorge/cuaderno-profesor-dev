@@ -1,12 +1,12 @@
-# Guía de uso · Cuaderno del Profesor 1.8.4
+# Guía de uso · Cuaderno del Profesor 1.8.5
 
 ## Empezar un curso
 
 El cuaderno se distribuye como copia de una plantilla inicializada. Usa el único menú **📘 Cuaderno del Profesor 📘**. Sus submenús son **Configuración** (🪪 Configurar datos del docente y centro, 📅 Configurar calendario, 🕒 Configurar horario) y **Módulos** (Crear configuración, Recalcular, Crear seguimiento y evaluación). Después aparecen **Reparar estructura**, **Preparar nuevo curso** y **Ayuda**. No hay un asistente de configuración independiente.
 
-Para pasar de un curso a otro, abre **Preparar nuevo curso**. Un único diálogo guía siete pasos. Abrirlo no modifica el cuaderno; la copia y el reinicio comienzan al pulsar **Crear copia y preparar** en Seguridad. **Siguiente** guarda el paso actual sin redibujar todavía las hojas. Puedes volver a pasos visitados desde el indicador superior; Atrás y el indicador descartan los cambios que aún no hayas guardado. Los pasos pendientes muestran un aviso ámbar con su motivo. **Finalizar y generar cuaderno** aplica todas las vistas en una espera final.
+Para pasar de un curso a otro, abre **Preparar nuevo curso**. Un único diálogo guía siete pasos. Abrirlo no modifica el cuaderno. **Siguiente** guarda un borrador del paso actual sin redibujar las hojas. Puedes volver a pasos visitados desde el indicador superior; Atrás y el indicador descartan los cambios que aún no hayas guardado. Los pasos pendientes muestran un aviso ámbar con su motivo. **Cancelar** conserva el borrador para retomarlo. **Finalizar y generar cuaderno** crea la copia, prepara el nuevo curso y aplica las vistas en una espera final.
 
-1. **Seguridad:** indica el nuevo curso y crea una copia verificada antes de reiniciar datos anuales.
+1. **Seguridad:** indica el nuevo curso y elige dónde se creará la copia al finalizar.
 2. **Datos del docente y centro:** comprueba el curso propuesto, docente, centro, web y tema. El formato es `YYYY-YYYY`.
 3. **Calendario:** revisa tipos, fechas lectivas, evaluaciones, FEOE, repaso, festivos, Navidad y Semana Santa con el calendario del centro.
 4. **Tramos:** revisa los periodos consecutivos conservados del curso anterior.
@@ -36,11 +36,11 @@ El menú **Reparar estructura** abre un selector. Los siete bloques visibles emp
 
 ## Preparar nuevo curso
 
-**Preparar nuevo curso** es una acción excepcional. Dentro del mismo diálogo, primero crea y verifica una copia completa en la carpeta elegida (la actual por defecto). Solo entonces mueve o renombra el cuaderno activo y reinicia datos anuales: alumnado, horario semanal y fechas del calendario. Conserva docente, centro, tema, tramos y actividades; archiva Seguimiento como OLD y elimina Config y Eval anteriores. Si cancelas después de Seguridad, los datos guardados permanecen y el diálogo aplica automáticamente las vistas antes de cerrarse. Cancelar antes de Seguridad no cambia nada.
+**Preparar nuevo curso** es una acción excepcional. Mientras recorres el diálogo solo se guarda un borrador que permanece si cancelas. Al pulsar **Finalizar y generar cuaderno**, se crea y verifica una copia completa en la carpeta elegida (la actual por defecto). Solo entonces se mueve o renombra el cuaderno activo y se reinician alumnado, horario semanal y fechas del calendario. Se conservan docente, centro, tema, tramos y actividades; Seguimiento se archiva como OLD y se eliminan Config y Eval anteriores. El resumen muestra si Calendario, Tramos, Actividades y Horario están completos o pendientes y explica los pendientes.
 
 ## Ayuda y estado
 
-**Ayuda** abre una barra lateral adaptada al espacio estrecho de Sheets. Muestra un resumen dinámico de controles correctos y solo los pendientes; **Ver detalle** sustituye esa lista por todos los controles. Durante la búsqueda se oculta el estado para dejar espacio a los resultados. Las secciones se despliegan una a una y la FAQ tiene preguntas propias. El buscador funciona sin tildes ni distinción de mayúsculas: por ejemplo, `evaluacion`, `peso`, `protegida` o `REACA`. La X limpia la búsqueda. **Actualizar estado** vuelve a cargar los datos una vez, sin consultas continuas.
+**Ayuda** abre una barra lateral adaptada al espacio estrecho de Sheets. Muestra un resumen dinámico de controles correctos y los pendientes. **Ver completados** aparece solo cuando hay elementos completos adicionales; al abrirlo no repite los pendientes. Durante la búsqueda se oculta el estado para dejar espacio a los resultados. Las secciones se despliegan una a una y la FAQ tiene preguntas propias. El buscador funciona sin tildes ni distinción de mayúsculas: por ejemplo, `evaluacion`, `peso`, `protegida` o `REACA`. La X limpia la búsqueda. **Actualizar estado** vuelve a cargar los datos una vez, sin consultas continuas.
 
 ## Preguntas frecuentes
 

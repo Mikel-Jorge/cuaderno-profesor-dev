@@ -16,6 +16,8 @@ function abrirAsistenteNuevoCurso() {
   template.currentFileName = currentFileName;
   template.wizardConfig = wizardConfig;
   template.themeConfig = getThemeConfigForUi_(spreadsheet, currentConfig);
+  template.courseDraft = getNewCourseDraft_();
+  template.courseSummary = getNewCourseDraftSummary_(template.courseDraft);
   setCommonUiTemplateData_(template);
 
   const output = template.evaluate()
@@ -32,59 +34,242 @@ function validarPreparacionNuevoCurso(input) {
 }
 
 function iniciarPreparacionNuevoCurso(input) {
-  const processInput = normalizeNewCourseProcessInput_(input);
+  const draft = getNewCourseDraft_();
+  if (!draft.reviewed[0]) throw new Error('Completa el paso Seguridad antes de generar.');
+  if (draft.generationPhase >= 1) return getNewCourseDraftSummary_(draft);
+  const processInput = normalizeNewCourseProcessInput_({
+    config: draft.config,
+    originalFileName: draft.originalFileName,
+    originalFolderId: draft.originalFolderId,
+    destinationFolderId: draft.destinationFolderId,
+  });
   validateNotebookOriginalLocation_(processInput);
   processInput.previousConfig = getGeneralConfigValues_(
     SpreadsheetApp.getActiveSpreadsheet()
   );
   const process = getNewCourseProcessDefinition_(processInput);
   process.steps.forEach(function(step) { step.run(process.input); });
-  return getCourseWizardSummary_();
+  draft.generationPhase = 1;
+  saveNewCourseDraft_(draft);
+  return getNewCourseDraftSummary_(draft);
 }
 
 function guardarDatosGeneralesNuevoCurso(input) {
   const values = normalizeGeneralConfigInput_(input);
   validateThemeConfig_(values);
-  return saveGeneralConfig_(values, { updateCover: false, showToast: false, includeTheme: true });
+  validateAcademicYear_(values[CP.CONFIG_KEYS.ACADEMIC_YEAR]);
+  const draft = getNewCourseDraft_();
+  assertNewCourseDraftEditable_(draft);
+  draft.config = values;
+  draft.reviewed[1] = true;
+  saveNewCourseDraft_(draft);
+  return { values: values, summary: getNewCourseDraftSummary_(draft) };
 }
 
 function guardarCalendarioNuevoCurso(input) {
-  return guardarConfiguracionCalendario_(input, { renderViews: false, showToast: false });
+  if (!input || !Array.isArray(input.types) || !Array.isArray(input.events)) {
+    throw new Error('Revisa los datos del calendario.');
+  }
+  const draft = getNewCourseDraft_();
+  assertNewCourseDraftEditable_(draft);
+  draft.calendar = input;
+  draft.reviewed[2] = true;
+  saveNewCourseDraft_(draft);
+  return getNewCourseDraftSummary_(draft);
 }
 
 function guardarHorarioNuevoCurso(input, step) {
   const section = { 3: 'slots', 4: 'activities', 5: 'sessions' }[step];
   if (!section) throw new Error('El paso de horario no existe.');
-  return guardarConfiguracionHorario_(input, { section: section, renderViews: false, showToast: false });
+  const draft = getNewCourseDraft_();
+  assertNewCourseDraftEditable_(draft);
+  const normalized = normalizeAndValidateScheduleConfig_(input);
+  draft.schedule = normalized;
+  draft.reviewed[step] = true;
+  saveNewCourseDraft_(draft);
+  return getNewCourseDraftSummary_(draft);
+}
+
+function guardarSeguridadNuevoCurso(input) {
+  const draft = getNewCourseDraft_();
+  assertNewCourseDraftEditable_(draft);
+  const processInput = normalizeNewCourseProcessInput_(input);
+  validateNotebookOriginalLocation_(processInput);
+  if (draft.config[CP.CONFIG_KEYS.ACADEMIC_YEAR] !==
+      processInput.config[CP.CONFIG_KEYS.ACADEMIC_YEAR]) {
+    draft.calendar = createDefaultNewCourseCalendarConfig_(
+      SpreadsheetApp.getActiveSpreadsheet(), processInput.config[CP.CONFIG_KEYS.ACADEMIC_YEAR]);
+    draft.reviewed[1] = false;
+    draft.reviewed[2] = false;
+  }
+  draft.config = processInput.config;
+  draft.originalFileName = processInput.originalFileName;
+  draft.originalFolderId = processInput.originalFolderId;
+  draft.destinationFolderId = processInput.destinationFolderId;
+  draft.visited[0] = true;
+  draft.reviewed[0] = true;
+  saveNewCourseDraft_(draft);
+  return getNewCourseDraftSummary_(draft);
+}
+
+function guardarVisitaNuevoCurso(step) {
+  if (!Number.isInteger(step) || step < 0 || step > 6) throw new Error('Paso no válido.');
+  const draft = getNewCourseDraft_();
+  assertNewCourseDraftEditable_(draft);
+  draft.visited[step] = true;
+  saveNewCourseDraft_(draft);
+}
+
+function assertNewCourseDraftEditable_(draft) {
+  if (draft.generationPhase) {
+    throw new Error('La generación ya ha comenzado. Continúa desde Resumen.');
+  }
+}
+
+const CP_NEW_COURSE_DRAFT_PREFIX = 'CP_NEW_COURSE_DRAFT_';
+function getNewCourseDraft_() {
+  const properties = PropertiesService.getDocumentProperties();
+  const count = Number(properties.getProperty(CP_NEW_COURSE_DRAFT_PREFIX + 'COUNT') || 0);
+  if (count) {
+    let json = '';
+    for (let index = 0; index < count; index += 1) {
+      const chunk = properties.getProperty(CP_NEW_COURSE_DRAFT_PREFIX + index);
+      if (chunk === null) throw new Error('El borrador del curso está incompleto.');
+      json += chunk;
+    }
+    return JSON.parse(json);
+  }
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const config = Object.assign({}, getGeneralConfigValues_(spreadsheet));
+  config[CP.CONFIG_KEYS.ACADEMIC_YEAR] = proponerCursoAcademico_(new Date(), spreadsheet.getSpreadsheetTimeZone());
+  const calendar = createDefaultNewCourseCalendarConfig_(
+    spreadsheet, config[CP.CONFIG_KEYS.ACADEMIC_YEAR]);
+  const schedule = getScheduleConfigForUi_(spreadsheet);
+  schedule.sessions = [];
+  return { config: config, calendar: calendar, schedule: schedule,
+    visited: [true, false, false, false, false, false, false],
+    reviewed: [false, false, false, false, false, false, false] };
+}
+
+function createDefaultNewCourseCalendarConfig_(spreadsheet, academicYear) {
+  const calendar = getCalendarConfigForUi_(spreadsheet);
+  calendar.academicYear = academicYear;
+  calendar.types.forEach(function(type) {
+    type.active = false;
+    ['startDate', 'endDate', 'practicesStart', 'practicesEnd', 'reviewStart', 'reviewEnd']
+      .forEach(function(key) { type[key] = ''; });
+    type.configurePractices = false;
+    type.configureReview = false;
+    type.evaluations.forEach(function(item) { item.endDate = ''; });
+  });
+  calendar.events = buildDefaultCalendarEventsForAcademicYear_(
+    calendar.academicYear, spreadsheet.getSpreadsheetTimeZone()).map(function(event) {
+      return {
+        id: event.id,
+        startDate: formatCalendarDateForUi_(event.startDate, spreadsheet.getSpreadsheetTimeZone()),
+        endDate: formatCalendarDateForUi_(event.endDate, spreadsheet.getSpreadsheetTimeZone()),
+        isRange: event.startDate.getTime() !== event.endDate.getTime(),
+        category: event.category,
+        appliesToAll: true,
+        typeIds: [],
+        description: event.description,
+      };
+    });
+  return calendar;
+}
+
+function saveNewCourseDraft_(draft) {
+  const properties = PropertiesService.getDocumentProperties();
+  const json = JSON.stringify(draft);
+  const chunks = json.match(/[\s\S]{1,2000}/g) || [''];
+  if (chunks.length > 150) throw new Error('El borrador es demasiado grande para guardarlo.');
+  const previous = Number(properties.getProperty(CP_NEW_COURSE_DRAFT_PREFIX + 'COUNT') || 0);
+  chunks.forEach(function(chunk, index) { properties.setProperty(CP_NEW_COURSE_DRAFT_PREFIX + index, chunk); });
+  for (let index = chunks.length; index < previous; index += 1) {
+    properties.deleteProperty(CP_NEW_COURSE_DRAFT_PREFIX + index);
+  }
+  properties.setProperty(CP_NEW_COURSE_DRAFT_PREFIX + 'COUNT', String(chunks.length));
+}
+
+function clearNewCourseDraft_() {
+  const properties = PropertiesService.getDocumentProperties();
+  const count = Number(properties.getProperty(CP_NEW_COURSE_DRAFT_PREFIX + 'COUNT') || 0);
+  for (let index = 0; index < count; index += 1) properties.deleteProperty(CP_NEW_COURSE_DRAFT_PREFIX + index);
+  properties.deleteProperty(CP_NEW_COURSE_DRAFT_PREFIX + 'COUNT');
+}
+
+function getNewCourseDraftSummary_(draft) {
+  const types = draft.calendar.types.filter(function(type) { return type.active; });
+  const calendarReady = types.length > 0 && types.every(function(type) { return type.startDate && type.endDate; });
+  const slots = draft.schedule.slots.length;
+  const activities = draft.schedule.activities.length;
+  const sessions = draft.schedule.sessions.length;
+  return { academicYear: draft.config[CP.CONFIG_KEYS.ACADEMIC_YEAR], calendar: calendarReady,
+    slots: slots, activities: activities, sessions: sessions,
+    visited: draft.visited, reviewed: draft.reviewed,
+    reasons: {
+      calendar: !types.length ? 'No hay ningún tipo de enseñanza activo.' :
+        calendarReady ? '' : 'Faltan fechas en los tipos de enseñanza activos.',
+      slots: slots ? '' : 'No hay tramos horarios.',
+      activities: activities ? '' : 'No hay actividades.',
+      sessions: sessions ? '' : 'No hay sesiones asignadas.',
+    } };
+}
+
+function aplicarBorradorNuevoCurso() {
+  const draft = getNewCourseDraft_();
+  if (!draft.reviewed[0]) throw new Error('Completa el paso Seguridad antes de generar.');
+  if (draft.generationPhase >= 2) return 'Datos del borrador aplicados.';
+  if (draft.generationPhase !== 1) throw new Error('Primero debe crearse la copia de seguridad.');
+  saveGeneralConfig_(draft.config, { updateCover: false, showToast: false, includeTheme: true });
+  guardarConfiguracionCalendario_(draft.calendar, { renderViews: false, showToast: false });
+  guardarConfiguracionHorario_(draft.schedule, { renderViews: false, showToast: false });
+  draft.generationPhase = 2;
+  saveNewCourseDraft_(draft);
+  return 'Datos del borrador aplicados.';
 }
 
 function finalizarCalendarioNuevoCurso() {
+  const draft = getNewCourseDraft_();
+  if (draft.generationPhase >= 3) return 'Calendario preparado.';
+  if (draft.generationPhase !== 2) throw new Error('Primero deben aplicarse los datos del nuevo curso.');
   createOrRepairCalendarSheet_({ skipIndex: true, showToast: false });
+  draft.generationPhase = 3;
+  saveNewCourseDraft_(draft);
   return 'Calendario preparado.';
 }
 
 function finalizarHorarioNuevoCurso() {
+  const draft = getNewCourseDraft_();
+  if (draft.generationPhase >= 4) return 'Horario preparado.';
+  if (draft.generationPhase !== 3) throw new Error('Primero debe generarse el calendario.');
   createOrRepairScheduleSheet_({ skipIndex: true });
+  draft.generationPhase = 4;
+  saveNewCourseDraft_(draft);
   return 'Horario preparado.';
 }
 
 function finalizarEstructuraNuevoCurso() {
+  const draft = getNewCourseDraft_();
+  if (draft.generationPhase !== 4) throw new Error('Primero debe generarse el horario.');
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   hideTechnicalSheets_(spreadsheet);
   reorderManagedVisibleSheets_(spreadsheet);
   initializeCoverStructure_();
   initializeMetaStructure_();
   installAllManagedProtections_();
+  clearNewCourseDraft_();
   spreadsheet.toast('Nuevo curso preparado.', CP.PROJECT_NAME, 5);
   return 'Cuaderno preparado.';
 }
 
 function obtenerResumenNuevoCurso() {
-  return getCourseWizardSummary_();
+  return getNewCourseDraftSummary_(getNewCourseDraft_());
 }
 
 function obtenerFormularioPasoNuevoCurso(step) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const draft = getNewCourseDraft_();
   const isCalendar = step === 2;
   if (!isCalendar && [3, 4, 5].indexOf(step) === -1) {
     throw new Error('El paso solicitado no existe.');
@@ -92,12 +277,11 @@ function obtenerFormularioPasoNuevoCurso(step) {
   const template = HtmlService.createTemplateFromFile(
     isCalendar ? 'UiDialogCalendarConfig' : 'UiDialogScheduleConfig');
   if (isCalendar) {
-    assertCalendarStructureReady_(spreadsheet);
-    template.calendarConfig = getCalendarConfigForUi_(spreadsheet);
+    template.calendarConfig = Object.assign({}, getCalendarConfigForUi_(spreadsheet),
+      draft.calendar, { academicYear: draft.config[CP.CONFIG_KEYS.ACADEMIC_YEAR] });
     template.wizardStep = 0;
   } else {
-    assertScheduleStructureReady_(spreadsheet);
-    template.scheduleConfig = getScheduleConfigForUi_(spreadsheet);
+    template.scheduleConfig = Object.assign({}, getScheduleConfigForUi_(spreadsheet), draft.schedule);
     template.wizardStep = step;
   }
   setCommonUiTemplateData_(template);

@@ -2,10 +2,18 @@
 
 **Última actualización:** 2026-10-10
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.8.4`
+**Versión vigente:** `1.8.5`
 **Esquema vigente:** `11`
 
-## Correctivo de Preparar nuevo curso 1.8.4
+## Correctivo UX y flujo 1.8.5
+
+- Portada compacta desde A1, sin primera fila/columna vacía ni separación bajo los encabezados de datos e índice.
+- Preparar nuevo curso guarda un borrador persistente por Spreadsheet en `DocumentProperties` y permite cancelarlo y retomarlo. Seguridad y los pasos intermedios no crean copia ni modifican hojas; la copia verificada, transición anual, aplicación del borrador y generación se ejecutan al finalizar. El esquema sigue en `11`.
+- Stepper y Resumen usan los mismos estados visitado/revisado/pendiente. Los pasos futuros no muestran checks. La espera de carga, guardado y generación ocupa el contenido; Seguridad y Apariencia se compactan.
+- Ayuda muestra pendientes directamente y solo ofrece «Ver completados» si existen elementos completos adicionales, sin duplicar pendientes.
+- Pendiente de prueba manual en `CP_DEV`: recorrido completo del asistente, cancelación y reapertura, carpeta alternativa, fallo de Drive simulado y aspecto final de Portada/Sidebar.
+
+## Correctivo de Preparar nuevo curso 1.8.4 (histórico)
 
 - Seguridad conserva backup verificado, transición anual y recuperación defensiva. Los pasos de configuración guardan datos técnicos sin reconstruir hojas visibles; Finalizar o Cancelar después de Seguridad aplica una fase automática única de vistas y mantenimiento.
 - Stepper navegable por pasos visitados: completado solo tras revisión, warnings ámbar con motivo y errores reales en rojo. Resumen en cards con el mismo estado. Loading central y formularios embebidos con altura dinámica y un único scroll.

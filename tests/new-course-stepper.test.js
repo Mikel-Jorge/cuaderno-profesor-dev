@@ -13,7 +13,7 @@ const colors = { primary: '#1F6E8C', secondary: '#355070', accent: '#A65B7C' };
 const controls = { tema_preset: { value: 'atlantico' }, tema_primary: { value: '' },
   tema_secondary: { value: '' }, tema_accent: { value: '' } };
 const context = vm.createContext({
-  prepared: true, currentStep: 1, errorStep: null,
+  currentStep: 1, errorStep: null,
   visited: [true, true, false, false, false, false, false],
   reviewed: [true, false, false, false, false, false, false],
   summary: { calendar: false, slots: 8, activities: 4, sessions: 0,
@@ -38,13 +38,14 @@ context.visited[5] = true;
 context.reviewed[5] = true;
 assert.strictEqual(context.stepState(5), 'warning');
 context.errorStep = 4;
-assert.strictEqual(context.stepState(4), 'error');
+assert.strictEqual(context.stepState(4), 'current');
 context.applySelectedTheme();
 assert.deepStrictEqual([controls.tema_primary.value, controls.tema_secondary.value,
   controls.tema_accent.value], ['#1f6e8c', '#355070', '#a65b7c']);
 assert.strictEqual(controls.tema_preset.value, 'atlantico');
-assert(html.includes('button.disabled=busy||!visited[index]'));
-assert(html.includes("button.addEventListener('click',function(){showStep(index)}"));
+assert(html.includes('button.disabled=busy||finalPhase>0||!visited[index]'));
+assert(html.includes("button.addEventListener('click',function(){if(index!==currentStep)showStep(index)}"));
+assert(html.includes('const complete=stepComplete(item[0])'));
 assert(html.includes('course-wizard-measure'));
 assert(html.includes("frame.setAttribute('scrolling','no')"));
 assert(!html.includes('min-height:510px'));

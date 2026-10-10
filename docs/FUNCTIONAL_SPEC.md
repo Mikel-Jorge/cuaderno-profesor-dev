@@ -10,8 +10,8 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 ## Definición funcional del proyecto
 
 **Estado:** especificación funcional vigente
-**Versión del documento:** 3.2
-**Versión del cuaderno:** `1.8.4`
+**Versión del documento:** 3.3
+**Versión del cuaderno:** `1.8.5`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables, Google Calendar ni People API en V1;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.8.4
+# 2. Estado funcional de la versión 1.8.5
 
 Están cerrados funcionalmente:
 
@@ -43,7 +43,7 @@ Existe un único menú superior `📘 Cuaderno del Profesor 📘`: submenús Con
 
 El selector de Reparar estructura presenta General y Módulos en dos columnas, con Seleccionar todo y Ninguno. Si no hay marcas, indica brevemente que solo se realizará mantenimiento general. `6 Eval` usa 132 px para Nombre al crear o reparar, sin alterar los 190 px de Apellidos.
 
-La Ayuda muestra un resumen de controles correcto/total calculado desde los elementos reales. Presenta pendientes por defecto; al desplegar el detalle, este sustituye la lista de pendientes. Durante una búsqueda se oculta el estado. La hoja activa puede destacarse en su sección, sin tarjeta de contexto independiente. Sus secciones son acordeones de primer nivel con una sola sección abierta fuera de búsqueda. El buscador local ignora tildes y mayúsculas, busca también FAQ y palabras clave, y abre las coincidencias. La Ayuda no duplica acciones ejecutables del menú.
+La Ayuda muestra un resumen de controles correcto/total calculado desde los elementos reales. Presenta pendientes por defecto y solo ofrece «Ver completados» cuando hay elementos completos adicionales. Ese detalle complementa los pendientes sin repetirlos. Durante una búsqueda se oculta el estado. La hoja activa puede destacarse en su sección, sin tarjeta de contexto independiente. Sus secciones son acordeones de primer nivel con una sola sección abierta fuera de búsqueda. El buscador local ignora tildes y mayúsculas, busca también FAQ y palabras clave, y abre las coincidencias. La Ayuda no duplica acciones ejecutables del menú.
 
 `Reparar estructura` abre un selector sin efectos al abrirse. Los siete bloques visibles (Portada, Calendario, Horario, Alumnado, todas las 4 Config, todas las 5 Seg y todas las 6 Eval) empiezan marcados; se pueden marcar o desmarcar todos. Una selección vacía ejecuta solo mantenimiento técnico. Al confirmar siempre se comprueban las estructuras técnicas, migraciones, referencias huérfanas, metadatos, ocultación, orden, colores de pestaña y protecciones técnicas. Solo los bloques elegidos se regeneran o reformatean; las dependencias no marcadas pueden leerse. Alumnado por sí solo no sincroniza Eval y Config por sí sola no repara Seg/Eval. Los OLD solo reciben orden, color de pestaña y protección de aviso. Las protecciones manuales se conservan. El progreso muestra únicamente los bloques elegidos y los pasos técnicos.
 
@@ -111,15 +111,15 @@ Los colores son presentación. El nombre de una hoja tampoco debe ser su única 
 
 # 5. Portada
 
-`0 Portada` muestra curso académico, profesor, datos del centro e índice navegable. El curso se propone automáticamente: de agosto a diciembre, año actual-año siguiente; de enero a julio, año anterior-año actual.
+`0 Portada` muestra curso académico, profesor, datos del centro e índice navegable desde la primera fila y columna. Conserva una fila de separación tras el curso académico; los datos comienzan inmediatamente bajo sus dos encabezados. El curso se propone automáticamente: de agosto a diciembre, año actual-año siguiente; de enero a julio, año anterior-año actual.
 
 El índice se construye desde las hojas visibles existentes y excluye todas las hojas cuyo nombre empieza por `_`. Por tanto, `3 Alumnado` aparece automáticamente y las futuras hojas 4/5/6 aparecerán cuando existan. No se mantiene una lista completa hardcodeada.
 
 # 6. Preparar nuevo curso
 
-La acción abre un único diálogo HTML de siete pasos. Al abrirse no modifica el cuaderno. El botón explícito `Crear copia y preparar` del paso Seguridad inicia la copia obligatoria del Spreadsheet en la carpeta elegida (la actual por defecto), con el nombre original; no se requiere checkbox adicional. Si el backup no puede crearse y verificarse, no se ejecuta ninguna mutación posterior.
+La acción abre un único diálogo HTML de siete pasos. Al abrirse no modifica el cuaderno. Seguridad recoge el curso propuesto y la carpeta de la futura copia, actual por defecto. Siguiente guarda un borrador persistente por Spreadsheet en `DocumentProperties`. Cancelar cierra sin aplicar el borrador y volver a abrir permite continuarlo.
 
-Después del backup verificado puede mover el cuaderno activo dentro de Mi unidad, renombrarlo como `CuadernoProfesor_XXXX` y actualizar curso, profesor, centro y apariencia. La copia conserva el contenido anterior íntegro.
+Solo al pulsar `Finalizar y generar cuaderno` se crea y verifica la copia del Spreadsheet en la carpeta elegida, con el nombre original. Si la copia no puede verificarse, no se ejecuta la transición. Después puede mover el cuaderno activo dentro de Mi unidad, renombrarlo como `CuadernoProfesor_XXXX` y aplicar curso, profesor, centro y apariencia. La copia conserva el contenido anterior íntegro.
 
 El cuaderno activo conserva profesor, centro, tema, tramos horarios y catálogo de actividades, incluidos sus IDs estables. Después del backup se reinician de forma coordinada:
 
@@ -129,11 +129,11 @@ El cuaderno activo conserva profesor, centro, tema, tramos horarios y catálogo 
 - fechas finales de `_CAL_EVALUACIONES` para 1º, 2º, Online y Curso de Especialización, conservando ID, nombre y orden;
 - todos los eventos anuales de `_FECHAS` y sus asociaciones en `_CAL_FECHA_TIPOS`.
 
-La transición anual conserva snapshots en memoria para restaurar Alumnado, Horario y Calendario si falla; el backup verificado sigue siendo la garantía completa. La generación de Calendario, Horario, Portada, metadatos e índice se difiere hasta finalizar el diálogo.
+La transición anual conserva snapshots en memoria para restaurar Alumnado, Horario y Calendario si falla; el backup verificado sigue siendo la garantía completa. La generación de Calendario, Horario, Portada, metadatos e índice se ejecuta al finalizar el diálogo.
 
 `Reparar estructura` nunca aplica esta política anual, no borra datos ni repone festivos eliminados por el docente.
 
-Tras la transición anual se continúa dentro del mismo diálogo por Datos del docente y centro, Calendario, Tramos, Actividades, Horario semanal y Resumen. Tramos, Actividades y Horario muestran solo su apartado, con un único scroll vertical. Siguiente valida y guarda los datos técnicos de cada paso sin regenerar las vistas visibles. Atrás o la navegación por pasos ya visitados descarta los cambios que no se hayan guardado. Los pasos no visitados no se pueden abrir directamente; un paso revisado se marca como completo o pendiente según sus datos, con motivo legible para los pendientes. Es válido finalizar con configuración parcial. Finalizar y generar cuaderno aplica una vez las vistas derivadas y el mantenimiento final; cancelar después de Seguridad conserva lo guardado y ejecuta la misma fase para dejar el libro coherente. Cancelar antes de Seguridad cierra sin cambios. Abrir el Spreadsheet no inicia el proceso ni escribe datos. El paso Seguridad no puede ejecutarse dos veces dentro del mismo flujo.
+Tras Seguridad se continúa dentro del mismo diálogo por Datos del docente y centro, Calendario, Tramos, Actividades, Horario semanal y Resumen, sin modificar hojas. Tramos, Actividades y Horario muestran solo su apartado, con un único scroll vertical. Siguiente valida y guarda el borrador de cada paso sin regenerar vistas visibles. Atrás o la navegación por pasos ya visitados descarta los cambios que no se hayan guardado; Seguridad también se puede revisitar. Los pasos no visitados no se pueden abrir directamente ni muestran checks aunque contengan datos de partida. Un paso visitado y revisado se marca como completo o pendiente ámbar según sus datos, con motivo legible para los pendientes; Resumen usa esos mismos estados. Es válido finalizar con configuración parcial. Finalizar crea la copia, ejecuta la transición anual, aplica el borrador y genera las vistas derivadas y el mantenimiento final bajo un único indicador de espera. Cancelar conserva el borrador sin trabajo de generación. Abrir el Spreadsheet no inicia el proceso ni escribe datos.
 
 Tras el backup se materializan y renombran las `5 Seg ...` activas como `OLD AACC`, se eliminan las `6 Eval ...` y las `4 Config ...` gestionadas del curso anterior y se vacían sus registros en `_MOD_CONFIG` y `_MOD_PLAN`. Los históricos conservan valores, textos, colores, separadores y aspecto sin referencias rotas.
 

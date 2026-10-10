@@ -65,11 +65,15 @@ assert.strictEqual((html.match(/class="course-step(?: current)?"/g) || []).lengt
 assert(!html.includes('confirm-reset'));
 assert(html.includes('reviewed[currentStep]=true'));
 assert(html.includes('Finalizar y generar cuaderno'));
+assert(html.includes("callServer('guardarSeguridadNuevoCurso',input)"));
+assert(html.includes("if(finalPhase<1){await callServer('iniciarPreparacionNuevoCurso',null)"));
+assert(html.includes('function cancelWizard(){if(!busy)google.script.host.close()}'));
 assert(html.includes('obtenerFormularioPasoNuevoCurso'));
 assert(!html.includes('abrirPasoAsistenteCurso'));
 assert(!html.includes('showModalDialog'));
 const backend = fs.readFileSync('NewCourse.gs', 'utf8');
 assert(backend.includes('process.steps.forEach(function(step) { step.run(process.input); })'));
+assert(backend.includes('PropertiesService.getDocumentProperties()'));
 assert(backend.includes("isCalendar ? 'UiDialogCalendarConfig' : 'UiDialogScheduleConfig'"));
 assert(fs.readFileSync('UiStyles.html', 'utf8').includes('.schedule-accordion.is-hidden'));
 console.log('unified menu and seven-step single-dialog wizard: ok');
