@@ -2,8 +2,14 @@
 
 **Última actualización:** 2026-10-10
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.8.6`
+**Versión vigente:** `1.8.7`
 **Esquema vigente:** `11`
+
+## Correctivo visual de Preparar nuevo curso 1.8.7
+
+- El selector de carpeta tiene un único desplazamiento en la lista. Un clic selecciona una carpeta; el doble clic la abre. El breadcrumb permite volver a un ancestro y Atrás sube un nivel. La carpeta que se usará aparece junto al footer.
+- Resumen conserva las cards y los estados del borrador, con un layout que solo desplaza el contenido cuando no cabe y mantiene el footer visible.
+- Pendiente de comprobación visual en CP_DEV: selector con muchas carpetas y Resumen en el modal habitual y en una ventana más baja.
 
 ## Correctivo de reparación, asistente y autoría 1.8.6
 

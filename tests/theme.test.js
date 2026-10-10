@@ -20,7 +20,7 @@ const expected = [
   ['grafito-esmeralda', 'Grafito esmeralda', '#475569', '#2F7464', '#B9832F'],
 ];
 assert.strictEqual(evaluate('CP_DEFAULT_THEME_PRESET'), expected[0][0]);
-assert.strictEqual(evaluate('CP.NOTEBOOK_VERSION'), '1.8.6');
+assert.strictEqual(evaluate('CP.NOTEBOOK_VERSION'), '1.8.7');
 assert.strictEqual(evaluate('CP.SCHEMA_VERSION'), '11');
 const presets = evaluate('getThemeConfigForUi_(null, {}).presets');
 assert.strictEqual(presets.length, 10);

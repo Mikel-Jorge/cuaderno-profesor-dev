@@ -1,4 +1,4 @@
-# Guía de uso · Cuaderno del Profesor 1.8.6
+# Guía de uso · Cuaderno del Profesor 1.8.7
 
 ## Empezar un curso
 
@@ -36,7 +36,7 @@ El menú **Reparar estructura** abre un selector. Los siete bloques visibles emp
 
 ## Preparar nuevo curso
 
-**Preparar nuevo curso** es una acción excepcional. Mientras recorres el diálogo solo se guarda un borrador que permanece si cancelas. Al pulsar **Finalizar y generar cuaderno**, se crea y verifica una copia completa en la carpeta elegida (la actual por defecto). Solo entonces se mueve o renombra el cuaderno activo y se reinician alumnado, horario semanal y fechas del calendario. Se conservan docente, centro, tema, tramos y actividades; Seguimiento se archiva como OLD y se eliminan Config y Eval anteriores. El resumen muestra si Calendario, Tramos, Actividades y Horario están completos o pendientes y explica los pendientes.
+**Preparar nuevo curso** es una acción excepcional. Mientras recorres el diálogo solo se guarda un borrador que permanece si cancelas. En el selector de carpetas, un clic selecciona una carpeta para la copia y un doble clic la abre para ver sus subcarpetas; el breadcrumb y Atrás permiten volver. Si no seleccionas una hija, se usa la carpeta abierta. Al pulsar **Finalizar y generar cuaderno**, se crea y verifica una copia completa en la carpeta elegida (la actual por defecto). Solo entonces se mueve o renombra el cuaderno activo y se reinician alumnado, horario semanal y fechas del calendario. Se conservan docente, centro, tema, tramos y actividades; Seguimiento se archiva como OLD y se eliminan Config y Eval anteriores. El resumen muestra si Calendario, Tramos, Actividades y Horario están completos o pendientes y explica los pendientes.
 
 ## Ayuda y estado
 
