@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <style id="active-theme"><?!= uiThemeCss ?></style>
     <?!= includeUiFile_('UiStyles'); ?>
-    <style>.module-prerequisite-warning{margin:9px 0 0;padding:9px 11px;border:1px solid #D97706;border-radius:7px;background:#FEF3C7;color:#78350F;font-size:12px;line-height:1.4}.module-prerequisite-warning:before{content:'⚠ ';font-weight:bold}</style>
+    <style>.module-prerequisite-warning{margin:9px 0 0;padding:9px 11px;border:1px solid #D97706;border-radius:7px;background:#FEF3C7;color:#78350F;font-size:12px;line-height:1.4}.module-prerequisite-warning:before{content:'⚠ ';font-weight:bold}#empty-state{display:flex;align-items:flex-start;gap:11px;width:100%;box-sizing:border-box;margin:12px 0 0;padding:14px 16px;border:1px solid #D97706;border-radius:8px;background:#FFFBEB;color:#78350F}#empty-state[hidden]{display:none}#empty-state .empty-icon{flex:none;font-size:18px;line-height:1.3}#empty-state .confirmation-message{font-weight:600;color:inherit}#empty-state .confirmation-helper{margin:5px 0 0;color:#92400E;font-size:12px;line-height:1.45}</style>
   </head>
   <body>
     <main class="app">
@@ -22,11 +22,10 @@
           <section class="form-section">
             <h2>Configuración individual</h2>
             <p class="form-help">Cada módulo y grupo mantiene su propio calendario y sus propias UT.</p>
-            <div id="empty-state" class="confirmation confirmation-warning" hidden>
-              <p class="confirmation-message">⚠ No quedan módulos elegibles.</p>
-              <p class="confirmation-helper">
-                Todos los módulos disponibles ya tienen su hoja 4 Config o todavía no hay actividades MÓDULO en Horario.
-              </p>
+            <div id="empty-state" hidden>
+              <span class="empty-icon" aria-hidden="true">⚠</span>
+              <div><p class="confirmation-message">No quedan módulos por configurar</p>
+              <p class="confirmation-helper">Todos los módulos disponibles ya tienen su 4 Config o todavía no hay módulos con sesiones asignadas en Horario.</p></div>
             </div>
             <div class="form-field" id="module-field">
               <label for="module-select">Módulo</label>
@@ -81,7 +80,7 @@
       } else if (!moduleData.modules.length) {
         emptyState.hidden = false;
         document.getElementById('module-field').hidden = true;
-        submitButton.disabled = true;
+        submitButton.hidden = true;
       } else {
         emptyState.hidden = true;
         document.getElementById('module-field').hidden = false;

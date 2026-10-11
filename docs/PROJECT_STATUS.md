@@ -1,8 +1,8 @@
 # Estado del proyecto
 
-**Última actualización:** 2026-10-10
+**Última actualización:** 2026-10-11
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.9.0`
+**Versión vigente:** `1.9.1`
 **Esquema vigente:** `11`
 
 ## Correctivo visual de Preparar nuevo curso 1.8.7
@@ -246,6 +246,12 @@ Pendiente de cierre del bloque:
 - Calendario limita las fechas especiales a tipos activos, explicita su ámbito en Notes, centra estadísticas y propone finales de junio. Horario limita tipos nuevos a activos, ofrece defaults institucionales y reserva el apoyo para MODULO.
 - Alumnado ofrece Grupo desde actividades MODULO. Repair de Eval asigna IDs faltantes a alumnos válidos, mantiene Educa como texto discreto y distingue en gris filas históricas.
 - El nuevo curso limpia evaluaciones, deja el histórico en la carpeta original, mueve el activo al destino elegido y rehace los enlaces del índice histórico.
+
+# Correctivo 1.9.1
+
+- Apariencia del configurador individual adopta la distribución compacta del asistente. Calendario abre y enfoca el primer campo inválido o la fecha especial cuyo ámbito falta.
+- Horario distingue visualmente el apoyo deshabilitado. Crear configuración muestra un estado vacío compacto cuando no quedan módulos elegibles.
+- Reparar Eval conserva Educa como texto discreto al reordenar alumnado: lee su valor visible, prepara las columnas como texto antes de escribir y reinstala después el desplegable. La media del grupo sigue siendo numérica. El esquema permanece en `11`.
 
 # ROADMAP futuro
 

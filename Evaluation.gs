@@ -220,6 +220,12 @@ function repairEvaluationSheet_(sheet, configSheet, context, activity) {
   const students = getEvaluationStudents_(spreadsheet, activity.group);
   const educaColumns = layout.groups.map(function(group) { return group.educaColumn; })
     .concat([layout.finalEducaColumn]);
+  if (existingCount) educaColumns.forEach(function(column) {
+    const displayed = sheet.getRange(4, column, existingCount, 1).getDisplayValues();
+    displayed.forEach(function(row, index) {
+      if (row[0] !== '') values[index][column - 1] = row[0];
+    });
+  });
   const rows = buildEvaluationStudentRows_(values, formulas, notes, students,
     layout.idColumn, educaColumns);
   if (rows.warning) {
@@ -256,6 +262,10 @@ function repairEvaluationSheet_(sheet, configSheet, context, activity) {
     sheet.getRange(2, column, 2, 1).merge();
   });
   if (rows.items.length) {
+    educaColumns.forEach(function(column) {
+      sheet.getRange(4, column, rows.items.length, 1)
+        .clearDataValidations().setNumberFormat('@');
+    });
     sheet.getRange(4, 1, rows.items.length, layout.idColumn)
       .setValues(rows.items.map(function(item) { return item.values; }));
     sheet.getRange(4, 1, rows.items.length, layout.idColumn)

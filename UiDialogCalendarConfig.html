@@ -13,7 +13,7 @@
     <div class="brand-copy"><p class="brand-name"><?= uiConfig.projectName ?></p><span class="version-label"><?= uiConfig.versionLabel ?></span></div>
   </header>
   <? if (wizardStep) { ?><p class="wizard-progress">Paso 2 de 6 · Calendario</p><p class="form-help">Los pasos guardados se conservan si cancelas. Atrás descarta los cambios de este paso aún no guardados.</p><? } ?>
-  <form class="config-form" id="calendar-form">
+  <form class="config-form" id="calendar-form" novalidate>
     <div class="config-scroll">
       <p class="calendar-course" id="calendar-course"></p>
       <div class="result" id="blocking-error" role="alert"></div>
@@ -69,7 +69,7 @@
   form.addEventListener('submit', function(domEvent) {
     domEvent.preventDefault();
     if (isBlocked || isSaving) return;
-    if (!isDirty() || !form.reportValidity() || !validateEventScopes()) return;
+    if (!isDirty() || !revealFirstInvalidField() || !validateEventScopes()) return;
     setSavingState(true);
     hideResult();
     google.script.run.withSuccessHandler(handleSaveSuccess).withFailureHandler(handleSaveError)
@@ -377,16 +377,58 @@
     }, 0);
   }
 
+  function revealFirstInvalidField() {
+    const invalid = Array.from(form.elements).find(function(control) {
+      return control.willValidate && !control.validity.valid;
+    });
+    if (!invalid) return true;
+    const kind = invalid.dataset.kind;
+    const typeIndex = invalid.dataset.typeIndex;
+    const eventIndex = invalid.dataset.itemIndex;
+    if (kind === 'type' || kind === 'evaluation') {
+      calendarData.types.forEach(function(_type, index) { expandedTypes[index] = index === Number(typeIndex); });
+      eventsExpanded = false;
+      expandedEvents = {};
+    } else if (kind === 'event') {
+      calendarData.types.forEach(function(_type, index) { expandedTypes[index] = false; });
+      eventsExpanded = true;
+      expandedEvents = {};
+      expandedEvents[calendarData.events[Number(eventIndex)].__uiKey] = true;
+    }
+    renderTypes(); renderEvents();
+    const selector = '[data-kind="' + kind + '"]' +
+      (typeIndex === undefined ? '' : '[data-type-index="' + typeIndex + '"]') +
+      (eventIndex === undefined ? '' : '[data-item-index="' + eventIndex + '"]') +
+      '[data-field="' + invalid.dataset.field + '"]';
+    const control = form.querySelector(selector);
+    if (control) {
+      control.scrollIntoView({ block: 'nearest' });
+      control.focus();
+      control.reportValidity();
+      const label = control.closest('label');
+      const fieldName = label && label.querySelector('span') ? label.querySelector('span').textContent.toLowerCase() : 'campo obligatorio';
+      const sectionName = kind === 'event' ? 'esta fecha especial' : calendarData.types[Number(typeIndex)].name;
+      showResult('Completa ' + fieldName + ' de ' + sectionName + '.', 'error');
+    }
+    return false;
+  }
+
   function compactSummaryText(value) {
     const text = (value || '').trim();
     return text.length > 90 ? text.slice(0, 87).trim() + '...' : text;
   }
 
   function validateEventScopes() {
-    const invalid = calendarData.events.some(function(calendarEvent) { return !calendarEvent.appliesToAll && calendarEvent.typeIds.length === 0; });
-    if (!invalid) return true;
-    eventsExpanded = true; renderEvents();
-    showResult('Selecciona Todos o al menos un tipo en cada fecha especial.', 'error');
+    const invalidIndex = calendarData.events.findIndex(function(calendarEvent) { return !calendarEvent.appliesToAll && calendarEvent.typeIds.length === 0; });
+    if (invalidIndex === -1) return true;
+    calendarData.types.forEach(function(_type, index) { expandedTypes[index] = false; });
+    eventsExpanded = true;
+    expandedEvents = {};
+    expandedEvents[calendarData.events[invalidIndex].__uiKey] = true;
+    renderTypes(); renderEvents();
+    const scope = form.querySelector('[data-kind="event"][data-item-index="' + invalidIndex + '"][data-field="appliesToAll"]');
+    if (scope) { scope.scrollIntoView({ block: 'nearest' }); scope.focus(); }
+    showResult('Selecciona a qué enseñanzas aplica esta fecha especial.', 'error');
     return false;
   }
   function handleSaveSuccess(response) {

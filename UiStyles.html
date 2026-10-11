@@ -686,6 +686,8 @@
   .schedule-session-cell select, .schedule-session-cell .schedule-support { background: rgba(255, 255, 255, 0.9); color: #1f2937; }
   .schedule-table th small { display: block; margin-top: 3px; color: var(--muted-text); font-weight: 400; }
   .schedule-support { margin-top: 5px; }
+  .schedule-session-cell .schedule-support:disabled { background: var(--muted); color: var(--muted-text); border-color: var(--border); cursor: not-allowed; opacity: .8; }
+  .schedule-session-cell .schedule-support:disabled::placeholder { color: var(--muted-text); opacity: .7; }
   .schedule-break-cell { background: var(--muted) !important; color: var(--muted-text); font-size: 11px; font-style: italic; text-align: center !important; }
 
   .internal-confirmation-backdrop {
