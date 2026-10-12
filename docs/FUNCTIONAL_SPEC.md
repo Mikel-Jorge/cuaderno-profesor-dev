@@ -10,8 +10,8 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 ## Definición funcional del proyecto
 
 **Estado:** especificación funcional vigente
-**Versión del documento:** 3.3
-**Versión del cuaderno:** `1.9.0`
+**Versión del documento:** 3.4
+**Versión del cuaderno:** `1.13.2`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -26,20 +26,14 @@ Principios cerrados:
 - Moodle calcula la nota interna de cada UT y el cuaderno recibe su nota final;
 - las recuperaciones se gestionan en Moodle;
 - los Resultados de Aprendizaje no son obligatorios en V1;
-- no se usan triggers instalables, Google Calendar ni People API en V1;
+- no se usan triggers instalables ni Google Calendar; Google Contacts usa Advanced People Service y el scope de contactos;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.9.0
+# 2. Estado funcional de la versión 1.13.2
 
-Están cerrados funcionalmente:
+El alcance previsto para el curso actual está operativo: Portada, Calendario, Horario, Alumnado, importadores EDUCA de módulos y Tutoría, Matrículas, Google Contacts, Tutoría base, Config, Seg, Eval, nuevo curso, Repair y Ayuda.
 
-- `0 Portada`;
-- `1 Calendario`;
-- `2 Horario`.
-
-Alumnado y `4 Config ...` están operativos. `5 Seg ...` implementa el seguimiento como snapshot editable de la planificación inicial. `6 Eval ...` registra las calificaciones del módulo.
-
-Existe un único menú superior `📘 Cuaderno del Profesor 📘`: submenús Configuración (`🪪 Configurar datos del docente y centro`, `📅 Configurar calendario`, `🕒 Configurar horario`), Alumnado (Importar alumnado desde EDUCA, Matrículas de módulos, Sincronizar Google Contacts y, solo con Soy tutor/a activo, Importar alumnado de tutoría junto al importador EDUCA) y Módulos (Crear Config, Recalcular, Crear Seguimiento y Evaluación); después Reparar estructura, Preparar nuevo curso y Ayuda, en ese orden. No existe un asistente de configuración independiente. Los tres configuradores puntuales siguen disponibles durante el curso.
+Existe un único menú superior `📘 Cuaderno del Profesor 📘`: submenús Configuración (`🪪 Configurar datos del docente y centro`, `📅 Configurar calendario`, `🕒 Configurar horario`), Alumnado (si es tutor/a, Importar grupo de tutoría arriba y separado; después Importar alumnado de módulos, Matrículas de módulos y Sincronizar Google Contacts) y Módulos (Crear Config, Recalcular, Crear Seguimiento y Evaluación); después Reparar estructura, Preparar nuevo curso y Ayuda, en ese orden. No existe un asistente de configuración independiente. Los tres configuradores puntuales siguen disponibles durante el curso.
 
 El selector de Reparar estructura presenta General y Módulos en dos columnas, con Seleccionar todo y Ninguno. Si no hay marcas, indica brevemente que solo se realizará mantenimiento general. `6 Eval` usa 132 px para Nombre al crear o reparar, sin alterar los 190 px de Apellidos.
 
@@ -49,7 +43,7 @@ La Ayuda muestra un resumen de controles correcto/total calculado desde los elem
 
 Si se seleccionan Seguimiento y Evaluación juntos, la reparación muestra un solo paso y recorre una sola vez el registro de módulos. Comunica por separado cuántos Seguimientos y Evaluaciones se repararon y cuántas Evaluaciones se recrearon. La autoría textual visible, cuando se presente en créditos, es «Mikel Jorge Soteras».
 
-En 6 Eval, tras sincronizar y ordenar por `alumno_id`, Apellidos y Nombre de todas las filas de alumnado se alinean a la izquierda y Medidas al centro, incluida la última fila. La cabecera FINAL, Media final y Educa final usa la familia accent del tema; los datos Educa conservan su fondo amarillo, negrita y semáforo. Las dos columnas finales son ligeramente más anchas.
+En 6 Eval, tras sincronizar y ordenar por `alumno_id`, Apellidos y Nombre de todas las filas de alumnado se alinean a la izquierda y REACA al centro, incluida la última fila. La cabecera FINAL, Media final y Educa final usa la familia accent del tema; los datos Educa conservan su fondo amarillo, negrita y semáforo. Las dos columnas finales son ligeramente más anchas.
 
 # 3. Estructura del libro
 
@@ -196,20 +190,20 @@ La cabecera y A:C quedan protegidas con advertencia; D Email, E REACA y F Inform
 
 Grupo ofrece la unión deduplicada y ordenada de grupos de actividades MODULO y, si procede, el grupo de tutoría activo; admite valores históricos fuera de la lista. La lista se sincroniza al importar, reparar Alumnado, guardar Actividades o Tutoría y terminar un curso nuevo, sin reformatar la hoja.
 
-`Reparar estructura`, al seleccionar Alumnado, garantiza la hoja, cabeceras, checkbox nativo, formato y posición sin borrar filas de alumnado. Normaliza los booleanos y los textos heredados `TRUE`/`FALSE`, asigna los UUID ausentes solo cuando Apellidos, Nombre y Grupo están completos y es idempotente. Preparar nuevo curso limpia también REACA, Medidas y los UUID después del backup.
+`Reparar estructura`, al seleccionar Alumnado, garantiza la hoja, cabeceras, checkbox nativo, formato y posición sin borrar filas de alumnado. Normaliza los booleanos y los textos heredados `TRUE`/`FALSE`, asigna los UUID ausentes solo cuando Apellidos, Nombre y Grupo están completos y es idempotente. Preparar nuevo curso limpia también REACA, Información / Medidas y los UUID después del backup.
 
 ## 10.2. Estado en el Sidebar
 
 - `Pendiente`: no existe ninguna fila con Apellidos, Nombre y Grupo informados.
 - `Configurado`: existe al menos una fila con esos tres campos.
 
-Email no interviene en el estado. La ayuda explica la importación, la edición manual de Email/REACA/Medidas y que Evaluación usa la matrícula del módulo cuando existe.
+Email no interviene en el estado. La ayuda explica la importación, la edición manual de Email/REACA/Información / Medidas y que Evaluación usa la matrícula del módulo cuando existe.
 
 ## 10.3. Relación con módulos
 
 `_MATRICULAS` relaciona `alumno_id` y `actividad_id` de MODULO, con `activo` y origen `EDUCA_XLS` o `MANUAL`. `_MATRICULAS_META` conserva el modo `EXPLICITA` por actividad, incluso cuando tiene cero alumnos. Sin modo explícito, Eval sigue seleccionando todo el alumnado cuyo Grupo coincide. Al importar o guardar Matrículas de módulos, la relación activa por IDs determina la pertenencia aunque los textos de Grupo difieran. Solo los estados que cambian en el gestor adquieren origen `MANUAL`; las importaciones posteriores conservan tanto las altas como las bajas `MANUAL` y actualizan las relaciones `EDUCA_XLS`. Grupo ayuda a proponer alumnado, no restringe una matrícula ya registrada. Seguimiento y Config no usan matrículas.
 
-La importación se limita al informe EDUCA «Listado mi alumnado» → «Por profesor» → Excel → Asignatura, seleccionando todas las asignaturas y las variantes finales «(Centro)». El `.xls` actual contiene OOXML/ZIP: se valida el contenido, se rechaza el XLS binario y se detectan hojas, descriptores y cabeceras sin posiciones fijas. Se concatena el rich text de shared strings, pero de Nombre solo se usa la primera línea y se separa por la primera coma. Las variantes normal y «(Centro)» se unen por asignatura normalizada y grupo, sin mezclar grupos. El informe no incluye ID estable ni email: la comparación de existentes usa Apellidos, Nombre y Grupo con normalización conservadora de espacios, separadores y Online/Virtual; una coincidencia ambigua se rechaza. Alumnado nuevo recibe UUID y Email vacío. El existente conserva ID, Email, REACA y Medidas y adopta el Grupo oficial de EDUCA. No se excluye automáticamente por Estado, no se usa Nº como identidad y nunca se borran alumnos ausentes.
+La importación se limita al informe EDUCA «Listado mi alumnado» → «Por profesor» → Excel → Asignatura, seleccionando todas las asignaturas y las variantes finales «(Centro)». El `.xls` actual contiene OOXML/ZIP: se valida el contenido, se rechaza el XLS binario y se detectan hojas, descriptores y cabeceras sin posiciones fijas. Se concatena el rich text de shared strings, pero de Nombre solo se usa la primera línea y se separa por la primera coma. Las variantes normal y «(Centro)» se unen por asignatura normalizada y grupo, sin mezclar grupos. El informe no incluye ID estable ni email: la comparación de existentes usa Apellidos, Nombre y Grupo con normalización conservadora de espacios, separadores y Online/Virtual; una coincidencia ambigua se rechaza. Alumnado nuevo recibe UUID y Email vacío. El existente conserva ID, Email, REACA e Información / Medidas y adopta el Grupo oficial de EDUCA. No se excluye automáticamente por Estado, no se usa Nº como identidad y nunca se borran alumnos ausentes.
 
 Analizar y previsualizar no escribe hojas. Cada asignatura puede mapearse manualmente a cualquier actividad MODULO; la sugerencia automática requiere nombre completo y Grupo equivalentes sin ambigüedad. Dos fuentes no pueden compartir destino. El preview anuncia cuándo cambiará el Grupo del módulo. Al confirmar, el servidor vuelve a validar y parsea el mismo archivo, actualiza el Grupo de cada MODULO seleccionado al valor de EDUCA sin cambiar su `actividad_id`, sincroniza la validación de Grupo de Alumnado y las relaciones `EDUCA_XLS`, respetando las decisiones `MANUAL`. Pide confirmación ante bajas automáticas. El archivo no se almacena en Drive ni en propiedades. El gestor y el importador sincronizan de inmediato la Eval existente, sin Repair; las bajas conservan fila y notas en estado inactivo gris, sin validaciones de entrada y con protección gestionada de advertencia. Repair reproduce ese estado. Nuevo curso vacía las relaciones después del backup.
 
@@ -217,9 +211,11 @@ Desde Alumnado se puede analizar y sincronizar Google Contacts. Al abrir el diá
 
 Para `2026-2027` usa el prefijo `2627`. Cada actividad MODULO gestiona `2627 · Grupo · Sigla`, con alumnado de matrícula activa y Email válido. Solo si existe un roster completo de Tutoría importado para el curso y grupo activos se gestiona además una etiqueta `2627 · Grupo de tutoría`; no se crean etiquetas generales de otros grupos. La sincronización manual presenta y actualiza ambas familias. El Cuaderno no elimina contactos ni ContactGroups. La primera sincronización manual sin incidencias, o la importación de Tutoría con Contacts correcto, guarda `contacts_sync_course` en `_CONFIG`. Solo mientras esa clave coincide con el curso actual, guardar Matrículas o importar EDUCA sincroniza las etiquetas de los módulos afectados; nunca consulta People para comprobar la activación. Si People falla después de guardar, la operación académica sigue siendo correcta y se muestra un aviso no bloqueante. Editar únicamente Email no dispara la sincronización: el módulo lo recoge en el siguiente guardado de Matrículas, importación EDUCA o sincronización manual; Tutoría lo recoge en su reimportación o sincronización manual. Cada nuevo curso requiere una nueva importación del roster de Tutoría. No se usan triggers instalables.
 
-El importador independiente de Tutoría exige `es_tutor` y `grupo_tutoria`. Acepta exclusivamente el XLS binario OLE/BIFF8 de EDUCA obtenido por **Alumnado → Informes → Listado mi alumnado → Por grupo → Excel → grupo de tutoría → Todos los alumnos → Enviar**. Detecta semánticamente título, cabeceras, descriptor de grupo y alumnado sin depender de filas fijas. Rechaza el informe Por profesor/Asignatura y archivos corruptos o de formato distinto. Analizar solo lee el archivo y cruza identidad normalizada de Apellidos, Nombre y Grupo con 3 Alumnado. La pantalla intermedia muestra todo el grupo: precarga los Email existentes en campos editables y exige uno válido para cada alumno. Al confirmar, el servidor vuelve a parsear y validar el archivo y la asociación identidad/Email. El Email final reemplaza al anterior sin otra confirmación; se conservan ID, REACA y Medidas. Una identidad indistinguible bloquea la importación. El grupo oficial de EDUCA actualiza la configuración y la actividad Tutoría si es equivalente al configurado; uno realmente distinto se rechaza.
+El importador independiente de Tutoría exige `es_tutor` y `grupo_tutoria`. Acepta exclusivamente el XLS binario OLE/BIFF8 de EDUCA obtenido por **Alumnado → Informes → Listado mi alumnado → Por grupo → Excel → grupo de tutoría → Todos los alumnos → Enviar**. Detecta semánticamente título, cabeceras, descriptor de grupo y alumnado sin depender de filas fijas. Rechaza el informe Por profesor/Asignatura y archivos corruptos o de formato distinto. Analizar solo lee el archivo y cruza identidad normalizada de Apellidos, Nombre y Grupo con 3 Alumnado. La pantalla intermedia muestra todo el grupo en filas compactas: precarga los Email existentes y deja vacíos los desconocidos. Importar permanece activo; al pulsarlo, valida todos los Email, marca los vacíos o inválidos y lleva al primero sin llamar al servidor hasta corregirlos. Al confirmar, el servidor vuelve a parsear y validar el archivo y la asociación identidad/Email. El Email final reemplaza al anterior sin otra confirmación; se conservan ID, REACA e Información / Medidas. Una identidad indistinguible bloquea la importación. El grupo oficial de EDUCA actualiza la configuración y la actividad Tutoría si es equivalente al configurado; uno realmente distinto se rechaza.
 
-`_TUT_ALUMNADO` guarda únicamente `alumno_id`, `curso`, `grupo` y `activo`. El informe es autoritativo: los presentes quedan activos y los ausentes se desactivan sin borrar 3 Alumnado, matrículas, notas o contactos. La importación de Tutoría no modifica `_MATRICULAS`, Eval, Config ni Seg. Después del guardado académico sincroniza solo la etiqueta general de Tutoría con contactos por Email exacto; los ambiguos se omiten. Un fallo de People no revierte el guardado académico y muestra un aviso. Desactivar Soy tutor/a o cambiar realmente de grupo invalida el roster activo. Preparar nuevo curso conserva el roster en el backup y deja vacío el del cuaderno nuevo.
+Todo alumno de Tutoría existe también en 3 Alumnado, aunque no curse módulos. No se crea matrícula ni fila de Eval sin matrícula real. Ambos importadores compactan 3 Alumnado, conservan A:G por persona y ordenan Grupo → Apellidos → Nombre con comparación española estable; las filas anómalas permanecen después y los grupos reciben separadores visuales. Repair reproduce cabecera, validaciones, checkbox, protecciones y separadores sin ordenar.
+
+`_TUT_ALUMNADO` guarda únicamente `alumno_id`, `curso`, `grupo` y `activo`. El informe es autoritativo: los presentes quedan activos y los ausentes se desactivan sin borrar 3 Alumnado, matrículas, notas o contactos. La importación de Tutoría no modifica `_MATRICULAS`, Eval, las hojas 4 Config ni Seg. Después del guardado académico sincroniza solo la etiqueta general de Tutoría con contactos por Email exacto; los ambiguos se omiten. Un fallo de People no revierte el guardado académico y muestra un aviso. Desactivar Soy tutor/a o cambiar realmente de grupo invalida el roster activo. Preparar nuevo curso conserva el roster en el backup y deja vacío el del cuaderno nuevo.
 
 
 # 11. Configuración de una impartición
@@ -362,19 +358,19 @@ Al preparar otro curso, cada seguimiento activo se materializa y archiva como `5
 
 # 13. Evaluación
 
-`6 Eval <SIGLA> · <GRUPO>` usa tres filas de cabecera, congela A:C y las tres primeras filas, y muestra Apellidos, Nombre e Información / Medidas a la izquierda. Cada evaluación configurada forma un bloque con sus UT activas en orden, `Media nª` y `Educa nª`; el bloque FINAL contiene `Media final` y `Educa final`. Los nombres de evaluaciones proceden de Calendario. La fila 1 usa los colores primario y de acento del tema; la fila 2 usa el secundario salvo las UT, que conservan su color propio. La fila 3 referencia directamente el peso de cada UT en Config y se actualiza al cambiarlo. La Note de cada UT contiene su nombre completo. La celda Información / Medidas muestra `REACA` si corresponde o queda vacía, y tiene una Note con el texto de Medidas con independencia de REACA. Grupo, Email y el UUID técnico no son visibles.
+`6 Eval <SIGLA> · <GRUPO>` usa tres filas de cabecera, congela A:C y las tres primeras filas, y muestra Apellidos, Nombre y REACA a la izquierda. Cada evaluación configurada forma un bloque con sus UT activas en orden, `Media nª` y `Educa nª`; el bloque FINAL contiene `Media final` y `Educa final`. Los nombres de evaluaciones proceden de Calendario. La fila 1 usa los colores primario y de acento del tema; la fila 2 usa el secundario salvo las UT, que conservan su color propio. La fila 3 referencia directamente el peso de cada UT en Config y se actualiza al cambiarlo. La Note de cada UT contiene su nombre completo. La celda REACA muestra `REACA` si corresponde o queda vacía, y tiene una Note con el texto de Información / Medidas con independencia de REACA. Grupo, Email y el UUID técnico no son visibles.
 
 Las notas UT son entradas de 0 a 10 con hasta dos decimales, visibles como `0,00`; la celda vacía queda visualmente vacía y cuenta como cero en el cálculo. Cada media de evaluación redondea a dos decimales la suma de `nota UT × Peso (%) / 100`, referenciando directamente M28:M42 de su `4 Config`. La media final redondea a dos decimales la suma de `Media nª × Peso final / 100` y referencia AH29:AH(28+n) de Config. Cambiar pesos actualiza las medias sin Repair. Educa por evaluación y final son entradas manuales independientes: entero 1–10 o `MH`, con vacío permitido. `MH` se muestra literalmente y equivale a 10 para el semáforo; Educa no interviene en Media final.
 
 Educa se conserva como texto discreto al ordenar o reparar: los números y formatos heredados inequívocos como `3,00` pasan a `3`, mientras la fila MEDIA DEL GRUPO mantiene formato numérico. Las filas de alumnos ausentes o desmatriculados conservan notas y Notes, se muestran en gris oscuro y pierden temporalmente validaciones de UT/Educa. Su fila de entrada recibe una protección `CUADERNO:EVAL_INACTIVO:<alumno_id>` de advertencia. Si el ID vuelve a estar activo, se recuperan estilo, validaciones y edición normal.
 
-En filas activas, las notas visibles no vacías muestran solo color de texto: menos de 5 rojo `#C62828`, de 5 a menos de 7 azul `#1565C0`, de 7 a menos de 9 verde `#2E7D32`, desde 9 o `MH` dorado `#B26A00`. Una media cero muestra `0,00` rojo; una UT vacía no se colorea. Media y Medidas usan fondo gris suave; Educa mantiene fondo amarillo suave y negrita incluso rellena. En filas inactivas prevalece el gris de estado sobre el semáforo. Las columnas de notas son compactas y los bordes entre alumnos y columnas son finos, con mayor separación entre bloques.
+En filas activas, las notas visibles no vacías muestran solo color de texto: menos de 5 rojo `#C62828`, de 5 a menos de 7 azul `#1565C0`, de 7 a menos de 9 verde `#2E7D32`, desde 9 o `MH` dorado `#B26A00`. Una media cero muestra `0,00` rojo; una UT vacía no se colorea. Media y REACA usan fondo gris suave; Educa mantiene fondo amarillo suave y negrita incluso rellena. En filas inactivas prevalece el gris de estado sobre el semáforo. Las columnas de notas son compactas y los bordes entre alumnos y columnas son finos, con mayor separación entre bloques.
 
-Cada fila de Eval conserva `alumno_id` oculto. Al crear, importar, guardar matrículas o reparar, el alumnado queda ordenado por Apellidos y Nombre mediante ese ID: notas UT, Educa, Notes y filas históricas siguen asociadas al alumno correcto; los alumnos nuevos se intercalan en su lugar. `Reparar estructura`, al seleccionar 6 Eval, migra las Eval de 1.7.0 con sus notas a la cabecera de tres filas, actualiza Información / Medidas y reinstala fórmulas, validaciones y formato. Importar y guardar matrículas sincronizan la Eval existente sin Repair ni trigger. Si la estructura de UT ya no coincide, preserva Eval y avisa sin reconstruirla. Si se borró la hoja, puede crear una nueva sin alterar `5 Seg`; las notas perdidas solo están en el backup. Preparar nuevo curso elimina Eval tras el backup.
+Cada fila de Eval conserva `alumno_id` oculto. Al crear, importar, guardar matrículas o reparar, el alumnado queda ordenado por Apellidos y Nombre mediante ese ID: notas UT, Educa, Notes y filas históricas siguen asociadas al alumno correcto; los alumnos nuevos se intercalan en su lugar. `Reparar estructura`, al seleccionar 6 Eval, migra las Eval de 1.7.0 con sus notas a la cabecera de tres filas, actualiza REACA y reinstala fórmulas, validaciones y formato. Importar y guardar matrículas sincronizan la Eval existente sin Repair ni trigger. Si la estructura de UT ya no coincide, preserva Eval y avisa sin reconstruirla. Si se borró la hoja, puede crear una nueva sin alterar `5 Seg`; las notas perdidas solo están en el backup. Preparar nuevo curso elimina Eval tras el backup.
 
 Una fila final `MEDIA DEL GRUPO` muestra con dos decimales la media de cada UT (vacío = 0), de cada Media de evaluación y de Media final. En las columnas Educa promedia solo los valores rellenos y trata `MH` como 10; si no hay valores muestra vacío. Sus fórmulas se actualizan al editar notas sin triggers y aplican el mismo semáforo, conservando fondo gris.
 
-Las celdas generadas y técnicas de las hojas gestionadas tienen protección nativa de solo advertencia. El docente puede confirmar una edición consciente y conserva la edición normal de Email/REACA/Medidas en Alumnado, los campos de entrada de Config, los campos docentes de Seg y las notas UT/Educa de alumnos activos en Eval. Las protecciones propias llevan prefijo `CUADERNO:`; Reparar actualiza solo esas protecciones y no modifica las protecciones manuales ni las hojas ajenas. Los seguimientos OLD y las hojas técnicas tienen advertencia en toda la hoja. El propietario conserva el control de las protecciones de Google Sheets.
+Las celdas generadas y técnicas de las hojas gestionadas tienen protección nativa de solo advertencia. El docente puede confirmar una edición consciente y conserva la edición normal de Email/REACA/Información / Medidas en Alumnado, los campos de entrada de Config, los campos docentes de Seg y las notas UT/Educa de alumnos activos en Eval. Las protecciones propias llevan prefijo `CUADERNO:`; Reparar actualiza solo esas protecciones y no modifica las protecciones manuales ni las hojas ajenas. Los seguimientos OLD y las hojas técnicas tienen advertencia en toda la hoja. El propietario conserva el control de las protecciones de Google Sheets.
 
 # 14. Generación, estados y ayuda
 
@@ -423,7 +419,7 @@ Los errores se expresan en lenguaje comprensible y no dejan estructuras parciale
 2. Confirmar profesor, centro y tema.
 3. Configurar calendario.
 4. Configurar horario, incluyendo actividades `MODULO` y grupos.
-5. Importar alumnado desde EDUCA y revisar las matrículas de módulos.
+5. Importar alumnado de módulos y revisar Matrículas de módulos. Si eres tutor/a, importar el grupo completo de Tutoría y revisar todos los Email; sincronizar Google Contacts cuando lo desees.
 6. Generar y completar `4 Config` para cada impartición.
 7. Recalcular su calendario de UT.
 8. Generar `5 Seg` y `6 Eval` cuando sus prerrequisitos estén listos.
@@ -436,14 +432,14 @@ No todo debe completarse al principio del curso.
 - Completado: núcleo, Portada, Calendario y Horario.
 - Completado: Alumnado y primera fase de Configuración individual de módulo.
 - Completado: ponderaciones de `4 Config`, Seguimiento y Evaluación.
-- Futuro: validaciones finales, ayuda ampliada, accesibilidad y pruebas adicionales; `7 Tutoría` permanece en el roadmap futuro.
+- Diferido: Google Calendar opcional y un registro avanzado de Tutoría (`7 Tutoría`) solo si el uso real demuestra necesidad; su alcance no está definido. Accesibilidad, rendimiento y pruebas adicionales son mantenimiento.
 
 # 19. Decisiones cerradas
 
 - No existe `3 Módulos`.
 - Cada actividad `MODULO` es una impartición independiente identificada por `actividad_id`.
 - No existe configuración automática compartida entre grupos.
-- `3 Alumnado` es global; Email, REACA y Medidas son editables, mientras la identificación académica procede de EDUCA.
+- `3 Alumnado` es global; Email, REACA e Información / Medidas son editables, mientras la identificación académica procede de EDUCA.
 - La matrícula explícita existe desde el esquema 13; los módulos legacy conservan la pertenencia por Grupo hasta su primera importación o guardado manual.
 - Config, Seg y Eval se agrupan por tipo en las pestañas.
 - Cada impartición tiene calendario propio calculado desde sesiones reales.

@@ -1,12 +1,12 @@
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
   const config = getGeneralConfigValues_(SpreadsheetApp.getActiveSpreadsheet());
-  const studentsMenu = ui.createMenu(CP.MENU.STUDENTS)
-    .addItem(CP.MENU.EDUCA_IMPORT, 'abrirImportadorEduca');
+  const studentsMenu = ui.createMenu(CP.MENU.STUDENTS);
   if (isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR])) {
-    studentsMenu.addItem(CP.MENU.TUTOR_IMPORT, 'abrirImportadorTutoria');
+    studentsMenu.addItem(CP.MENU.TUTOR_IMPORT, 'abrirImportadorTutoria').addSeparator();
   }
   studentsMenu
+    .addItem(CP.MENU.EDUCA_IMPORT, 'abrirImportadorEduca')
     .addItem(CP.MENU.MODULE_ENROLLMENTS, 'abrirMatriculasModulos')
     .addItem(CP.MENU.CONTACTS_SYNC, 'abrirSincronizacionContactos');
 

@@ -17,6 +17,13 @@ context.getActiveTheme_ = () => ({});
 context.createUiThemeCss_ = () => '';
 assert.strictEqual(context.getSidebarData_().feedbackFormUrl, feedbackUrl);
 const sections = context.getSidebarHelpSections_('evaluation');
+const helpText = sections.map(section => [section.title, section.text, section.keywords,
+  ...section.bullets, ...(section.faqs || []).flat()].join(' ')).join(' ');
+for (const phrase of ['Importar grupo de tutoría', 'Importar alumnado de módulos',
+  'Información / Medidas', 'REACA', 'Matrículas de módulos', 'Sincronizar Google Contacts']) {
+  assert(helpText.includes(phrase), phrase);
+}
+assert(!helpText.includes('Importar alumnado desde EDUCA'));
 const importHelp = sections.find(item => item.id === 'educa-import');
 const enrollmentHelp = sections.find(item => item.id === 'module-enrollments');
 const contactsHelp = sections.find(item => item.id === 'google-contacts');

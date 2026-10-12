@@ -50,6 +50,8 @@ const ctx = vm.createContext({
   installManagedSheetProtections_: () => {},
   isValidContactEmail_: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
   normalizeContactEmail_: v => String(v || '').trim().toLowerCase(),
+  isStudentRowEmpty_: row => row.every((value, index) => index === 4 ? !value : !value),
+  normalizeStudentsAfterManagedImport_: () => { ctx.normalizations = (ctx.normalizations || 0) + 1; },
 });
 for (const file of ['EducaTutorBiff.gs', 'TutorRoster.gs', 'EducaTutorImport.gs']) {
   vm.runInContext(fs.readFileSync(file, 'utf8'), ctx);
@@ -85,6 +87,17 @@ config.group = 'SMR 1A';
 assert.strictEqual(ctx.getActiveTutorRoster_(book, config).length, 0);
 ctx.clearTutorRosterForNewCourse_();
 assert.strictEqual(ctx.readTutorRosterRows_(book).length, 0);
+const prepared = [sheets.students.rows[0],
+  ['Pérez', 'Ana', 'DAM 2A', 'old@example.test', true, 'Apoyo', 'A']];
+while (prepared.length < 201) prepared.push(['', '', '', '', false, '', '']);
+sheets.students.rows = prepared;
+const newcomers = makeReport([['Nuevo', 'Uno'], ['Nuevo', 'Dos']]);
+const newcomerPlan = ctx.buildTutorImportPlan_(book, newcomers);
+ctx.applyTutorStudents_(book, newcomerPlan, Object.fromEntries(newcomerPlan.map(
+  (row, index) => [row.key, `new${index}@example.test`])));
+assert.equal(sheets.students.rows[2][0], 'Nuevo');
+assert.equal(sheets.students.rows[3][0], 'Nuevo');
+assert.equal(sheets.students.rows[200][0], '');
 const localXls = '_local_testdata/rptALMPorGrupo.xls';
 if (fs.existsSync(localXls)) {
   const real = ctx.parseTutorEducaFile_({ getBytes: () => [...fs.readFileSync(localXls)] });
@@ -117,6 +130,7 @@ const finalEmails = JSON.stringify({ [one.students[0].key]: 'final@example.test'
 const academic = ctx.importarAlumnadoTutoria({ archivo: {}, emails: finalEmails });
 assert.strictEqual(academic.imported, 1);
 assert.strictEqual(academic.academicImported, true);
+assert.strictEqual(ctx.normalizations, 1);
 assert.strictEqual(academic.contactsOk, true);
 assert.strictEqual(JSON.parse(JSON.stringify(academic)).academicImported, true);
 assert.strictEqual(config.group, 'DAM 2A');

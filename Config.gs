@@ -1,6 +1,6 @@
 const CP = Object.freeze({
   PROJECT_NAME: 'Cuaderno del Profesor',
-  NOTEBOOK_VERSION: '1.13.1',
+  NOTEBOOK_VERSION: '1.13.2',
   SCHEMA_VERSION: '14',
   FEEDBACK_FORM_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSeGNIgzDp0hLj8vymzhPSuRBqkS1RNe5l2pRughEmRmwNjNBw/viewform?usp=publish-editor',
   TAB_COLORS: Object.freeze({
@@ -62,9 +62,9 @@ const CP = Object.freeze({
     MODULE_CONFIG_CREATE: '🗓️ Crear configuración de módulo',
     MODULE_CONFIG_RECALCULATE: '🔄 Recalcular configuración del módulo',
     MODULE_TRACKING_CREATE: '📋 Crear seguimiento y evaluación',
-    EDUCA_IMPORT: '📥 Importar alumnado desde EDUCA',
-    TUTOR_IMPORT: '👥 Importar alumnado de tutoría',
-    MODULE_ENROLLMENTS: '👥 Matrículas de módulos',
+    EDUCA_IMPORT: '📥 Importar alumnado de módulos',
+    TUTOR_IMPORT: '🎓 Importar grupo de tutoría',
+    MODULE_ENROLLMENTS: '✅ Matrículas de módulos',
     CONTACTS_SYNC: '📇 Sincronizar Google Contacts',
     HELP: '❓ Ayuda',
   }),

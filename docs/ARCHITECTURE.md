@@ -1,8 +1,8 @@
 # Arquitectura técnica
 
 **Estado:** vigente
-**Última revisión:** 2026-10-10
-**Versión:** `1.9.0` / esquema `11`
+**Última revisión:** 2026-10-12
+**Versión:** `1.13.2` / esquema `14`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -25,7 +25,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.9.0`, esquema `11` y paleta fija de pestañas.
+- `Config.gs`: constantes, nombres de hojas, versión `1.13.2`, esquema `14` y paleta fija de pestañas.
 - `Theme.gs`: tema global, presets, aliases de compatibilidad y colores semánticos. La lectura detecta tríos originales sin personalización para aplicar la nueva paleta; la reparación persiste el ID canónico y los colores resueltos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -33,7 +33,11 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 - `Calendar.gs`: modelo y vista del calendario escolar.
 - `Schedule.gs`: modelo, validación, persistencia y consultas de Horario.
 - `ScheduleView.gs`: renderizado de `2 Horario`.
-- `Students.gs`: estructura, tema, estado y limpieza anual de `3 Alumnado`.
+- `Students.gs`: estructura, normalización tras importaciones, separadores de grupo, estado y limpieza anual de `3 Alumnado`.
+- `EducaImport.gs`, `EducaTutorBiff.gs` y `EducaTutorImport.gs`: informes EDUCA de módulos y Tutoría.
+- `Matriculas.gs`: pertenencia explícita a módulos.
+- `TutorRoster.gs`: roster anual de Tutoría.
+- `Contacts.gs`: vista externa por Email mediante Advanced People Service.
 - `ModuleConfig.gs`: registro, creación, calendario, UT y planificación de `4 Config`.
 - `Tracking.gs`: creación conjunta, snapshot, reparación y archivo anual de `5 Seg`/`6 Eval`.
 - `Evaluation.gs`: layout, fórmulas y sincronización conservadora de `6 Eval`.
@@ -55,7 +59,9 @@ No se crean capas o abstracciones sin necesidad real.
 | Versión y esquema | `Config.gs` | `_META` y UI |
 | Calendario escolar | `_CAL_TIPOS`, `_CAL_EVALUACIONES`, `_FECHAS`, `_CAL_FECHA_TIPOS` | `1 Calendario` y calendarios de módulo |
 | Horario | `_HOR_TRAMOS`, `_HOR_ACTIVIDADES`, `_HOR_SESIONES` | `2 Horario` y sesiones reales de módulo |
-| Alumnado | `3 Alumnado` | `6 Eval ...` |
+| Alumnado: identidad global, Email, REACA e Información / Medidas | `3 Alumnado` | Matrículas, Tutoría, Contacts y `6 Eval ...` |
+| Roster anual de Tutoría | `_TUT_ALUMNADO` | etiqueta general de Tutoría en Contacts |
+| Contactos por Email | `3 Alumnado`, `_MATRICULAS` y `_TUT_ALUMNADO` | Google Contacts como vista externa derivada |
 | Matrículas por módulo | `_MATRICULAS`, `_MATRICULAS_META` | `6 Eval ...` |
 | Configuración de impartición | tabla editable de `4 Config <SIGLA> · <GRUPO>` | calendario propio, `5 Seg ...` y `6 Eval ...` |
 | Registro y plan calculado | `_MOD_CONFIG`, `_MOD_PLAN` | identidad estable de Config/Seg/Eval, estado y plan inicial |
@@ -76,11 +82,14 @@ _CAL_FECHA_TIPOS
 _HOR_TRAMOS
 _HOR_ACTIVIDADES
 _HOR_SESIONES
+_MATRICULAS
+_MATRICULAS_META
+_TUT_ALUMNADO
 _MOD_CONFIG
 _MOD_PLAN
 ```
 
-Todas permanecen ocultas. No existen `_MODULOS`, `_MATRICULAS` ni `_UT`: las UT editables no se duplican en otra tabla técnica.
+Todas permanecen ocultas. No existen `_MODULOS` ni `_UT`: las UT editables no se duplican en otra tabla técnica.
 
 `_META` se reconstruye desde `Config.gs` y escribe `version_cuaderno` y `version_esquema` como texto literal. La versión no se duplica como constante en otros módulos.
 
@@ -142,7 +151,7 @@ No existe sincronización entre actividades con la misma sigla. Cada grupo manti
 
 # 9. Modelo de Alumnado
 
-`3 Alumnado` conserva las identidades importadas: A:C y la cabecera quedan protegidas con advertencia, D:F permiten editar Email, REACA y Medidas, y G guarda `alumno_id` (UUID) oculto y protegido. La protección `CUADERNO:STUDENTS` deja desprotegido solo D:F en las filas de datos, también en futuras filas; Repair la reinstala sin tocar protecciones ajenas.
+`3 Alumnado` conserva las identidades importadas: A:C y la cabecera quedan protegidas con advertencia, D:F permiten editar Email, REACA e Información / Medidas, y G guarda `alumno_id` (UUID) oculto y protegido. La protección `CUADERNO:STUDENTS` deja desprotegido solo D:F en las filas de datos, también en futuras filas; Repair la reinstala sin tocar protecciones ajenas.
 
 `createOrRepairStudentsSheet_()`:
 
@@ -161,7 +170,7 @@ No existe sincronización entre actividades con la misma sigla. Cada grupo manti
 
 `Contacts.gs` usa Advanced People Service v1 con el scope `https://www.googleapis.com/auth/contacts`, añadido por la autodetección de Apps Script. Lee todas las páginas de `People.People.Connections.list` y `People.ContactGroups.list`. Calcula etiquetas de módulo con matrícula activa y Email válido y, si hay roster anual activo de Tutoría, una etiqueta general solo para ese grupo. El preview consulta People sin mutar; la ejecución manual revalida las fuentes bajo `LockService`. Crea contactos por email si faltan, reutiliza coincidencias inequívocas y omite ambigüedades. Crea o reutiliza etiquetas exactas y actualiza sus miembros por lotes de hasta 1000 con `ContactGroups.Members.modify`. En una importación que cambia el Grupo, intenta renombrar la antigua etiqueta del módulo mediante `ContactGroups.update` si el nombre anterior y el destino son inequívocos; nunca elimina ContactGroups. Tras una ejecución manual completa o importación de Tutoría con Contacts correcto guarda `contacts_sync_course` en `_CONFIG`; el guardado de Matrículas y la importación EDUCA comprueban solo ese dato local antes de lanzar la sincronización incremental de módulos afectados, fuera del bloqueo académico. Un fallo de People produce aviso sin revertir los datos académicos. No hay triggers instalables ni scopes adicionales.
 
-`EducaTutorBiff.gs` es un parser independiente del OOXML/ZIP de `EducaImport.gs`. Lee en memoria OLE/CFB (cabecera, FAT/DIFAT, directorio y stream Workbook/Book) y los registros BIFF8 necesarios, incluidos SST/CONTINUE, Unicode y rich text. Limita el archivo a 5 MB y reconoce semánticamente el informe «Alumnos por grupo», sus cabeceras y el descriptor «Grupo …». `EducaTutorImport.gs` valida Tutoría activa, grupo equivalente e identidad sin duplicados. El análisis no escribe. La importación reparsea bajo bloqueo, valida un Email por clave de identidad, actualiza 3 Alumnado conservando ID/REACA/Medidas y registra el grupo completo en `_TUT_ALUMNADO` (`alumno_id`, `curso`, `grupo`, `activo`). El roster es independiente de `_MATRICULAS`; no modifica Eval, Config ni Seg. Contacts se sincroniza después del guardado académico y un fallo no revierte ese guardado. `TutorRoster.gs` crea, valida, oculta y protege la hoja con advertencia `CUADERNO:` durante Repair; el nuevo curso la vacía tras el backup. Al desactivar Tutoría o cambiar realmente de grupo se invalida el roster anterior.
+`EducaTutorBiff.gs` es un parser independiente del OOXML/ZIP de `EducaImport.gs`. Lee en memoria OLE/CFB (cabecera, FAT/DIFAT, directorio y stream Workbook/Book) y los registros BIFF8 necesarios, incluidos SST/CONTINUE, Unicode y rich text. Limita el archivo a 5 MB y reconoce semánticamente el informe «Alumnos por grupo», sus cabeceras y el descriptor «Grupo …». `EducaTutorImport.gs` valida Tutoría activa, grupo equivalente e identidad sin duplicados. El análisis no escribe. La importación reparsea bajo bloqueo, valida un Email por clave de identidad, actualiza 3 Alumnado conservando ID/REACA/Información / Medidas y registra el grupo completo en `_TUT_ALUMNADO` (`alumno_id`, `curso`, `grupo`, `activo`). El roster es independiente de `_MATRICULAS`; los alumnos exclusivos de Tutoría existen en 3 Alumnado y no adquieren matrícula ni Eval. Ambos importadores llaman al normalizador común de Alumnado tras sus mutaciones por fila: compacta, ordena Grupo → Apellidos → Nombre, restaura formato y separadores, y conserva A:G por UUID; no modifica Eval, las hojas 4 Config ni Seg. Contacts se sincroniza después del guardado académico y un fallo no revierte ese guardado. `TutorRoster.gs` crea, valida, oculta y protege la hoja con advertencia `CUADERNO:` durante Repair; el nuevo curso la vacía tras el backup. Al desactivar Tutoría o cambiar realmente de grupo se invalida el roster anterior.
 
 La llamada final del importador devuelve un DTO simple con `ok`, `academicImported`, `contactsOk`, `contactsWarning` y, en caso de error académico, `message`. El frontend cierra solo ante éxito académico; tanto un resultado negativo como una excepción del servidor detienen el loading y mantienen el preview con error visible. Al desactivar Tutoría, `Schedule.gs` persiste primero la eliminación de sus sesiones y después la actividad. La lectura de Horario reutiliza la referencia bound al Spreadsheet y excluye del modelo de UI las sesiones cuya actividad ya no existe; abrir el diálogo no repara hojas.
 
@@ -237,7 +246,7 @@ En el cambio de curso se capturan los valores calculados de Acum./Total, se mate
 
 `Evaluation.gs` construye la hoja visible desde las UT activas y evaluaciones de Config. Las notas UT y Educa viven únicamente en `6 Eval`; una columna técnica oculta vincula cada fila a `alumno_id`. Las tres filas de cabecera muestran bloques temáticos, columnas y pesos de UT por fórmula directa a M28:M42. Las fórmulas de Media referencian M28:M42 y AH29:AH(28+n) de Config. No existe hoja técnica de notas ni snapshot de pesos.
 
-Repair conserva el `sheet_id` de las hojas vacías 1.6.x y las rellena in-place. En hojas funcionales compara el esquema de columnas antes de escribir; una discrepancia de UT genera aviso y preserva la hoja. Si coincide, migra la tercera fila de cabecera de 1.7.0 mediante inserción, lee valores, fórmulas y Notes por `alumno_id`, sincroniza A:C, añade alumnos y reescribe el bloque ordenado por apellido y nombre. Después reinstala fórmulas derivadas y la fila `MEDIA DEL GRUPO`; las entradas y los ausentes históricos permanecen asociados a su UUID. Si Eval fue borrada, puede recrearla sin tocar Seg. Preparar nuevo curso la elimina tras el backup.
+Repair conserva el `sheet_id` de las hojas vacías 1.6.x y las rellena in-place. En hojas funcionales compara el esquema de columnas antes de escribir; una discrepancia de UT genera aviso y preserva la hoja. Si coincide, identifica la cabecera histórica de dos filas por su estructura y la migra mediante inserción. Las Eval modernas de tres filas cambian solo la cabecera C a REACA, sin insertar; lee valores, fórmulas y Notes por `alumno_id`, sincroniza A:C, añade alumnos y reescribe el bloque ordenado por apellido y nombre. Después reinstala fórmulas derivadas y la fila `MEDIA DEL GRUPO`; las entradas y los ausentes históricos permanecen asociados a su UUID. Si Eval fue borrada, puede recrearla sin tocar Seg. Preparar nuevo curso la elimina tras el backup.
 
 `Protections.gs` usa protecciones de hoja `setWarningOnly(true)` con excepciones de edición para los campos docentes. Una descripción `CUADERNO:<tipo>` identifica las protecciones propias; la instalación actualiza o sustituye únicamente las propias y deja intactas las manuales. Las hojas técnicas, Portada, Calendario, Horario y Seg OLD se protegen completas; Alumnado, Config, Seg y Eval exponen solo sus entradas. El paso de Repair se ejecuta tras reconstruir rangos y es idempotente. Las nuevas Config, Seg y Eval reciben protección al crearse.
 
@@ -267,9 +276,9 @@ El botón X del marco nativo no puede bloquearse; por ello cada paso debe ser se
 # 14. Restricciones vigentes
 
 - Sin triggers instalables.
-- Sin People API.
+- Advanced People Service con scope de contactos vigente.
 - Sin integración obligatoria con Google Calendar.
-- Sin `_MODULOS`, `_MATRICULAS` ni `_UT` anticipados.
+- Sin `_MODULOS` ni `_UT` anticipados.
 - Sin herencia o sincronización automática entre grupos.
 - Sin usar colores o nombres de pestaña como identidad única.
 - Sin datos personales reales en CP_DEV, GitHub o `clasp`.

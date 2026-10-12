@@ -227,6 +227,7 @@ context.ensureSheetSize_ = () => {};
 context.groupConsecutiveRows_ = numbers => numbers.map(start => ({ start, count: 1 }));
 context.Utilities.getUuid = () => 'ID-NEW';
 context.createOrRepairStudentsSheet_ = () => {};
+context.isStudentRowEmpty_ = row => row.every((value, index) => index === 4 ? !value : !value);
 context.writeEducaNewStudents_({ getSheetByName: () => studentTable },
   [{ surname: 'Apellido Dos', name: 'Pedro', group: 'DAM 2A' }]);
 assert.deepEqual(existingRow, ['Apellido Uno', 'Ana', 'DAM 2A',
@@ -234,6 +235,17 @@ assert.deepEqual(existingRow, ['Apellido Uno', 'Ana', 'DAM 2A',
 assert.deepEqual(JSON.parse(JSON.stringify(studentWrites[0])), { row: 3, values: [[
   'Apellido Dos', 'Pedro', 'DAM 2A', '', false, '', 'ID-NEW',
 ]] });
+studentWrites.length = 0;
+const anomaly = ['', '', '', '', false, 'Revisar manualmente', ''];
+const reserved = ['', '', '', '', false, '', ''];
+const studentTableWithGap = { getLastRow: () => 4, getRange(row, col, count) { return {
+  getValues: () => [existingRow, anomaly, reserved],
+  setValues: values => studentWrites.push({ row, values }),
+}; } };
+context.writeEducaNewStudents_({ getSheetByName: () => studentTableWithGap },
+  [{ surname: 'Apellido Dos', name: 'Pedro', group: 'DAM 2A' }]);
+assert.equal(anomaly[5], 'Revisar manualmente');
+assert.equal(studentWrites[0].row, 4, 'no sobrescribe una fila anómala');
 const existing = { id: 'ID-A', surname: 'Apellido Uno', name: 'Ana', group: 'DAM 2A',
   email: 'ana@example.invalid', reaca: true, measures: 'Adaptación' };
 let studentState = [existing], enrollmentState = [], modeState = {}, repaired = [];
@@ -267,6 +279,8 @@ context.syncEducaExistingStudentGroups_ = (_book, plan) => {
 };
 let groupValidationSyncs = 0;
 context.syncStudentGroupValidation_ = () => { groupValidationSyncs++; };
+let normalizations = 0;
+context.normalizeStudentsAfterManagedImport_ = () => { normalizations++; };
 context.createOrRepairScheduleSheet_ = () => {};
 const firstReport = fixture([{ subject: 'Módulo',
   names: ['Apellido Uno, Ana', 'Apellido Dos, Pedro'] }]);
@@ -284,6 +298,7 @@ assert.equal(studentState[1].email, '');
 assert.equal(enrollmentState.filter(item => item.active).length, 2);
 assert.equal(modeState.M1, true);
 assert.deepEqual(Array.from(repaired), ['M1']);
+assert.equal(normalizations, 1);
 const secondReport = fixture([{ subject: 'Módulo', names: ['Apellido Uno, Ana'] }]);
 assert.throws(() => context.importarAlumnadoEduca({ archivo: secondReport,
   mapping: '{}', confirmDrops: 'false' }), /Confirma primero/);

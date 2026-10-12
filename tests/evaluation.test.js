@@ -27,7 +27,7 @@ const blocks = [
 ];
 const layout = context.getEvaluationLayout_(blocks);
 assert.strictEqual(JSON.stringify(context.getEvaluationHeaders_(layout)), JSON.stringify([
-  'Apellidos', 'Nombre', 'Información / Medidas', 'UT1', 'UT2', 'Media 1ª', 'Educa 1ª',
+  'Apellidos', 'Nombre', 'REACA', 'UT1', 'UT2', 'Media 1ª', 'Educa 1ª',
   'Media 2ª', 'Educa 2ª', 'Media final', 'Educa final', 'alumno_id',
 ]));
 assert.strictEqual(layout.idColumn, 12);

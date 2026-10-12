@@ -1,11 +1,21 @@
 # Estado del proyecto
 
+**Estado general:** alcance funcional del curso actual cerrado y operativo; las ampliaciones futuras quedan diferidas.
+
 **Última actualización:** 2026-10-12
-**Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.13.1`
+**Versión vigente:** `1.13.2`
 **Esquema vigente:** `14`
 
-## Estabilización Tutoría y menú 1.13.1
+## Parche final de cierre 1.13.2
+
+- Menú Alumnado definitivo, importador de Tutoría compacto con validación de todos los Email al pulsar, y ambos importadores compactan y ordenan 3 Alumnado por Grupo → Apellidos → Nombre con separadores. Los alumnos exclusivos de Tutoría permanecen en Alumnado y roster sin matrícula automática.
+- Cabecera F de Alumnado: Información / Medidas. Cabecera C de Eval: REACA; Repair distingue la Eval histórica de dos filas de la moderna y no inserta filas en la moderna. Ayuda y documentación actualizadas. Esquema 14.
+
+## Estabilización Tutoría y menú 1.13.1 (histórico)
+
+Las entradas anteriores a 1.13.2 documentan su evolución; los pendientes antiguos no son el estado vigente.
+
+Las entradas anteriores a 1.13.2 documentan su evolución; los pendientes antiguos no son el estado vigente.
 
 - El menú separa Alumnado (importadores, Matrículas y Contacts) de Módulos (Config, Seguimiento y Evaluación); Tutoría aparece solo con Soy tutor/a activo.
 - El ciclo Tutoría desactivada/reactivada elimina primero sus sesiones y después su actividad, limpia el ID gestionado y conserva las demás asignaciones. El modelo de Horario ignora referencias huérfanas a actividades eliminadas sin modificar las hojas al abrir. Si falla la lectura, el diálogo muestra un error claro y permite reintentar o cerrar.
@@ -99,7 +109,7 @@
 - Seguridad conserva backup verificado, transición anual y recuperación defensiva. Los pasos de configuración guardan datos técnicos sin reconstruir hojas visibles; Finalizar o Cancelar después de Seguridad aplica una fase automática única de vistas y mantenimiento.
 - Stepper navegable por pasos visitados: completado solo tras revisión, warnings ámbar con motivo y errores reales en rojo. Resumen en cards con el mismo estado. Loading central y formularios embebidos con altura dinámica y un único scroll.
 - Seguridad y Apariencia compactas; selector de temas actualiza los tres colores. Actividades expande una sola ficha; Horario usa «Docente de apoyo».
-- Pendiente de validación manual en `CP_DEV`: recorrido visual, cancelación tras guardados, scroll con muchas actividades y vistas finales con calendario u horario pendientes.
+- En este hito histórico se anotó una validación visual posterior del asistente.
 
 ## Correctivo visual 1.8.3
 
@@ -154,10 +164,10 @@
 - Sidebar, Portada y reparación integrados.
 - `actividad_id` fijado como identidad estable de cada impartición; no se creará `3 Módulos` ni `_MODULOS`.
 
-# Alumnado — FUNCIONANDO
+# Alumnado — FUNCIONANDO (resumen histórico; estado vigente arriba)
 
 - Creada `3 Alumnado` como hoja global, visible y editable.
-- Columnas visibles: `Apellidos`, `Nombre`, `Grupo`, `Email`, `REACA`, `Medidas`; UUID técnico oculto por alumno.
+- Columnas visibles: `Apellidos`, `Nombre`, `Grupo`, `Email`, `REACA`, `Información / Medidas`; UUID técnico oculto por alumno.
 - Tema, anchos, cabecera congelada, Email en texto y área preparada para pegado.
 - Reparación idempotente que conserva las filas de alumnado.
 - Estado `Pendiente`/`Configurado` y ayuda contextual en el Sidebar; Email no es obligatorio.
@@ -165,7 +175,7 @@
 - Índice dinámico y orden de hojas gestionadas integrados.
 - Reparación secuencial corregida: sus respuestas al navegador contienen solo datos serializables y los errores identifican el paso fallido sin dejar el spinner activo.
 
-Pendiente de cierre del bloque:
+Validaciones que estaban pendientes en este hito histórico:
 
 - validación manual en `CP_DEV` de creación, pegado, estado, reparación y limpieza anual;
 - confirmación visual del tema y de la posición tras `2 Horario`.
@@ -237,7 +247,7 @@ Pendiente de cierre del bloque:
 - Los pendientes negativos se destacan como error y el recálculo conserva su validación previa de exceso.
 - Configuración de módulo continúa en validación final; las ponderaciones siguen pendientes.
 
-Pendiente de cierre del bloque:
+Validaciones que estaban pendientes en este hito histórico:
 
 - validación visual y funcional completa en `CP_DEV`.
 
@@ -278,7 +288,7 @@ Pendiente de cierre del bloque:
 - `3 Alumnado` añade REACA, Medidas y `alumno_id` oculto; Repair migra filas existentes de forma idempotente.
 - `6 Eval` presenta UT activas por evaluación, medias calculadas y Educa manual; sus fórmulas referencian directamente las ponderaciones de `4 Config`.
 - Repair migra las hojas vacías 1.6.x in-place, sincroniza alumnado por UUID y conserva notas y filas históricas. Las discrepancias estructurales de UT se avisan sin reconstrucción.
-- Pendiente de validación manual en `CP_DEV`: pesos reactivos, valores y formato de notas, REACA/Notes, altas y bajas, migración de Eval previa y revisión visual.
+- En este hito histórico se anotaron comprobaciones posteriores de Eval, ya superadas en versiones siguientes.
 
 # Correctivo 1.7.1
 
@@ -286,7 +296,7 @@ Pendiente de cierre del bloque:
 - Eval usa tema global, cabecera de tres filas con pesos UT en vivo, columna Medidas, notas compactas y Educa siempre amarilla y en negrita.
 - Repair ordena por `alumno_id` sin desplazar notas; incorpora `MEDIA DEL GRUPO` con vacíos UT como cero y `MH` como diez solo para promedio Educa.
 - Protecciones `CUADERNO:` de solo advertencia en rangos generados; entradas docentes y protecciones externas se conservan.
-- `6 Eval` permanece en validación manual en `CP_DEV`. `7 Tutoría` continúa como bloque futuro.
+- En 1.7.1 la validación manual de Eval seguía abierta; quedó superada en versiones posteriores.
 
 # Versión 1.8.0
 
@@ -295,17 +305,17 @@ Pendiente de cierre del bloque:
 - Historial 1.8.0: el asistente explícito de seis pasos usaba los configuradores de datos generales, Calendario y Horario. Fue sustituido por el diálogo único de siete pasos en 1.8.1.
 - Menús reordenados, nombre visible Reparar estructura y ayuda ampliada en Sidebar y `USER_GUIDE.md`.
 - Abrir los configuradores o Crear configuración de módulo es solo lectura; la creación confirmada sanea Config huérfanas.
-- Pendiente de validación manual en `CP_DEV`: recorrido de asistente, Repair con combinaciones de selección, protección e inspección visual de Eval.
+- En este hito histórico se anotaron comprobaciones posteriores del asistente y Repair.
 
-# Decisiones vigentes
+# Decisiones vigentes en 1.13.2
 
 - No existe `3 Módulos`.
-- No existen `_MODULOS`, `_MATRICULAS` ni `_UT`; `_MOD_CONFIG` y `_MOD_PLAN` no duplican los campos editables de UT.
+- No existen `_MODULOS` ni `_UT`; `_MATRICULAS` existe y es la fuente de pertenencia a módulos; `_MOD_CONFIG` y `_MOD_PLAN` no duplican los campos editables de UT.
 - Imparticiones con igual sigla y distinto grupo son independientes.
 - Las familias 4/5/6 se ordenan agrupadas por tipo; la familia 5 agrupa activos e históricos por sigla independientemente del grupo.
 - Las hojas no gestionadas no se borran ni renombran.
 - Los colores nunca son fuente de verdad.
-- No hay triggers instalables, People API ni Google Calendar en V1.
+- No hay triggers instalables ni integración de Google Calendar. Google Contacts usa Advanced People Service y el scope de contactos.
 
 # Correctivo 1.9.0
 
@@ -320,10 +330,12 @@ Pendiente de cierre del bloque:
 - Horario distingue visualmente el apoyo deshabilitado. Crear configuración muestra un estado vacío compacto cuando no quedan módulos elegibles.
 - Reparar Eval conserva Educa como texto discreto al reordenar alumnado: lee su valor visible, prepara las columnas como texto antes de escribir y reinstala después el desplegable. La media del grupo sigue siendo numérica. El esquema permanece en `11`.
 
-# ROADMAP futuro
+# Ampliaciones diferidas
 
-- Sincronización opcional con Google Calendar: estudiar permisos, conflictos y calendario de destino; no se han añadido scopes ni triggers.
-- Tutoría avanzada (`7 Tutoría`, entrevistas, conversaciones y faltas): definir primero datos, privacidad y flujos docentes. No hay hoja ni estructura técnica implementada.
+- Google Calendar opcional permanece congelado; no se añaden scopes ni triggers.
+- Tutoría avanzada (`7 Tutoría`) solo se considerará si el uso real la justifica. El alcance de un registro avanzado está por definir.
+
+Accesibilidad, rendimiento y pruebas adicionales son mantenimiento, no fases funcionales pendientes.
 
 # Regla de actualización
 

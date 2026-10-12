@@ -213,5 +213,5 @@ assert(dialog.includes('.analizarGoogleContacts();'));
 assert(dialog.includes("function showResult(result){document.getElementById('intro').hidden=true"));
 const menu = fs.readFileSync('Main.gs', 'utf8');
 assert(menu.indexOf('CP.MENU.MODULE_ENROLLMENTS') < menu.indexOf('CP.MENU.CONTACTS_SYNC'));
-assert(menu.indexOf('CP.MENU.CONTACTS_SYNC') < menu.indexOf('.addSeparator()'));
+assert(menu.indexOf('CP.MENU.TUTOR_IMPORT') < menu.indexOf('.addSeparator()'));
 console.log('Google Contacts preview, sync, memberships, ambiguity and course: ok');

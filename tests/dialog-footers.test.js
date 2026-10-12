@@ -26,7 +26,7 @@ const tutor = fs.readFileSync('UiDialogTutorImport.html', 'utf8');
 for (const step of ['Alumnado', 'Informes', 'Listado mi alumnado', 'Por grupo', 'Excel',
   'Todos los alumnos', 'Enviar']) assert(tutor.includes(step));
 assert(tutor.includes('input.value=student.email||'));
-assert(tutor.includes('complete!==inputs.length'));
+assert(tutor.includes('markEmailErrors()'));
 assert(tutor.includes('importarAlumnadoTutoria(form)'));
 for (const name of ['UiDialogMatriculas.html', 'UiDialogEducaImport.html',
   'UiDialogContacts.html', 'UiDialogTutorImport.html']) {

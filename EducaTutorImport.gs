@@ -97,7 +97,9 @@ function applyTutorStudents_(book, plan, emails) {
       ids[student.key] = String(row[6]);
     } else {
       const id = Utilities.getUuid();
-      rows.push([student.surname, student.name, student.group, email, false, '', id]);
+      const empty = rows.findIndex(function(row) { return isStudentRowEmpty_(row); });
+      if (empty < 0) rows.push([student.surname, student.name, student.group, email, false, '', id]);
+      else rows[empty] = [student.surname, student.name, student.group, email, false, '', id];
       ids[student.key] = id;
     }
   });
@@ -174,6 +176,7 @@ function importarAlumnadoTutoria(form) {
       const ids = applyTutorStudents_(book, plan, emails);
       stage = 'ROSTER';
       applyTutorRoster_(book, report, config[CP.CONFIG_KEYS.ACADEMIC_YEAR], ids);
+      normalizeStudentsAfterManagedImport_(book);
       if (config[CP.CONFIG_KEYS.TUTOR_GROUP] !== report.group) {
         stage = 'TUTOR_CONFIG';
         config[CP.CONFIG_KEYS.TUTOR_GROUP] = report.group;
@@ -184,6 +187,8 @@ function importarAlumnadoTutoria(form) {
     } catch (error) {
       try { restoreTutorImportSnapshots_(book, snapshot); }
       catch (restoreError) { console.warn('No se pudieron restaurar todos los datos de Tutoría.'); }
+      try { createOrRepairStudentsSheet_(); }
+      catch (repairError) { console.warn('No se pudo restaurar el formato de Alumnado.'); }
       throw error;
     }
   } catch (error) {

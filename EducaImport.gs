@@ -446,7 +446,7 @@ function writeEducaNewStudents_(book, newStudents) {
   let cursor = 0;
   const writes = [];
   newStudents.forEach(function(student) {
-    while (cursor < values.length && values[cursor].slice(0, 3).some(function(value) { return String(value).trim(); })) cursor += 1;
+    while (cursor < values.length && !isStudentRowEmpty_(values[cursor])) cursor += 1;
     const rowNumber = cursor + 2;
     const row = [student.surname, student.name, student.group, '', false, '', Utilities.getUuid()];
     writes.push({ rowNumber: rowNumber, values: row });
@@ -601,6 +601,7 @@ function importarAlumnadoEduca(form) {
       selectedIds.forEach(function(id) { modes[id] = true; });
       writeEnrollmentState_(book, rows, modes);
       repairEvaluationsForActivities_(selectedIds);
+      normalizeStudentsAfterManagedImport_(book);
       if (groupChanges.renames.length || plan.summary.groupUpdates) {
         if (book.getSheetByName(CP.SHEETS.SCHEDULE)) createOrRepairScheduleSheet_();
         else actualizarIndicePortada();

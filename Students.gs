@@ -57,7 +57,62 @@ function createOrRepairStudentsSheet_() {
   }
   trimSheetToBounds_(sheet, requiredRows, CP_STUDENT_HEADERS.length);
   installManagedSheetProtections_(sheet);
+  applyStudentGroupSeparators_(sheet);
   return sheet;
+}
+
+function isStudentRowEmpty_(row) {
+  return row.every(function(value, index) {
+    return index === 4 ? normalizeStudentReacaValue_(value) === false :
+      value === '' || value === null;
+  });
+}
+
+function compareManagedStudentText_(left, right) {
+  const clean = function(value) { return String(value || '').trim().replace(/\s+/g, ' '); };
+  return clean(left).localeCompare(clean(right), 'es', { sensitivity: 'base' });
+}
+
+function applyStudentGroupSeparators_(sheet) {
+  const count = Math.max(0, sheet.getLastRow() - 1);
+  if (!count) return;
+  sheet.getRange(2, 1, count, 6).setBorder(false, null, false, null, false, null);
+  const rows = sheet.getRange(2, 1, count, 3).getValues();
+  let previous = '';
+  rows.forEach(function(row, index) {
+    if (!row.every(function(value) { return String(value || '').trim(); })) return;
+    const group = String(row[2]).trim();
+    if (previous && compareManagedStudentText_(previous, group) !== 0) {
+      sheet.getRange(index + 2, 1, 1, 6).setBorder(true, null, null, null, null, null,
+        '#455A64', SpreadsheetApp.BorderStyle.SOLID_THICK);
+    }
+    previous = group;
+  });
+}
+
+function normalizeStudentsAfterManagedImport_(book) {
+  const sheet = book.getSheetByName(CP.SHEETS.STUDENTS);
+  const count = Math.max(0, sheet.getLastRow() - 1);
+  const rows = count ? sheet.getRange(2, 1, count, 7).getValues() : [];
+  const valid = [], anomalous = [];
+  rows.forEach(function(row) {
+    if (isStudentRowEmpty_(row)) return;
+    if (row.slice(0, 3).every(function(value) { return String(value || '').trim(); })) {
+      if (!String(row[6] || '').trim()) row[6] = Utilities.getUuid();
+      valid.push(row);
+    } else anomalous.push(row);
+  });
+  valid.sort(function(left, right) {
+    return compareManagedStudentText_(left[2], right[2]) ||
+      compareManagedStudentText_(left[0], right[0]) ||
+      compareManagedStudentText_(left[1], right[1]) ||
+      compareManagedStudentText_(left[6], right[6]);
+  });
+  const ordered = valid.concat(anomalous);
+  if (count) sheet.getRange(2, 1, count, 7).clearContent();
+  if (ordered.length) sheet.getRange(2, 1, ordered.length, 7).setValues(ordered);
+  createOrRepairStudentsSheet_();
+  return { students: valid.length, anomalous: anomalous.length };
 }
 
 function ensureStudentIdsForValidRows_(spreadsheet) {

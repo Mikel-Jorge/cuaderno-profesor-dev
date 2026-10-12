@@ -62,7 +62,7 @@ function getEvaluationLayout_(blocks) {
 }
 
 function getEvaluationHeaders_(layout) {
-  const headers = ['Apellidos', 'Nombre', 'Información / Medidas'];
+  const headers = ['Apellidos', 'Nombre', 'REACA'];
   layout.groups.forEach(function(group, index) {
     group.units.forEach(function(unit) { headers.push(unit.code); });
     const label = getEvaluationOrdinal_(index + 1);
@@ -194,8 +194,10 @@ function repairEvaluationSheet_(sheet, configSheet, context, activity) {
   let legacy = false;
   if (!provisional) {
     const existing = sheet.getRange(2, 1, 1, headers.length).getDisplayValues()[0];
-    legacy = existing[2] === 'REACA';
-    if (legacy || existing[2] === 'Medidas') existing[2] = 'Información / Medidas';
+    // La hoja histórica tenía dos filas de cabecera; la moderna tiene tres.
+    // REACA puede ser ya la cabecera moderna y no identifica por sí sola el legado.
+    legacy = sheet.getRange(3, 1).getDisplayValue() !== '';
+    if (existing[2] === 'Información / Medidas' || existing[2] === 'Medidas') existing[2] = 'REACA';
     if (existing.some(function(value, index) { return value !== headers[index]; })) {
       const warning = 'La estructura de UT de ' + sheet.getName() +
         ' no coincide con 4 Config. Se conservan todas sus notas; revisa la hoja manualmente.';
