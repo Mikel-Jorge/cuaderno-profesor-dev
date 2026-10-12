@@ -272,6 +272,48 @@ const secondResult = context.importarAlumnadoEduca({ archivo: secondReport,
 assert.equal(secondResult.summary.deactivations, 1);
 assert.equal(studentState.length, 2);
 assert.equal(enrollmentState.find(item => item.studentId === 'NEW-0').active, false);
+const virtualModule = { id: 'ASIR', category: 'MODULO', group: 'ASIR Online',
+  name: 'Gestión de bases de datos', acronym: 'GBD' };
+context.getModuleActivitiesForEnrollment_ = () => [virtualModule];
+studentState = [];
+enrollmentState = [];
+modeState = {};
+const virtualReport = fixture([{ subject: 'Gestión de bases de datos',
+  group: 'ASIR - VIRTUAL', names: ['Apellido Cuatro, Vera'] }]);
+const virtualResult = context.importarAlumnadoEduca({ archivo: virtualReport,
+  mapping: '{}', confirmDrops: 'false' });
+assert.equal(virtualResult.summary.modules, 1);
+assert.equal(studentState[0].group, 'ASIR - VIRTUAL');
+assert.equal(enrollmentState[0].activityId, 'ASIR');
+assert.equal(enrollmentState[0].active, true);
+assert.equal(modeState.ASIR, true);
+studentState = [{ id: 'EXISTING', surname: 'Apellido Cuatro', name: 'Vera',
+  group: 'ASIR Online', email: 'existing@example.invalid', reaca: true, measures: 'Medida previa' }];
+enrollmentState = [];
+modeState = {};
+const existingVirtualResult = context.importarAlumnadoEduca({ archivo: virtualReport,
+  mapping: '{}', confirmDrops: 'false' });
+assert.equal(existingVirtualResult.summary.newStudents, 0);
+assert.equal(studentState.length, 1);
+assert.equal(studentState[0].group, 'ASIR Online');
+assert.equal(studentState[0].email, 'existing@example.invalid');
+assert.equal(studentState[0].reaca, true);
+assert.equal(studentState[0].measures, 'Medida previa');
+assert.equal(enrollmentState[0].studentId, 'EXISTING');
+const distinctModule = { id: 'SMR', category: 'MODULO', group: 'SMR 1A',
+  name: 'Otro módulo', acronym: 'OM' };
+context.getModuleActivitiesForEnrollment_ = () => [distinctModule];
+studentState = [];
+enrollmentState = [];
+modeState = {};
+const sourceKey = context.parseEducaReport_(virtualReport)[0].key;
+const distinctResult = context.importarAlumnadoEduca({ archivo: virtualReport,
+  mapping: JSON.stringify({ [sourceKey]: 'SMR' }), confirmDrops: 'true', expectedDrops: '0' });
+assert.equal(distinctResult.summary.manualDifferentGroups, 1);
+assert.equal(studentState[0].group, 'ASIR - VIRTUAL');
+assert.equal(enrollmentState[0].activityId, 'SMR');
+assert.equal(enrollmentState[0].active, true);
+assert.equal(context.getStudentsForModuleActivity_({}, distinctModule)[0].id, studentState[0].id);
 const dialog = fs.readFileSync('UiDialogEducaImport.html', 'utf8');
 assert.match(dialog, /type="file" accept="\.xls,\.xlsx"/);
 assert.match(dialog, /Listado mi alumnado/);

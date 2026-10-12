@@ -1,12 +1,12 @@
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
   const modulesMenu = ui.createMenu(CP.MENU.MODULES)
+    .addItem(CP.MENU.EDUCA_IMPORT, 'abrirImportadorEduca')
+    .addItem(CP.MENU.MODULE_ENROLLMENTS, 'abrirMatriculasModulos')
+    .addSeparator()
     .addItem(CP.MENU.MODULE_CONFIG_CREATE, 'abrirCreacionConfiguracionModulo')
     .addItem(CP.MENU.MODULE_CONFIG_RECALCULATE, 'recalcularConfiguracionModulo')
-    .addItem(CP.MENU.MODULE_TRACKING_CREATE, 'abrirCreacionSeguimientoEvaluacion')
-    .addSeparator()
-    .addItem(CP.MENU.EDUCA_IMPORT, 'abrirImportadorEduca')
-    .addItem(CP.MENU.MODULE_ENROLLMENTS, 'abrirMatriculasModulos');
+    .addItem(CP.MENU.MODULE_TRACKING_CREATE, 'abrirCreacionSeguimientoEvaluacion');
 
   const configMenu = ui.createMenu(CP.MENU.CONFIG)
     .addItem(CP.MENU.GENERAL_DATA, 'abrirDatosGenerales')

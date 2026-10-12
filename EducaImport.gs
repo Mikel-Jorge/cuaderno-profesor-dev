@@ -294,12 +294,26 @@ function parseEducaReport_(blob) {
   return result;
 }
 
+function getEducaEnrollmentSyncStudents_(students, enrollments, activity, sourceGroup) {
+  const related = {};
+  enrollments.forEach(function(row) {
+    if (row.activityId === activity.id) related[row.studentId] = true;
+  });
+  const sourceHint = normalizeEnrollmentGroupHint_(sourceGroup);
+  const moduleHint = normalizeEnrollmentGroupHint_(activity.group);
+  return students.filter(function(student) {
+    const groupHint = normalizeEnrollmentGroupHint_(student.group);
+    return groupHint === sourceHint || groupHint === moduleHint || related[student.id];
+  });
+}
+
 function buildEducaImportPlan_(blocks, mappingInput, modules, students, enrollments, modes) {
   const mapping = mappingInput || {};
-  const moduleById = modules.reduce(function(map, item) { map[item.id] = item; return map; }, {});
+  const moduleChoices = modules.filter(function(item) { return item.category === 'MODULO'; });
+  const moduleById = moduleChoices.reduce(function(map, item) { map[item.id] = item; return map; }, {});
   const existingByKey = {};
   students.forEach(function(student) {
-    const key = studentImportKey_(student);
+    const key = studentImportIdentityKey_(student);
     if (existingByKey[key]) {
       throw new Error('Hay dos alumnos con el mismo nombre, apellidos y grupo. Revisa Alumnado antes de importar.');
     }
@@ -309,19 +323,31 @@ function buildEducaImportPlan_(blocks, mappingInput, modules, students, enrollme
   const selected = [];
   const usedDestinations = {};
   const previewBlocks = blocks.map(function(block) {
-    block.students.forEach(function(student) { detected[studentImportKey_(student)] = true; });
-    const candidates = modules.filter(function(activity) {
-      return normalizeEnrollmentKey_(activity.group) === normalizeEnrollmentKey_(block.group);
+    block.students.forEach(function(student) { detected[studentImportIdentityKey_(student)] = true; });
+    const candidates = moduleChoices.slice().sort(function(left, right) {
+      const leftPriority = normalizeEnrollmentGroupHint_(left.group) === normalizeEnrollmentGroupHint_(block.group) ? 0 : 1;
+      const rightPriority = normalizeEnrollmentGroupHint_(right.group) === normalizeEnrollmentGroupHint_(block.group) ? 0 : 1;
+      return leftPriority - rightPriority ||
+        normalizeEnrollmentKey_(left.group).localeCompare(normalizeEnrollmentKey_(right.group), 'es') ||
+        normalizeEnrollmentKey_(left.acronym).localeCompare(normalizeEnrollmentKey_(right.acronym), 'es') ||
+        normalizeEnrollmentKey_(left.name).localeCompare(normalizeEnrollmentKey_(right.name), 'es');
     });
-    const automatic = candidates.filter(function(activity) {
+    const sameName = candidates.filter(function(activity) {
       return normalizeEnrollmentKey_(activity.name) === normalizeEnrollmentKey_(block.subject);
     });
+    const exact = sameName.filter(function(activity) {
+      return normalizeEnrollmentKey_(activity.group) === normalizeEnrollmentKey_(block.group);
+    });
+    const equivalent = sameName.filter(function(activity) {
+      return normalizeEnrollmentGroupHint_(activity.group) === normalizeEnrollmentGroupHint_(block.group);
+    });
     const activityId = Object.prototype.hasOwnProperty.call(mapping, block.key)
-      ? String(mapping[block.key] || '') : automatic.length === 1 ? automatic[0].id : '';
+      ? String(mapping[block.key] || '') : exact.length === 1 ? exact[0].id :
+        equivalent.length === 1 ? equivalent[0].id : '';
     if (activityId) {
       const activity = moduleById[activityId];
-      if (!activity || candidates.indexOf(activity) === -1) {
-        throw new Error('Un destino no es un módulo del mismo grupo. Corrige el mapeo.');
+      if (!activity) {
+        throw new Error('Un destino no es un módulo configurado. Corrige el mapeo.');
       }
       if (usedDestinations[activityId]) {
         throw new Error('Dos asignaturas de EDUCA no pueden tener el mismo módulo de destino.');
@@ -331,6 +357,9 @@ function buildEducaImportPlan_(blocks, mappingInput, modules, students, enrollme
     }
     return { key: block.key, subject: block.subject, group: block.group,
       count: block.students.length, variants: block.variants, activityId: activityId,
+      groupMismatch: Boolean(activityId) &&
+        normalizeEnrollmentGroupHint_(moduleById[activityId].group) !== normalizeEnrollmentGroupHint_(block.group),
+      selectedGroup: activityId ? moduleById[activityId].group : '',
       candidates: candidates.map(function(item) { return { id: item.id,
         name: item.name, acronym: item.acronym, group: item.group }; }) };
   });
@@ -341,7 +370,10 @@ function buildEducaImportPlan_(blocks, mappingInput, modules, students, enrollme
   });
   const selectedStudents = {};
   selected.forEach(function(item) {
-    item.block.students.forEach(function(student) { selectedStudents[studentImportKey_(student)] = student; });
+    item.block.students.forEach(function(student) {
+      const key = studentImportIdentityKey_(student);
+      if (!selectedStudents[key]) selectedStudents[key] = student;
+    });
   });
   const newStudents = Object.keys(selectedStudents).filter(function(key) { return !existingByKey[key]; })
     .map(function(key) { return selectedStudents[key]; });
@@ -350,14 +382,16 @@ function buildEducaImportPlan_(blocks, mappingInput, modules, students, enrollme
   let activations = 0, deactivations = 0;
   selected.forEach(function(item) {
     const imported = {};
-    item.block.students.forEach(function(student) { imported[studentImportKey_(student)] = true; });
-    students.concat(newStudents).forEach(function(student) {
-      if (normalizeEnrollmentKey_(student.group) !== normalizeEnrollmentKey_(item.activity.group)) return;
-      const key = studentImportKey_(student);
+    item.block.students.forEach(function(student) { imported[studentImportIdentityKey_(student)] = true; });
+    getEducaEnrollmentSyncStudents_(students.concat(newStudents), enrollments,
+      item.activity, item.block.group).forEach(function(student) {
+      const key = studentImportIdentityKey_(student);
       const now = Boolean(imported[key]);
       const wasRecorded = modes[item.activity.id] &&
         Boolean(previous[student.id + '\n' + item.activity.id]);
-      const wasEffective = modes[item.activity.id] ? wasRecorded : Boolean(existingByKey[key]);
+      const wasEffective = modes[item.activity.id] ? wasRecorded :
+        Boolean(existingByKey[key]) &&
+        normalizeEnrollmentKey_(student.group) === normalizeEnrollmentKey_(item.activity.group);
       if (now && !wasRecorded) activations += 1;
       if (!now && wasEffective) deactivations += 1;
     });
@@ -367,6 +401,7 @@ function buildEducaImportPlan_(blocks, mappingInput, modules, students, enrollme
       detectedStudents: Object.keys(detected).length, newStudents: newStudents.length,
       existingStudents: Object.keys(selectedStudents).length - newStudents.length,
       activations: activations, deactivations: deactivations,
+      manualDifferentGroups: previewBlocks.filter(function(block) { return block.groupMismatch; }).length,
       skipped: blocks.length - selected.length } };
 }
 
@@ -454,17 +489,18 @@ function importarAlumnadoEduca(form) {
       writeEducaNewStudents_(book, plan.newStudents);
       const students = getEnrollmentStudents_(book);
       const selectedIds = plan.selected.map(function(item) { return item.activity.id; });
-      const existing = readEnrollmentRows_(book).filter(function(row) {
+      const previousEnrollments = readEnrollmentRows_(book);
+      const existing = previousEnrollments.filter(function(row) {
         return selectedIds.indexOf(row.activityId) === -1;
       });
       const rows = existing.slice();
       plan.selected.forEach(function(item) {
         const imported = {};
-        item.block.students.forEach(function(student) { imported[studentImportKey_(student)] = true; });
-        students.forEach(function(student) {
-          if (normalizeEnrollmentKey_(student.group) !== normalizeEnrollmentKey_(item.activity.group)) return;
+        item.block.students.forEach(function(student) { imported[studentImportIdentityKey_(student)] = true; });
+        getEducaEnrollmentSyncStudents_(students, previousEnrollments,
+          item.activity, item.block.group).forEach(function(student) {
           rows.push({ studentId: student.id, activityId: item.activity.id,
-            active: Boolean(imported[studentImportKey_(student)]), origin: 'EDUCA_XLS' });
+            active: Boolean(imported[studentImportIdentityKey_(student)]), origin: 'EDUCA_XLS' });
         });
       });
       const modes = readEnrollmentModes_(book);

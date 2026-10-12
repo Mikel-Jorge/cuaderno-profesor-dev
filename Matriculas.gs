@@ -6,8 +6,18 @@ function normalizeEnrollmentKey_(value) {
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleUpperCase();
 }
 
+function normalizeEnrollmentGroupHint_(value) {
+  return normalizeEnrollmentKey_(value).replace(/\bONLINE\b/g, 'VIRTUAL')
+    .replace(/[\s\-_–—]+/g, '');
+}
+
 function studentImportKey_(student) {
   return [student.surname, student.name, student.group].map(normalizeEnrollmentKey_).join('\n');
+}
+
+function studentImportIdentityKey_(student) {
+  return [normalizeEnrollmentKey_(student.surname), normalizeEnrollmentKey_(student.name),
+    normalizeEnrollmentGroupHint_(student.group)].join('\n');
 }
 
 function ensureEnrollmentStructure_() {
@@ -83,13 +93,14 @@ function getModuleActivitiesForEnrollment_() {
 }
 
 function getStudentsForModuleActivity_(book, activity) {
-  const students = getEvaluationStudents_(book, activity.group);
-  if (!readEnrollmentModes_(book)[activity.id]) return students;
+  if (!readEnrollmentModes_(book)[activity.id]) return getEvaluationStudents_(book, activity.group);
   const active = readEnrollmentRows_(book).reduce(function(map, row) {
     if (row.activityId === activity.id) map[row.studentId] = row.active;
     return map;
   }, {});
-  return students.filter(function(student) { return active[student.id] === true; });
+  return getEnrollmentStudents_(book).filter(function(student) { return active[student.id] === true; })
+    .map(function(student) { return { id: student.id, surname: student.surname,
+      name: student.name, reaca: student.reaca, measures: student.measures }; });
 }
 
 function normalizeEnrollmentStorage_(book) {
@@ -104,11 +115,10 @@ function normalizeEnrollmentStorage_(book) {
     const student = byId[row.studentId], activity = activities[row.activityId];
     if (!student || !activity) return;
     const key = row.studentId + '\n' + row.activityId;
-    const valid = normalizeEnrollmentKey_(student.group) === normalizeEnrollmentKey_(activity.group);
     if (byPair[key]) {
-      byPair[key].active = byPair[key].active && row.active && valid;
+      byPair[key].active = byPair[key].active && row.active;
     } else {
-      byPair[key] = Object.assign({}, row, { active: row.active && valid });
+      byPair[key] = Object.assign({}, row);
     }
   });
   const modes = readEnrollmentModes_(book);
@@ -124,19 +134,36 @@ function normalizeEnrollmentStorage_(book) {
   }
 }
 
+function getModuleEnrollmentCandidates_(students, activity, enrollments) {
+  const group = normalizeEnrollmentGroupHint_(activity.group);
+  const related = {};
+  enrollments.forEach(function(row) {
+    if (row.activityId === activity.id) related[row.studentId] = true;
+  });
+  return students.filter(function(student) {
+    return normalizeEnrollmentGroupHint_(student.group) === group || related[student.id];
+  });
+}
+
 function getModuleEnrollmentManagerData_() {
   const book = SpreadsheetApp.getActiveSpreadsheet();
   const modules = getModuleActivitiesForEnrollment_();
   const students = getEnrollmentStudents_(book);
   const rows = readEnrollmentRows_(book);
   const modes = readEnrollmentModes_(book);
+  const candidatesByModule = {};
+  modules.forEach(function(module) {
+    candidatesByModule[module.id] = getModuleEnrollmentCandidates_(students, module, rows)
+      .map(function(student) { return student.rowNumber; });
+  });
   return { modules: modules.map(function(module) { return {
     id: module.id, name: module.name, acronym: module.acronym, group: module.group,
   }; }), students: students.map(function(student) { return {
-    id: student.id, surname: student.surname, name: student.name, group: student.group,
+    id: student.id, rowNumber: student.rowNumber, surname: student.surname,
+    name: student.name, group: student.group,
   }; }), enrollments: rows.map(function(row) { return {
     studentId: row.studentId, activityId: row.activityId, active: row.active,
-  }; }), modes: modes };
+  }; }), modes: modes, candidatesByModule: candidatesByModule };
 }
 
 function saveModuleEnrollments(input) {
@@ -149,16 +176,15 @@ function saveModuleEnrollments(input) {
     });
     if (!activity) throw new Error('Selecciona un módulo válido.');
     if (!Array.isArray(input.studentIds)) throw new Error('La selección de alumnado no es válida.');
-    const candidates = getEnrollmentStudents_(book).filter(function(student) {
-      return normalizeEnrollmentKey_(student.group) === normalizeEnrollmentKey_(activity.group);
-    });
+    const candidates = getModuleEnrollmentCandidates_(getEnrollmentStudents_(book), activity,
+      readEnrollmentRows_(book));
     if (candidates.some(function(student) { return !student.id; })) {
       throw new Error('Hay alumnado sin alumno_id. Repara primero 3 Alumnado.');
     }
     const allowed = candidates.reduce(function(map, student) { map[student.id] = true; return map; }, {});
     const selected = {};
     input.studentIds.forEach(function(id) {
-      if (!allowed[id] || selected[id]) throw new Error('La matrícula contiene un alumno ajeno al grupo o repetido.');
+      if (!allowed[id] || selected[id]) throw new Error('La matrícula contiene un alumno no disponible para este módulo o repetido.');
       selected[id] = true;
     });
     ensureEnrollmentStructure_();

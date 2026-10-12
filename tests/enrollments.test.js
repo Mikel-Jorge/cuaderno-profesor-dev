@@ -10,11 +10,11 @@ const context = vm.createContext({
 });
 ['Matriculas.gs', 'EducaImport.gs', 'Evaluation.gs'].forEach(file =>
   vm.runInContext(fs.readFileSync(file, 'utf8'), context, { filename: file }));
-const ana = { id: 'A', surname: 'Apellido Uno', name: 'Ana', group: 'DAM 2A',
+const ana = { id: 'A', rowNumber: 2, surname: 'Apellido Uno', name: 'Ana', group: 'DAM 2A',
   email: 'existing@example.invalid', reaca: true, measures: 'Tiempo extra' };
-const javi = { id: 'J', surname: 'Apellido Dos', name: 'Javi', group: 'DAM 2A',
+const javi = { id: 'J', rowNumber: 3, surname: 'Apellido Dos', name: 'Javi', group: 'DAM 2A',
   email: '', reaca: false, measures: '' };
-const other = { id: 'X', surname: 'Apellido Tres', name: 'Xavi', group: 'DAM 2B' };
+const other = { id: 'X', rowNumber: 4, surname: 'Apellido Tres', name: 'Xavi', group: 'DAM 2B' };
 const acda = { id: 'ACDA', category: 'MODULO', name: 'Acceso a datos', acronym: 'ACDA', group: 'DAM 2A' };
 const pmdm = { id: 'PMDM', category: 'MODULO', name: 'Programación multimedia', acronym: 'PMDM', group: 'DAM 2A' };
 const pmdmB = { id: 'PMDM-B', category: 'MODULO', name: 'Programación multimedia', acronym: 'PMDM', group: 'DAM 2B' };
@@ -34,12 +34,14 @@ assert.equal(plan.summary.existingStudents, 2);
 assert.equal(plan.summary.deactivations, 1); // Javi deja ACDA, no PMDM.
 assert.equal(plan.blocks[0].activityId, 'ACDA');
 assert.equal(plan.blocks[1].activityId, 'PMDM');
-assert.equal(plan.blocks[1].candidates.some(item => item.id === 'PMDM-B'), false);
+assert.equal(plan.blocks[1].candidates.some(item => item.id === 'PMDM-B'), true);
 assert.equal(ana.email, 'existing@example.invalid');
 assert.equal(ana.reaca, true);
 assert.equal(ana.measures, 'Tiempo extra');
-assert.throws(() => context.buildEducaImportPlan_(blocks,
-  { [blocks[0].key]: 'PMDM-B' }, modules, [ana, javi], [], {}), /mismo grupo/);
+const crossGroupPlan = context.buildEducaImportPlan_(blocks,
+  { [blocks[0].key]: 'PMDM-B' }, modules, [ana, javi], [], {});
+assert.equal(crossGroupPlan.blocks[0].groupMismatch, true);
+assert.equal(crossGroupPlan.summary.manualDifferentGroups, 1);
 assert.throws(() => context.buildEducaImportPlan_(blocks,
   { [blocks[0].key]: 'PMDM', [blocks[1].key]: 'PMDM' }, modules, [ana, javi], [], {}), /mismo módulo/);
 assert.equal(context.buildEducaImportPlan_(blocks, {}, modules, [ana, javi], [], {})
@@ -53,6 +55,37 @@ assert.equal(repeated.summary.deactivations, 1);
 assert.equal(repeated.summary.newStudents, 0);
 assert.throws(() => context.buildEducaImportPlan_(blocks, {}, modules,
   [ana, { ...ana, id: 'A-duplicate' }], [], {}), /dos alumnos/);
+const virtual = { id: 'V', rowNumber: 5, surname: 'Apellido Cuatro', name: 'Vera', group: 'ASIR - VIRTUAL' };
+const virtualModule = { id: 'ASIR', category: 'MODULO', name: 'Gestión de bases de datos',
+  acronym: 'GBD', group: 'ASIR Online' };
+const virtualBlock = block('Gestión de bases de datos', [virtual], 'ASIR - VIRTUAL');
+const virtualPlan = context.buildEducaImportPlan_([virtualBlock], {},
+  [virtualModule, ...modules], [virtual], [], {});
+assert.equal(virtualPlan.blocks[0].activityId, 'ASIR');
+assert.equal(virtualPlan.blocks[0].groupMismatch, false);
+assert.equal(virtualPlan.blocks[0].candidates[0].id, 'ASIR');
+assert.equal(context.normalizeEnrollmentGroupHint_('DAM 2A'), context.normalizeEnrollmentGroupHint_('DAM2A'));
+assert.equal(context.normalizeEnrollmentGroupHint_('DAM-2A'), context.normalizeEnrollmentGroupHint_('DAM2A'));
+assert.equal(context.normalizeEnrollmentGroupHint_('ASIR Online'),
+  context.normalizeEnrollmentGroupHint_('ASIR - VIRTUAL'));
+const compactGroup = { ...acda, group: 'DAM2A' };
+assert.equal(context.buildEducaImportPlan_([block('Acceso a datos', [ana])], {},
+  [compactGroup], [ana], [], {}).blocks[0].activityId, 'ACDA');
+const existingCompact = { ...ana, group: 'DAM2A' };
+const equivalentIdentityPlan = context.buildEducaImportPlan_([block('Acceso a datos', [ana])], {},
+  [compactGroup], [existingCompact], [], {});
+assert.equal(equivalentIdentityPlan.summary.newStudents, 0);
+assert.equal(equivalentIdentityPlan.summary.existingStudents, 1);
+assert.equal(existingCompact.group, 'DAM2A');
+const differentGroup = { id: 'SMR', category: 'MODULO', name: 'Acceso a datos',
+  acronym: 'SMR', group: 'SMR 1A' };
+const differentPlan = context.buildEducaImportPlan_([block('Acceso a datos', [ana])], {},
+  [differentGroup], [ana], [], {});
+assert.equal(differentPlan.blocks[0].activityId, '');
+assert.equal(differentPlan.blocks[0].candidates[0].id, 'SMR');
+assert.equal(context.buildEducaImportPlan_([block('Acceso a datos', [ana])],
+  { [block('Acceso a datos', [ana]).key]: 'SMR' }, [differentGroup], [ana], [], {})
+  .summary.manualDifferentGroups, 1);
 
 let students = [ana, javi, other], rows = [], modes = {}, saved;
 const book = {};
@@ -66,7 +99,7 @@ context.writeEnrollmentState_ = (_book, nextRows, nextModes) => {
 };
 context.repairEvaluationsForActivities_ = () => {};
 assert.throws(() => context.saveModuleEnrollments({ activityId: 'ACDA', studentIds: ['X'] }),
-  /ajeno al grupo/);
+  /no disponible/);
 assert.throws(() => context.saveModuleEnrollments({ activityId: 'T', studentIds: [] }),
   /módulo válido/);
 context.saveModuleEnrollments({ activityId: 'ACDA', studentIds: ['A'] });
@@ -77,6 +110,13 @@ assert.deepEqual(Array.from(saved.rows.filter(row => row.activityId === 'ACDA')
 context.saveModuleEnrollments({ activityId: 'PMDM', studentIds: [] });
 assert.equal(modes.PMDM, true);
 assert.equal(rows.filter(row => row.activityId === 'PMDM' && row.active).length, 0);
+students = [ana, javi, other, virtual];
+rows.push({ studentId: 'V', activityId: 'ACDA', active: true, origin: 'EDUCA_XLS' });
+assert.equal(context.getModuleEnrollmentManagerData_().candidatesByModule.ACDA.includes(5), true);
+context.saveModuleEnrollments({ activityId: 'ACDA', studentIds: ['A', 'V'] });
+assert.equal(rows.find(row => row.activityId === 'ACDA' && row.studentId === 'V').active, true);
+students = [ana, javi, other];
+rows = rows.filter(row => row.studentId !== 'V');
 context.saveModuleEnrollments({ activityId: 'ACDA', studentIds: ['A'] });
 assert.equal(rows.filter(row => row.activityId === 'ACDA').length, 2);
 context.getEvaluationStudents_ = () => [
@@ -86,7 +126,7 @@ context.getEvaluationStudents_ = () => [
 ];
 assert.deepEqual(Array.from(context.getStudentsForModuleActivity_(book, acda).map(item => item.id)), ['A']);
 students = [{ ...ana, group: 'DAM 2B' }, javi, other];
-assert.deepEqual(Array.from(context.getStudentsForModuleActivity_(book, acda).map(item => item.id)), []);
+assert.deepEqual(Array.from(context.getStudentsForModuleActivity_(book, acda).map(item => item.id)), ['A']);
 students = [ana, javi, other];
 modes = {}; // Legacy: todo el grupo continúa activo.
 assert.deepEqual(Array.from(context.getStudentsForModuleActivity_(book, acda).map(item => item.id)), ['A', 'J']);
@@ -116,6 +156,6 @@ book.getSheetByName = () => ({ getLastRow: () => 3 });
 context.normalizeEnrollmentStorage_(book);
 assert.equal(rows.length, 2);
 assert.equal(rows.find(row => row.studentId === 'A').active, false);
-assert.equal(rows.find(row => row.studentId === 'X').active, false); // Grupo DAM 2B.
+assert.equal(rows.find(row => row.studentId === 'X').active, true); // La relación por ID permanece activa.
 assert.deepEqual(Object.keys(modes), ['ACDA']);
 console.log('legacy, manual and EDUCA memberships; Eval history and annual reset: ok');

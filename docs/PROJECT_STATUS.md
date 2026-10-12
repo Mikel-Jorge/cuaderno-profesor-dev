@@ -2,8 +2,14 @@
 
 **Última actualización:** 2026-10-12
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.11.2`
+**Versión vigente:** `1.11.3`
 **Esquema vigente:** `13`
+
+## Mapeo y matrículas por módulo 1.11.3
+
+- El menú Módulos muestra primero importación y matrículas. El preview ofrece todos los MODULO, prioriza grupos equivalentes y solo sugiere un destino con nombre completo y grupo inequívocos; los grupos distintos se avisan sin bloquear.
+- En módulos gestionados individualmente, las matrículas activas por IDs determinan el alumnado de Eval aunque el Grupo visible difiera. Repair conserva esas relaciones; los módulos antiguos mantienen la selección por Grupo. El gestor incorpora alumnado de grupos equivalentes y relaciones ya registradas, con un estado vacío claro.
+- La Ayuda usa términos docentes y explica cómo elegir el módulo cuando EDUCA y el Cuaderno nombran el grupo de modo diferente. Esquema 13 sin cambios.
 
 ## Correctivo de descompresión EDUCA 1.11.2
 
