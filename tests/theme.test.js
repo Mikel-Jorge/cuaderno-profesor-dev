@@ -20,8 +20,8 @@ const expected = [
   ['grafito-esmeralda', 'Grafito esmeralda', '#475569', '#2F7464', '#B9832F'],
 ];
 assert.strictEqual(evaluate('CP_DEFAULT_THEME_PRESET'), expected[0][0]);
-assert.strictEqual(evaluate('CP.NOTEBOOK_VERSION'), '1.9.2');
-assert.strictEqual(evaluate('CP.SCHEMA_VERSION'), '11');
+assert.strictEqual(evaluate('CP.NOTEBOOK_VERSION'), '1.10.0');
+assert.strictEqual(evaluate('CP.SCHEMA_VERSION'), '12');
 const presets = evaluate('getThemeConfigForUi_(null, {}).presets');
 assert.strictEqual(presets.length, 10);
 presets.forEach((preset, index) => {
@@ -80,6 +80,7 @@ for (const [oldId, newId] of [['claro-azul', 'azul-profesional'], ['oscuro-azul'
 context.storedValues = { tema_preset: 'verde-natural', tema_primary: '#123456',
   tema_secondary: '#654321', tema_accent: '#ABCDEF' };
 context.getConfigRows_ = () => Object.entries(context.storedValues).map(entry => entry);
+context.ensureSheetSize_ = () => {};
 let repairedRows;
 const range = { clearContent() { return this; }, setValues(rows) { repairedRows = rows; return this; },
   setNumberFormat() { return this; }, setBackground() { return this; }, setFontColor() { return this; },

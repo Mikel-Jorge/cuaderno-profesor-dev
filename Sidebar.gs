@@ -114,7 +114,7 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'general-data',
       title: 'Datos del docente y centro',
-      text: 'Revisa el curso académico y los datos que aparecerán en la Portada. Escribe el curso con el formato YYYY-YYYY.',
+      text: 'Revisa el curso académico y los datos que aparecerán en la Portada. Escribe el curso con el formato YYYY-YYYY. Si eres tutor/a, indica también el grupo de tutoría.',
     },
     {
       id: 'calendar',
@@ -124,12 +124,12 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'schedule',
       title: 'Horario',
-      text: 'Revisa tramos y actividades; después coloca las actividades en la semana. Una sesión cuenta como una hora docente.',
+      text: 'Revisa tramos y actividades; después coloca las actividades en la semana. Las actividades institucionales se proponen una vez por curso. Una sesión cuenta como una hora docente.',
     },
     {
       id: 'students',
       title: 'Alumnado',
-      text: 'Anota Apellidos, Nombre y Grupo. Email es opcional. Usa REACA y Medidas cuando corresponda; Medidas se muestra como nota en Eval.',
+      text: 'Anota Apellidos, Nombre y Grupo. Grupo incluye módulos y, si está activa, Tutoría. Email es opcional. Usa REACA y Medidas cuando corresponda; Medidas se muestra como nota en Eval.',
     },
     {
       id: 'module-config',

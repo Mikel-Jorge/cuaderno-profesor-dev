@@ -15,15 +15,18 @@ const CP_SCHEDULE_DAYS = Object.freeze([
 
 const CP_SCHEDULE_SLOT_TYPES = Object.freeze({ SESION: 'Sesión', DESCANSO: 'Descanso' });
 const CP_SCHEDULE_ACTIVITY_CATEGORIES = Object.freeze([
-  'MODULO', 'TUTORIA', 'GUARDIA', 'REUNION', 'DUAL', 'PPPP', 'P', 'OTRA',
+  'MODULO', 'TUTORIA', 'GUARDIA', 'REUNION', 'ECDPI', 'PPPP', 'P', 'OTRA',
 ]);
+const CP_SCHEDULE_INSTITUTIONAL_CATEGORIES = Object.freeze(['GUARDIA', 'REUNION', 'ECDPI', 'PPPP', 'P']);
+const CP_SCHEDULE_BASE_CATEGORIES = Object.freeze(['REUNION', 'ECDPI', 'PPPP', 'P']);
 const CP_SCHEDULE_INSTITUTIONAL_COLOR = '#E5E7EB';
 const CP_SCHEDULE_ACTIVITY_DEFAULTS = Object.freeze({
   TUTORIA: Object.freeze({ name: 'Tutoría', acronym: 'T', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
   GUARDIA: Object.freeze({ name: 'Guardia', acronym: 'G', classroom: 'Sala de Profesores', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
-  REUNION: Object.freeze({ name: 'Reunión', acronym: 'R', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
-  P: Object.freeze({ name: 'Labores propias del puesto de trabajo', acronym: 'P', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
-  PPPP: Object.freeze({ name: 'Participación en proyectos, programas o planes de centro', acronym: 'PPPP', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
+  REUNION: Object.freeze({ name: 'Reunión de Departamento', acronym: 'RD', classroom: 'Departamento', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
+  ECDPI: Object.freeze({ name: 'Tareas de coordinación de centro y elaboración de documentos de planificación institucional', acronym: 'ECDPI', classroom: 'Departamento', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
+  PPPP: Object.freeze({ name: 'Participación en proyectos, programas o planes de centro', acronym: 'PPPP', classroom: 'Departamento', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
+  P: Object.freeze({ name: 'Labores propias del puesto de trabajo', acronym: 'P', classroom: 'Departamento', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
 });
 const CP_SCHEDULE_TEACHING_TYPE_IDS = Object.freeze(CP_CALENDAR_TYPE_DEFINITIONS.map(function(definition) { return definition.id; }));
 const CP_SCHEDULE_TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -194,10 +197,15 @@ function abrirConfiguracionHorario(wizardStep) {
 }
 
 function getScheduleConfigForUi_(spreadsheet) {
+  const config = getGeneralConfigValues_(spreadsheet);
+  const storedActivities = getScheduleActivities_();
   return {
     blockingError: '',
     slots: getScheduleTimeSlots_().map(function(slot) { return Object.assign({}, slot); }),
-    activities: getScheduleActivities_().map(function(activity) { return Object.assign({}, activity); }),
+    activities: (config[CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR] === config[CP.CONFIG_KEYS.ACADEMIC_YEAR]
+      ? storedActivities : addMissingBaseActivities_(storedActivities)).map(function(activity) { return Object.assign({}, activity); }),
+    managedTutorActivityId: isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR])
+      ? config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] : '',
     sessions: getWeeklySchedule_().map(function(session) { return Object.assign({}, session); }),
     days: CP_SCHEDULE_DAYS,
     slotTypes: CP_SCHEDULE_SLOT_TYPES,
@@ -228,7 +236,10 @@ function guardarConfiguracionHorario_(input, options) {
   const saveOptions = options || {};
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   assertScheduleStructureReady_(spreadsheet);
-  const normalized = normalizeAndValidateScheduleConfig_(input);
+  const previousActivities = getScheduleActivities_();
+  const normalized = normalizeAndValidateScheduleConfig_(input, previousActivities);
+  const generalConfig = getGeneralConfigValues_(spreadsheet);
+  assertManagedTutorActivity_(normalized.activities, generalConfig, previousActivities);
   const activeTypes = getScheduleTeachingTypesForUi_(spreadsheet)
     .filter(function(type) { return type.active; }).map(function(type) { return type.id; });
   const previousTypes = getScheduleActivities_().reduce(function(map, activity) {
@@ -256,6 +267,11 @@ function guardarConfiguracionHorario_(input, options) {
   }
   if (!saveOptions.section || saveOptions.section === 'activities') {
     syncStudentGroupValidation_(spreadsheet);
+    if (generalConfig[CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR] !== generalConfig[CP.CONFIG_KEYS.ACADEMIC_YEAR]) {
+      const marker = {};
+      marker[CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR] = generalConfig[CP.CONFIG_KEYS.ACADEMIC_YEAR];
+      updateConfigValues_(spreadsheet.getSheetByName(CP.SHEETS.CONFIG), marker, [CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR]);
+    }
   }
   if (saveOptions.renderViews !== false) {
     try {
@@ -271,10 +287,10 @@ function guardarConfiguracionHorario_(input, options) {
   return { message: 'La configuración del horario se ha guardado.' };
 }
 
-function normalizeAndValidateScheduleConfig_(input) {
+function normalizeAndValidateScheduleConfig_(input, previousActivities) {
   if (!input || typeof input !== 'object') throw new Error('No se han recibido datos válidos del horario.');
   const slots = normalizeScheduleSlots_(input.slots || []);
-  const activities = normalizeScheduleActivities_(input.activities || []);
+  const activities = normalizeScheduleActivities_(input.activities || [], previousActivities || []);
   const slotById = slots.reduce(function(map, slot) { map[slot.id] = slot; return map; }, {});
   const activityById = activities.reduce(function(map, activity) { map[activity.id] = activity; return map; }, {});
   const sessions = normalizeScheduleSessions_(input.sessions || [], slotById, activityById);
@@ -354,8 +370,10 @@ function normalizeScheduleSlotChain_(slots) {
   return slots;
 }
 
-function normalizeScheduleActivities_(rows) {
+function normalizeScheduleActivities_(rows, previousActivities) {
   const usedIds = {};
+  const legacyIds = (previousActivities || []).filter(function(item) { return item.category === 'DUAL'; })
+    .map(function(item) { return item.id; });
   return rows.map(function(raw) {
     const category = normalizeScheduleActivityCategory_(raw.category || raw.categoria);
     const activity = {
@@ -369,7 +387,15 @@ function normalizeScheduleActivities_(rows) {
       color: normalizeScheduleColor_(raw.color),
     };
     if (usedIds[activity.id]) throw new Error('Hay actividades con el mismo ID.');
-    if (CP_SCHEDULE_ACTIVITY_CATEGORIES.indexOf(category) === -1) throw new Error('La categoría de una actividad no es válida.');
+    if (CP_SCHEDULE_ACTIVITY_CATEGORIES.indexOf(category) === -1 &&
+        !(category === 'DUAL' && legacyIds.indexOf(activity.id) !== -1)) {
+      throw new Error('La categoría de una actividad no es válida.');
+    }
+    if (CP_SCHEDULE_INSTITUTIONAL_CATEGORIES.indexOf(category) !== -1) {
+      activity.teachingTypeId = '';
+      activity.group = '';
+    }
+    if (category === 'TUTORIA') activity.teachingTypeId = '';
     if (!activity.name || !activity.acronym) throw new Error('Toda actividad debe tener nombre y sigla.');
     if (!activity.color) throw new Error('Toda actividad debe tener un color válido.');
     if (category === 'MODULO') {
@@ -381,6 +407,118 @@ function normalizeScheduleActivities_(rows) {
     usedIds[activity.id] = true;
     return activity;
   });
+}
+
+function addMissingBaseActivities_(activities, preserveCustomized) {
+  const result = activities.map(function(activity) { return Object.assign({}, activity); });
+  CP_SCHEDULE_BASE_CATEGORIES.forEach(function(category) {
+    const defaults = CP_SCHEDULE_ACTIVITY_DEFAULTS[category];
+    if (result.some(function(activity) {
+      return activity.category === category &&
+        (preserveCustomized || activity.acronym === defaults.acronym);
+    })) return;
+    result.push({ id: createCalendarRecordId_('ACT'), category: category,
+      name: defaults.name, acronym: defaults.acronym, teachingTypeId: '', group: '',
+      classroom: defaults.classroom, color: defaults.color });
+  });
+  return result;
+}
+
+function seedBaseScheduleActivities_(spreadsheet) {
+  const config = getGeneralConfigValues_(spreadsheet);
+  const year = config[CP.CONFIG_KEYS.ACADEMIC_YEAR];
+  if (!year || config[CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR] === year) return;
+  const current = getScheduleActivities_();
+  const seeded = addMissingBaseActivities_(current);
+  if (seeded.length !== current.length) {
+    persistScheduleConfig_(spreadsheet, { activities: seeded }, 'activities');
+    syncStudentGroupValidation_(spreadsheet);
+  }
+  const marker = {};
+  marker[CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR] = year;
+  updateConfigValues_(spreadsheet.getSheetByName(CP.SHEETS.CONFIG), marker, [CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR]);
+}
+
+function assertManagedTutorActivity_(activities, config, previousActivities) {
+  if (!isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR])) return;
+  const id = config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID];
+  if (!id) throw new Error('Falta la actividad de Tutoría gestionada. Repara la estructura.');
+  const current = (previousActivities || []).find(function(item) { return item.id === id; });
+  const next = activities.find(function(item) { return item.id === id; });
+  if (!current || !next || next.category !== 'TUTORIA' || next.name !== 'Tutoría' ||
+      next.acronym !== 'T' || next.group !== config[CP.CONFIG_KEYS.TUTOR_GROUP] ||
+      next.teachingTypeId) {
+    throw new Error('La actividad Tutoría se gestiona desde Datos del docente y centro.');
+  }
+}
+
+function syncManagedTutorActivity_(spreadsheet, values, previousValues) {
+  const activitiesSheet = spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_ACTIVITIES);
+  const sessionsSheet = spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE_SESSIONS);
+  if (!activitiesSheet || !sessionsSheet) {
+    if (isTutorEnabled_(values[CP.CONFIG_KEYS.IS_TUTOR])) {
+      throw new Error('Falta la estructura técnica del Horario. Usa «Reparar estructura».');
+    }
+    return '';
+  }
+  const activities = getScheduleActivities_();
+  const sessions = getWeeklySchedule_();
+  const config = Object.assign({}, values);
+  config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] = previousValues[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] || '';
+  const reconciled = reconcileTutorActivityInModel_(activities, sessions, config);
+  if (JSON.stringify(reconciled.activities) !== JSON.stringify(activities)) {
+    persistScheduleConfig_(spreadsheet, { activities: reconciled.activities }, 'activities');
+  }
+  if (reconciled.sessions.length !== sessions.length) {
+    persistScheduleConfig_(spreadsheet, { sessions: reconciled.sessions }, 'sessions');
+  }
+  return reconciled.id;
+}
+
+function reconcileTutorActivityInModel_(activities, sessions, config) {
+  const enabled = isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR]);
+  const id = normalizeConfigValue_(config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID]);
+  const current = id ? activities.find(function(item) { return item.id === id; }) : null;
+  if (current && current.category !== 'TUTORIA') {
+    throw new Error('La referencia técnica de Tutoría apunta a otra actividad. Revisa la estructura.');
+  }
+  if (!enabled) {
+    return { id: '',
+      activities: current ? activities.filter(function(item) { return item.id !== id; }) : activities,
+      sessions: id ? sessions.filter(function(item) { return item.activityId !== id; }) : sessions };
+  }
+  const group = config[CP.CONFIG_KEYS.TUTOR_GROUP];
+  if (!group) throw new Error('Indica el grupo de tutoría.');
+  const matches = !id ? activities.filter(function(item) {
+    return item.category === 'TUTORIA' && item.name === 'Tutoría' && item.acronym === 'T' &&
+      item.group === group;
+  }) : [];
+  const activity = current || (matches.length === 1 ? matches[0] : null);
+  const nextId = activity ? activity.id : createCalendarRecordId_('ACT');
+  const updated = Object.assign({}, activity || {}, { id: nextId, category: 'TUTORIA',
+    name: 'Tutoría', acronym: 'T', group: group, teachingTypeId: '',
+    classroom: activity ? activity.classroom : '',
+    color: activity ? activity.color : CP_SCHEDULE_INSTITUTIONAL_COLOR });
+  const next = activity
+    ? activities.map(function(item) { return item.id === nextId ? updated : item; })
+    : activities.concat(updated);
+  return { id: nextId, activities: next, sessions: sessions };
+}
+
+function repairTutorAndBaseActivities_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const config = getGeneralConfigValues_(spreadsheet);
+  seedBaseScheduleActivities_(spreadsheet);
+  if (isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR])) {
+    const id = syncManagedTutorActivity_(spreadsheet, config, config);
+    if (id !== config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID]) {
+      const update = {};
+      update[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] = id;
+      updateConfigValues_(spreadsheet.getSheetByName(CP.SHEETS.CONFIG), update,
+        [CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID]);
+    }
+  }
+  syncStudentGroupValidation_(spreadsheet);
 }
 
 function normalizeScheduleSessions_(rows, slotById, activityById) {

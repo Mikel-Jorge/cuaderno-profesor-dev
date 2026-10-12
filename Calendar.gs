@@ -1,7 +1,7 @@
 const CP_CALENDAR_TYPE_DEFINITIONS = Object.freeze([
   Object.freeze({ id: 'FP1', name: '1º' }),
   Object.freeze({ id: 'FP2', name: '2º' }),
-  Object.freeze({ id: 'ONLINE', name: 'Online' }),
+  Object.freeze({ id: 'ONLINE', name: 'VIRTUAL' }),
   Object.freeze({ id: 'CE', name: 'Curso de Especialización' }),
 ]);
 

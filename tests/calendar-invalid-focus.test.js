@@ -7,7 +7,7 @@ assert.match(html, /id="calendar-form" novalidate/);
 const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 const data = {
   academicYear: '2026-2027',
-  types: ['1º', '2º', 'Online', 'Curso de Especialización'].map((name, index) => ({
+  types: ['1º', '2º', 'VIRTUAL', 'Curso de Especialización'].map((name, index) => ({
     id: `T${index}`, name, active: true, startDate: '2026-09-01', endDate: '',
     configurePractices: false, configureReview: false,
     evaluations: [{ name: '1ª evaluación', endDate: '' }],

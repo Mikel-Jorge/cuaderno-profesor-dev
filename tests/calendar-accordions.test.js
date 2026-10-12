@@ -6,7 +6,7 @@ const html = fs.readFileSync('UiDialogCalendarConfig.html', 'utf8');
 const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 const initialData = {
   academicYear: '2026-2027',
-  types: ['1º', '2º', 'Online', 'Curso de Especialización'].map((name, index) => ({
+  types: ['1º', '2º', 'VIRTUAL', 'Curso de Especialización'].map((name, index) => ({
     id: `T${index}`, name, active: false, startDate: '', endDate: '',
     configurePractices: false, configureReview: false, evaluations: [],
   })),

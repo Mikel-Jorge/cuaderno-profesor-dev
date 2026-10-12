@@ -28,6 +28,8 @@ function getGeneralConfigCompletion_(config) {
   if (!normalizeConfigValue_(config[CP.CONFIG_KEYS.ACADEMIC_YEAR])) missing.push('el curso académico');
   if (!normalizeConfigValue_(config[CP.CONFIG_KEYS.TEACHER])) missing.push('el nombre del docente');
   if (!normalizeConfigValue_(config[CP.CONFIG_KEYS.SCHOOL])) missing.push('el centro');
+  if (isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR]) &&
+      !normalizeConfigValue_(config[CP.CONFIG_KEYS.TUTOR_GROUP])) missing.push('el grupo de tutoría');
   if (!missing.length) return { complete: true, reason: '' };
   const reason = missing.length === 1
     ? 'Falta ' + missing[0] + '.'
@@ -47,6 +49,7 @@ function guardarDatosGeneralesAsistente(input) {
   }
   const result = saveGeneralConfig_(values, {
     updateCover: true, showToast: false, includeTheme: true,
+    confirmedTutorRemoval: input.confirmedTutorRemoval === true,
   });
   if (!spreadsheet.getSheetByName(CP.SHEETS.COVER)) {
     initializeCoverStructure_();
@@ -90,6 +93,13 @@ function saveGeneralConfig_(input, options) {
   if (structureError) throw new Error(structureError);
 
   const previousValues = getStoredConfigMap_(spreadsheet);
+  values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] = normalizeConfigValue_(previousValues[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID]);
+  values[CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR] = normalizeConfigValue_(previousValues[CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR]);
+  if (isTutorEnabled_(previousValues[CP.CONFIG_KEYS.IS_TUTOR]) &&
+      !isTutorEnabled_(values[CP.CONFIG_KEYS.IS_TUTOR]) && saveOptions.confirmedTutorRemoval !== true &&
+      input.confirmedTutorRemoval !== true) {
+    throw new Error('Confirma que deseas eliminar la actividad Tutoría y sus sesiones.');
+  }
   const previousTheme = saveOptions.includeTheme
     ? getActiveTheme_(spreadsheet, previousValues) : null;
   const changedKeys = getPersistedConfigFields_(saveOptions).map(function(field) {
@@ -98,7 +108,27 @@ function saveGeneralConfig_(input, options) {
     return normalizeConfigValue_(previousValues[key]) !== values[key];
   });
 
-  updateConfigValues_(configSheet, values, changedKeys);
+  const tutorChanged = (isTutorEnabled_(values[CP.CONFIG_KEYS.IS_TUTOR]) ||
+    isTutorEnabled_(previousValues[CP.CONFIG_KEYS.IS_TUTOR])) && (changedKeys.some(function(key) {
+    return key === CP.CONFIG_KEYS.IS_TUTOR || key === CP.CONFIG_KEYS.TUTOR_GROUP;
+  }) ||
+    !values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID]);
+  if (tutorChanged) {
+    const snapshots = captureScheduleSnapshots_(spreadsheet);
+    try {
+      const activityId = syncManagedTutorActivity_(spreadsheet, values, previousValues);
+      values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] = activityId;
+      updateConfigValues_(configSheet, values, changedKeys.concat([CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID]));
+    } catch (error) {
+      restoreScheduleSnapshots_(spreadsheet, snapshots);
+      throw error;
+    }
+    syncStudentGroupValidation_(spreadsheet);
+    if (saveOptions.updateScheduleView !== false &&
+        spreadsheet.getSheetByName(CP.SHEETS.SCHEDULE)) createOrRepairScheduleSheet_();
+  } else {
+    updateConfigValues_(configSheet, values, changedKeys);
+  }
 
   const themeChanged = saveOptions.includeTheme && changedKeys.some(isThemeConfigKey_);
   if (themeChanged) {
@@ -109,7 +139,11 @@ function saveGeneralConfig_(input, options) {
   if (saveOptions.updateCover !== false && coverSheet) {
     const changedGeneralKeys = changedKeys.filter(isGeneralDataConfigKey_);
     if (changedGeneralKeys.length) {
-      updateCoverData_(coverSheet, values, changedGeneralKeys);
+      if (changedGeneralKeys.indexOf(CP.CONFIG_KEYS.IS_TUTOR) !== -1) {
+        createOrRepairCover_(coverSheet);
+      } else {
+        updateCoverData_(coverSheet, values, changedGeneralKeys);
+      }
     }
   }
 
@@ -172,6 +206,7 @@ function initializeConfigSheet_(sheet) {
   const rowsToClear = Math.max(sheet.getLastRow(), values.length);
   const columnsToClear = Math.max(sheet.getLastColumn(), 3);
 
+  ensureSheetSize_(sheet, rowsToClear, columnsToClear);
   sheet.clearFormats();
   sheet.getRange(1, 1, rowsToClear, columnsToClear).clearContent();
   sheet.getRange(1, 1, values.length, 2).setValues(values);
@@ -185,12 +220,19 @@ function initializeConfigSheet_(sheet) {
 }
 
 function updateConfigValues_(sheet, values, changedKeys) {
-  const rowByKey = getConfigFields_().reduce(function(map, field, index) {
-    map[field.key] = index + 2;
+  const lastRow = sheet.getLastRow();
+  const keys = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, 1).getValues() : [];
+  const rowByKey = keys.reduce(function(map, row, index) {
+    if (row[0]) map[row[0]] = index + 2;
     return map;
   }, {});
-
+  let nextRow = Math.max(2, lastRow + 1);
   changedKeys.forEach(function(key) {
+    if (!rowByKey[key]) {
+      rowByKey[key] = nextRow++;
+      ensureSheetSize_(sheet, rowByKey[key], 2);
+      sheet.getRange(rowByKey[key], 1).setValue(key);
+    }
     sheet.getRange(rowByKey[key], 2)
       .setNumberFormat('@')
       .setValue(values[key]);
@@ -239,7 +281,8 @@ function normalizeGeneralConfigInput_(input) {
   }
 
   const values = getConfigFields_().reduce(function(config, field) {
-    config[field.key] = normalizeConfigValue_(input[field.key] || field.defaultValue || '');
+    config[field.key] = normalizeConfigFieldValue_(field.key,
+      input[field.key] === undefined ? field.defaultValue || '' : input[field.key]);
     return config;
   }, {});
 
@@ -258,10 +301,15 @@ function normalizeConfigValue_(value) {
 
 function normalizeConfigFieldValue_(key, value) {
   const normalizedValue = normalizeConfigValue_(value);
+  if (key === CP.CONFIG_KEYS.IS_TUTOR) return isTutorEnabled_(value) ? 'true' : 'false';
   if (key === CP.CONFIG_KEYS.THEME_PRESET) {
     return normalizeThemePresetId_(normalizedValue);
   }
   return normalizedValue;
+}
+
+function isTutorEnabled_(value) {
+  return value === true || String(value).trim().toLowerCase() === 'true';
 }
 
 function normalizeSchoolWebsite_(value) {
@@ -331,6 +379,10 @@ function getConfigFields_() {
     { key: CP.CONFIG_KEYS.SCHOOL_PHONE },
     { key: CP.CONFIG_KEYS.SCHOOL_EMAIL },
     { key: CP.CONFIG_KEYS.SCHOOL_WEB },
+    { key: CP.CONFIG_KEYS.IS_TUTOR, defaultValue: 'false' },
+    { key: CP.CONFIG_KEYS.TUTOR_GROUP },
+    { key: CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID },
+    { key: CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR },
     { key: CP.CONFIG_KEYS.THEME_PRESET, defaultValue: CP_DEFAULT_THEME_PRESET },
     { key: CP.CONFIG_KEYS.THEME_PRIMARY, defaultValue: CP_THEME_PRESETS[CP_DEFAULT_THEME_PRESET].colors.primary },
     { key: CP.CONFIG_KEYS.THEME_SECONDARY, defaultValue: CP_THEME_PRESETS[CP_DEFAULT_THEME_PRESET].colors.secondary },
@@ -347,7 +399,9 @@ function getGeneralConfigFields_() {
 function getPersistedConfigFields_(options) {
   const fields = getGeneralConfigFields_();
   return options && options.includeTheme
-    ? getConfigFields_()
+    ? getConfigFields_().filter(function(field) {
+      return [CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID, CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR].indexOf(field.key) === -1;
+    })
     : fields;
 }
 
@@ -361,6 +415,8 @@ function isGeneralDataConfigKey_(key) {
     CP.CONFIG_KEYS.SCHOOL_PHONE,
     CP.CONFIG_KEYS.SCHOOL_EMAIL,
     CP.CONFIG_KEYS.SCHOOL_WEB,
+    CP.CONFIG_KEYS.IS_TUTOR,
+    CP.CONFIG_KEYS.TUTOR_GROUP,
   ].indexOf(key) !== -1;
 }
 

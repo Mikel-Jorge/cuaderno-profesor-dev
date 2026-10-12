@@ -15,7 +15,8 @@ const calendar = { academicYear: '2027-2028', types: [{ id: 'FP1', active: false
 const schedule = { slots: [{ id: 'T1', type: 'SESION', startTime: '08:00', durationMinutes: 60 }],
   activities: [{ id: 'A1', name: 'Actividad' }], sessions: [] };
 const context = {
-  CP: { CONFIG_KEYS: { ACADEMIC_YEAR: 'curso_academico', TEACHER: 'profesor', SCHOOL: 'centro' } },
+  CP: { CONFIG_KEYS: { ACADEMIC_YEAR: 'curso_academico', TEACHER: 'profesor', SCHOOL: 'centro',
+    IS_TUTOR: 'es_tutor', TUTOR_GROUP: 'grupo_tutoria', TUTOR_ACTIVITY_ID: 'actividad_tutoria_id' } },
   normalizeConfigValue_: value => String(value || '').trim(),
   PropertiesService: { getDocumentProperties: () => properties },
   SpreadsheetApp: { getActiveSpreadsheet: () => ({ getSpreadsheetTimeZone: () => 'Europe/Madrid',
@@ -28,6 +29,11 @@ const context = {
   normalizeGeneralConfigInput_: value => value,
   validateAcademicYear_: () => {}, validateThemeConfig_: () => {},
   normalizeAndValidateScheduleConfig_: value => value,
+  addMissingBaseActivities_: value => value,
+  reconcileTutorActivityInModel_: (activities, sessions, config) =>
+    ({ activities, sessions, id: config.actividad_tutoria_id || '' }),
+  assertManagedTutorActivity_: () => {},
+  isTutorEnabled_: value => value === 'true',
   normalizeNewCourseProcessInput_: value => value,
   validateNotebookOriginalLocation_: () => {},
   saveGeneralConfig_: () => calls.push('general'),

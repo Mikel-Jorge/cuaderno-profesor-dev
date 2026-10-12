@@ -85,6 +85,11 @@ function syncStudentGroupValidation_(spreadsheet) {
       .filter(function(row) { return normalizeScheduleActivityCategory_(row[0]) === 'MODULO'; })
       .map(function(row) { return normalizeScheduleText_(row[4]).replace(/\s+/g, ' '); })
       .filter(Boolean) : [];
+  const config = getGeneralConfigValues_(book);
+  if (isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR])) {
+    const tutorGroup = normalizeScheduleText_(config[CP.CONFIG_KEYS.TUTOR_GROUP]).replace(/\s+/g, ' ');
+    if (tutorGroup) groups.push(tutorGroup);
+  }
   const unique = Array.from(new Set(groups)).sort(function(a, b) {
     return a.localeCompare(b, 'es', { sensitivity: 'base' });
   });

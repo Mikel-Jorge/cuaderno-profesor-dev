@@ -20,6 +20,7 @@
       .general-theme-grid label:first-child{grid-column:1/-1}
       .general-theme-grid select,.general-theme-grid input{box-sizing:border-box;width:100%;min-width:0;height:40px;padding:4px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)}
       .general-theme-grid input[type=color]{cursor:pointer}
+      .tutor-toggle{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}.tutor-toggle input{width:16px;height:16px;min-height:0!important}.tutor-group[hidden]{display:none}
       @media(max-width:460px){.general-theme-grid{gap:8px}}
     </style>
   </head>
@@ -59,6 +60,11 @@
               <div class="form-field form-field-wide">
                 <label for="profesor_email">Correo del profesor</label>
                 <input id="profesor_email" name="profesor_email" type="email" autocomplete="email">
+              </div>
+              <label class="tutor-toggle form-field-wide"><input id="es_tutor" type="checkbox">Soy tutor/a</label>
+              <div class="form-field form-field-wide tutor-group" id="tutor-group-field" hidden>
+                <label for="grupo_tutoria">Grupo de tutoría</label>
+                <input id="grupo_tutoria" name="grupo_tutoria" type="text" autocomplete="off">
               </div>
             </div>
           </section>
@@ -114,6 +120,7 @@
           </div>
         </div>
       </form>
+      <div class="internal-confirmation-backdrop is-hidden" id="tutor-confirmation" aria-hidden="true"><section class="internal-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="tutor-confirmation-title"><h2 id="tutor-confirmation-title">Dejar de ser tutor/a</h2><p>Se eliminarán la actividad Tutoría y todas las sesiones del horario asignadas a ella. No afecta al alumnado ni a otros módulos. ¿Quieres continuar?</p><div class="actions"><button class="button button-secondary" id="tutor-cancel" type="button">Cancelar</button><button class="button button-danger" id="tutor-accept" type="button">Dejar de ser tutor/a</button></div></section></div>
 
       <footer class="author-footer">
         &copy; <?= uiConfig.author ?> &middot;
@@ -130,6 +137,7 @@
         'curso_academico',
         'profesor',
         'profesor_email',
+        'grupo_tutoria',
         'centro',
         'centro_direccion',
         'centro_telefono',
@@ -141,6 +149,7 @@
       const saveButton = document.getElementById('save-button');
       const resultElement = document.getElementById('form-result');
       const saveLoading = document.getElementById('save-loading');
+      const tutorCheckbox = document.getElementById('es_tutor');
       let baseline = '';
       let isSaving = false;
 
@@ -189,6 +198,37 @@
           showResult('El curso académico debe tener el formato YYYY-YYYY.', 'error');
           return;
         }
+        if (values.es_tutor === 'true' && !values.grupo_tutoria) {
+          showResult('Indica el grupo de tutoría.', 'error');
+          document.getElementById('grupo_tutoria').focus();
+          return;
+        }
+        if (GENERAL_CONFIG.es_tutor === 'true' && values.es_tutor !== 'true') {
+          const overlay = document.getElementById('tutor-confirmation');
+          overlay.classList.remove('is-hidden');
+          overlay.setAttribute('aria-hidden', 'false');
+          document.getElementById('tutor-cancel').focus();
+          return;
+        }
+        saveValues(values);
+      });
+
+      document.getElementById('tutor-cancel').addEventListener('click', function() {
+        const overlay = document.getElementById('tutor-confirmation');
+        overlay.classList.add('is-hidden');
+        overlay.setAttribute('aria-hidden', 'true');
+        tutorCheckbox.checked = true;
+        updateTutorGroupVisibility();
+        updateSaveButton();
+      });
+      document.getElementById('tutor-accept').addEventListener('click', function() {
+        document.getElementById('tutor-confirmation').classList.add('is-hidden');
+        const values = collectValues();
+        values.confirmedTutorRemoval = true;
+        saveValues(values);
+      });
+
+      function saveValues(values) {
 
         setSavingState(true);
         document.getElementById('save-loading-label').textContent =
@@ -200,7 +240,7 @@
           .withSuccessHandler(handleSaveSuccess)
           .withFailureHandler(handleSaveError)
           [WIZARD_STEP ? 'guardarDatosGeneralesAsistente' : 'guardarDatosGenerales'](values);
-      });
+      }
 
       closeButton.addEventListener('click', function() {
         google.script.host.close();
@@ -208,6 +248,7 @@
 
       function handleFormChange(event) {
         if (isSaving) return;
+        if (event.target === tutorCheckbox) updateTutorGroupVisibility();
         if (resultElement.classList.contains('success')) {
           hideResult();
         }
@@ -232,6 +273,13 @@
         fieldNames.forEach(function(fieldName) {
           document.getElementById(fieldName).value = values[fieldName] || '';
         });
+        tutorCheckbox.checked = values.es_tutor === 'true';
+        updateTutorGroupVisibility();
+      }
+
+      function updateTutorGroupVisibility() {
+        document.getElementById('tutor-group-field').hidden = !tutorCheckbox.checked;
+        document.getElementById('grupo_tutoria').required = tutorCheckbox.checked;
       }
 
       function collectValues() {
@@ -239,6 +287,7 @@
           config[fieldName] = document.getElementById(fieldName).value.trim();
           return config;
         }, {});
+        values.es_tutor = tutorCheckbox.checked ? 'true' : 'false';
         ['preset', 'primary', 'secondary', 'accent'].forEach(function(key) {
           values['tema_' + key] = document.getElementById('tema_' + key).value;
         });

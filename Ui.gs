@@ -100,6 +100,7 @@ function getUiProcessDefinition_(processId, processInput) {
         initializeConfigStructure_();
         initializeCalendarStructure_();
         ensureScheduleTechnicalStructure_();
+        repairTutorAndBaseActivities_();
         ensureModuleConfigTechnicalStructure_();
         cleanupOrphanModuleConfigsWithLock_();
       } },

@@ -49,12 +49,18 @@ function iniciarPreparacionNuevoCurso(input) {
 }
 
 function guardarDatosGeneralesNuevoCurso(input) {
-  const values = normalizeGeneralConfigInput_(input);
+  const draft = getNewCourseDraft_();
+  const merged = Object.assign({}, draft.config, input);
+  const values = normalizeGeneralConfigInput_(merged);
   validateThemeConfig_(values);
   validateAcademicYear_(values[CP.CONFIG_KEYS.ACADEMIC_YEAR]);
-  const draft = getNewCourseDraft_();
   assertNewCourseDraftEditable_(draft);
+  if (isTutorEnabled_(draft.config[CP.CONFIG_KEYS.IS_TUTOR]) &&
+      !isTutorEnabled_(values[CP.CONFIG_KEYS.IS_TUTOR]) && input.confirmedTutorRemoval !== true) {
+    throw new Error('Confirma que deseas dejar de ser tutor/a en el nuevo curso.');
+  }
   draft.config = values;
+  reconcileNewCourseTutorDraft_(draft);
   draft.reviewed[1] = true;
   saveNewCourseDraft_(draft);
   return { values: values, summary: getNewCourseDraftSummary_(draft) };
@@ -77,7 +83,8 @@ function guardarHorarioNuevoCurso(input, step) {
   if (!section) throw new Error('El paso de horario no existe.');
   const draft = getNewCourseDraft_();
   assertNewCourseDraftEditable_(draft);
-  const normalized = normalizeAndValidateScheduleConfig_(input);
+  const normalized = normalizeAndValidateScheduleConfig_(input, draft.schedule.activities);
+  assertManagedTutorActivity_(normalized.activities, draft.config, draft.schedule.activities);
   if (section === 'activities') {
     const activeIds = draft.calendar.types.filter(function(type) { return type.active; })
       .map(function(type) { return type.id; });
@@ -93,6 +100,7 @@ function guardarHorarioNuevoCurso(input, step) {
     });
   }
   draft.schedule = normalized;
+  if (section === 'activities') draft.schedule.activities = addMissingBaseActivities_(draft.schedule.activities, true);
   draft.reviewed[step] = true;
   saveNewCourseDraft_(draft);
   return getNewCourseDraftSummary_(draft);
@@ -103,6 +111,11 @@ function guardarSeguridadNuevoCurso(input) {
   assertNewCourseDraftEditable_(draft);
   const processInput = normalizeNewCourseProcessInput_(input);
   validateNotebookOriginalLocation_(processInput);
+  if (isTutorEnabled_(draft.config[CP.CONFIG_KEYS.IS_TUTOR]) &&
+      !isTutorEnabled_(processInput.config[CP.CONFIG_KEYS.IS_TUTOR]) &&
+      input.confirmedTutorRemoval !== true) {
+    throw new Error('Confirma que deseas dejar de ser tutor/a en el nuevo curso.');
+  }
   if (draft.config[CP.CONFIG_KEYS.ACADEMIC_YEAR] !==
       processInput.config[CP.CONFIG_KEYS.ACADEMIC_YEAR]) {
     draft.calendar = createDefaultNewCourseCalendarConfig_(
@@ -110,7 +123,9 @@ function guardarSeguridadNuevoCurso(input) {
     draft.reviewed[1] = false;
     draft.reviewed[2] = false;
   }
+  const tutorActivityId = draft.config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID];
   draft.config = processInput.config;
+  draft.config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] = normalizeConfigValue_(tutorActivityId);
   draft.originalFileName = processInput.originalFileName;
   draft.originalFolderId = processInput.originalFolderId;
   draft.destinationFolderId = processInput.destinationFolderId;
@@ -146,7 +161,11 @@ function getNewCourseDraft_() {
       if (chunk === null) throw new Error('El borrador del curso está incompleto.');
       json += chunk;
     }
-    return JSON.parse(json);
+    const draft = JSON.parse(json);
+    draft.config = normalizeGeneralConfigInput_(draft.config);
+    draft.schedule.activities = addMissingBaseActivities_(draft.schedule.activities, true);
+    reconcileNewCourseTutorDraft_(draft);
+    return draft;
   }
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const config = Object.assign({}, getGeneralConfigValues_(spreadsheet));
@@ -155,9 +174,21 @@ function getNewCourseDraft_() {
     spreadsheet, config[CP.CONFIG_KEYS.ACADEMIC_YEAR]);
   const schedule = getScheduleConfigForUi_(spreadsheet);
   schedule.sessions = [];
-  return { config: config, calendar: calendar, schedule: schedule,
+  schedule.activities = addMissingBaseActivities_(schedule.activities, true);
+  const draft = { config: config, calendar: calendar, schedule: schedule,
     visited: [true, false, false, false, false, false, false],
     reviewed: [false, false, false, false, false, false, false] };
+  reconcileNewCourseTutorDraft_(draft);
+  return draft;
+}
+
+function reconcileNewCourseTutorDraft_(draft) {
+  const next = reconcileTutorActivityInModel_(draft.schedule.activities,
+    draft.schedule.sessions, draft.config);
+  draft.schedule.activities = next.activities;
+  draft.schedule.sessions = next.sessions;
+  draft.config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] = next.id;
+  draft.schedule.managedTutorActivityId = next.id;
 }
 
 function createDefaultNewCourseCalendarConfig_(spreadsheet, academicYear) {
@@ -231,7 +262,9 @@ function getNewCourseDraftSummary_(draft) {
       complete: reviewed && value,
       reason: reviewed && !value ? reasons[keys[index]] || '' : '' };
   });
-  return { academicYear: draft.config[CP.CONFIG_KEYS.ACADEMIC_YEAR], calendar: calendarReady,
+  return { academicYear: draft.config[CP.CONFIG_KEYS.ACADEMIC_YEAR],
+    tutorGroup: isTutorEnabled_(draft.config[CP.CONFIG_KEYS.IS_TUTOR])
+      ? draft.config[CP.CONFIG_KEYS.TUTOR_GROUP] : '', calendar: calendarReady,
     slots: slots, activities: activities, sessions: sessions,
     steps: steps, reasons: reasons };
 }
@@ -241,7 +274,8 @@ function aplicarBorradorNuevoCurso() {
   if (!draft.reviewed[0]) throw new Error('Completa el paso Seguridad antes de generar.');
   if (draft.generationPhase >= 2) return 'Datos del borrador aplicados.';
   if (draft.generationPhase !== 1) throw new Error('Primero debe crearse la copia de seguridad.');
-  saveGeneralConfig_(draft.config, { updateCover: false, showToast: false, includeTheme: true });
+  saveGeneralConfig_(draft.config, { updateCover: false, showToast: false,
+    includeTheme: true, confirmedTutorRemoval: true, updateScheduleView: false });
   guardarConfiguracionCalendario_(draft.calendar, { renderViews: false, showToast: false });
   guardarConfiguracionHorario_(draft.schedule, { renderViews: false, showToast: false });
   draft.generationPhase = 2;
@@ -303,6 +337,7 @@ function obtenerFormularioPasoNuevoCurso(step) {
     template.wizardStep = 0;
   } else {
     template.scheduleConfig = Object.assign({}, getScheduleConfigForUi_(spreadsheet), draft.schedule);
+    template.scheduleConfig.managedTutorActivityId = draft.config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID];
     template.scheduleConfig.teachingTypes = draft.calendar.types.map(function(type) {
       return { id: type.id, label: type.name, active: type.active };
     });

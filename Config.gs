@@ -1,7 +1,7 @@
 const CP = Object.freeze({
   PROJECT_NAME: 'Cuaderno del Profesor',
-  NOTEBOOK_VERSION: '1.9.2',
-  SCHEMA_VERSION: '11',
+  NOTEBOOK_VERSION: '1.10.0',
+  SCHEMA_VERSION: '12',
   FEEDBACK_FORM_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSeGNIgzDp0hLj8vymzhPSuRBqkS1RNe5l2pRughEmRmwNjNBw/viewform?usp=publish-editor',
   TAB_COLORS: Object.freeze({
     GENERAL: '#546E7A',
@@ -36,6 +36,10 @@ const CP = Object.freeze({
     SCHOOL_PHONE: 'centro_telefono',
     SCHOOL_EMAIL: 'centro_email',
     SCHOOL_WEB: 'centro_web',
+    IS_TUTOR: 'es_tutor',
+    TUTOR_GROUP: 'grupo_tutoria',
+    TUTOR_ACTIVITY_ID: 'actividad_tutoria_id',
+    BASE_ACTIVITIES_YEAR: 'actividades_base_curso',
     THEME_PRESET: 'tema_preset',
     THEME_PRIMARY: 'tema_primary',
     THEME_SECONDARY: 'tema_secondary',

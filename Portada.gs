@@ -8,7 +8,7 @@ function createOrRepairCover_(sheet) {
     );
   }
 
-  prepareCoverStructure_(sheet);
+  prepareCoverStructure_(sheet, config);
   updateCoverData_(sheet, config);
   applyCoverTheme_(sheet, getActiveTheme_(spreadsheet, config));
   renderCoverIndex_(sheet);
@@ -24,7 +24,7 @@ function actualizarIndicePortada() {
   }
 }
 
-function prepareCoverStructure_(sheet) {
+function prepareCoverStructure_(sheet, config) {
   const bounds = getCoverLayoutBounds_(sheet.getParent());
   ensureSheetSize_(sheet, bounds.rows, bounds.columns);
 
@@ -77,9 +77,10 @@ function prepareCoverStructure_(sheet) {
     ['Correo del centro'],
     ['Web del centro'],
   ];
+  if (isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR])) labels.push(['Tutoría']);
   sheet.getRange(7, 1, labels.length, 1).setValues(labels).setFontWeight('bold');
 
-  for (let row = 7; row <= 13; row += 1) {
+  for (let row = 7; row < 7 + labels.length; row += 1) {
     sheet.getRange(row, 2, 1, 4).merge().setWrap(true);
   }
 }
@@ -94,6 +95,7 @@ function updateCoverData_(sheet, config, changedKeys) {
     CP.CONFIG_KEYS.SCHOOL_PHONE,
     CP.CONFIG_KEYS.SCHOOL_EMAIL,
     CP.CONFIG_KEYS.SCHOOL_WEB,
+    CP.CONFIG_KEYS.TUTOR_GROUP,
   ];
   const theme = getActiveTheme_(sheet.getParent(), config);
   const fields = {};
@@ -104,6 +106,9 @@ function updateCoverData_(sheet, config, changedKeys) {
   fields[CP.CONFIG_KEYS.SCHOOL_PHONE] = { range: 'B11:E11' };
   fields[CP.CONFIG_KEYS.SCHOOL_EMAIL] = { range: 'B12:E12', linkType: 'mailto:' };
   fields[CP.CONFIG_KEYS.SCHOOL_WEB] = { range: 'B13:E13', linkType: 'web' };
+  if (isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR])) {
+    fields[CP.CONFIG_KEYS.TUTOR_GROUP] = { range: 'B14:E14' };
+  }
 
   keysToUpdate.forEach(function(key) {
     if (key === CP.CONFIG_KEYS.ACADEMIC_YEAR) {
@@ -147,14 +152,15 @@ function applyCoverTheme_(sheet, theme) {
   sheet.getRange('G6')
     .setBackground(colors.accent)
     .setFontColor(colors.onAccent);
-  sheet.getRange('A7:A13')
+  const lastDataRow = isTutorEnabled_(getGeneralConfigValues_(sheet.getParent())[CP.CONFIG_KEYS.IS_TUTOR]) ? 14 : 13;
+  sheet.getRange('A7:A' + lastDataRow)
     .setBackground(colors.muted)
     .setFontColor(colors.text);
-  sheet.getRange('B7:E13')
+  sheet.getRange('B7:E' + lastDataRow)
     .setBackground(colors.surface)
     .setFontColor(colors.text);
 
-  for (let row = 7; row <= 13; row += 1) {
+  for (let row = 7; row <= lastDataRow; row += 1) {
     sheet.getRange(row, 2, 1, 4).setBorder(
       true, true, true, true, false, false,
       colors.border,
@@ -220,7 +226,8 @@ function renderCoverIndex_(coverSheet) {
 
 function getCoverLayoutBounds_(spreadsheet) {
   return {
-    rows: Math.max(13, 6 + getVisibleNotebookSheets_(spreadsheet).length),
+    rows: Math.max(isTutorEnabled_(getGeneralConfigValues_(spreadsheet)[CP.CONFIG_KEYS.IS_TUTOR]) ? 14 : 13,
+      6 + getVisibleNotebookSheets_(spreadsheet).length),
     columns: 7,
   };
 }

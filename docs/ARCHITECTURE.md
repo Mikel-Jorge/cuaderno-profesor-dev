@@ -87,7 +87,7 @@ Todas permanecen ocultas. No existen `_MODULOS`, `_MATRICULAS` ni `_UT`: las UT 
 
 `0 Portada` se genera desde `_CONFIG`. Su índice consulta las hojas visibles existentes, excluye nombres `_...` y crea enlaces por `gid`; por ello incorpora automáticamente `3 Alumnado` y, cuando existan, las familias 4/5/6.
 
-Al cambiar la apariencia, `Theme.gs` recolorea únicamente el tema en las hojas visibles gestionadas, sin reconstruir sus datos. `Students.gs` sincroniza la validación de Grupo desde `_HOR_ACTIVIDADES` y asigna UUID faltantes a filas válidas antes de sincronizar Eval. La copia histórica del nuevo curso se crea en la carpeta original y su índice se rehace con el Spreadsheet copiado como padre.
+Al cambiar la apariencia, `Theme.gs` recolorea únicamente el tema en las hojas visibles gestionadas, sin reconstruir sus datos. `Students.gs` sincroniza la validación de Grupo desde las actividades MODULO y la Tutoría activa de `_CONFIG`, y asigna UUID faltantes a filas válidas antes de sincronizar Eval. La copia histórica del nuevo curso se crea en la carpeta original y su índice se rehace con el Spreadsheet copiado como padre.
 
 Las hojas generadas usan `ensureSheetSize_()` antes de escribir y `trimSheetToBounds_()` después. `3 Alumnado` conserva un mínimo de filas editables y nunca borra datos en la reparación normal.
 
@@ -107,6 +107,8 @@ La utilidad mueve solo hojas con nombres gestionados, no borra ni renombra hojas
 
 `_CAL_TIPOS` mantiene los IDs `FP1`, `FP2`, `ONLINE` y `CE`, su activación y periodos lectivos, de FEOE y de repaso. Los nombres técnicos históricos de las columnas de FEOE se conservan por compatibilidad. Se relaciona 1:N con `_CAL_EVALUACIONES`.
 
+El ID `ONLINE` conserva fechas y relaciones; su nombre canónico visible es `VIRTUAL` y la inicialización de `_CAL_TIPOS` actualiza solo esa etiqueta.
+
 `_FECHAS` almacena cada evento una sola vez con ID, intervalo, categoría, descripción y prioridad. `_CAL_FECHA_TIPOS` resuelve su relación N:M con tipos: cero relaciones significa evento global. Las categorías admitidas son `FESTIVO`, `REUNION` y `DESTACADO`.
 
 El guardado valida el modelo completo, usa bloqueo de documento, conserva snapshots y escribe en bloque con intento de rollback. Fines de semana, lectividad, finales de evaluación y estadísticas se derivan en código.
@@ -124,6 +126,8 @@ La precarga de Semana Santa es un único evento `FESTIVO` de Jueves Santo al vie
 `_HOR_ACTIVIDADES` contiene `actividad_id`, `categoria`, `nombre`, `sigla`, `tipo_ensenanza_id`, `grupo`, `aula` y `color`. `_HOR_SESIONES` contiene `sesion_id`, `dia_semana`, `tramo_id`, `actividad_id` y `apoyo_sigla`.
 
 `ensureScheduleTechnicalStructure_()` crea o repara las tablas y mantiene la migración idempotente anterior. El configurador solo lee al abrir. El guardado normaliza, valida y persiste antes de renderizar.
+
+El esquema 12 añade en `_CONFIG` `es_tutor`, `grupo_tutoria`, `actividad_tutoria_id` y `actividades_base_curso`. `GeneralConfig.gs` valida Tutoría y coordina el guardado con `Schedule.gs`; esta última conserva el `actividad_id` gestionado, adopta solo una coincidencia inequívoca y elimina sus sesiones al desactivar. Repair reconcilia Tutoría y siembra una vez por curso las cuatro actividades institucionales, marcando el curso para no reponer borrados deliberados. El configurador proyecta los defaults al leer sin escribir. Los grupos del desplegable de Alumnado unen actividades MODULO y la Tutoría activa. No hay hojas nuevas.
 
 `ScheduleView.gs` genera `2 Horario` exclusivamente desde esas tablas. Las fórmulas muestran la semana actual de lunes a viernes y la siguiente durante el fin de semana. El formato condicional destaca con `accent` solo la celda horaria del tramo actual y no altera los fondos de actividades. Horario queda cerrado funcionalmente.
 
@@ -154,7 +158,7 @@ No existe matrícula por módulo. Evaluación filtra por coincidencia de Grupo y
 
 # 10. Preparar nuevo curso
 
-`UiDialogNewCourse.html` mantiene los siete pasos en un único diálogo. Al abrir, `getNewCourseDraft_()` solo lee el borrador o construye una propuesta en memoria; no repara ni escribe hojas. `DocumentProperties` guarda el borrador por Spreadsheet en fragmentos menores de 9 KB, sin crear hojas ni cambiar el esquema 11. Seguridad guarda curso, carpeta y nombre original; los siguientes pasos actualizan únicamente datos y estados del borrador. Calendario y Horario se muestran como formularios embebidos; `postMessage` entrega DTO y altura, y `ResizeObserver` ajusta el iframe al contenido para mantener un único scroll. El padre distingue pasos visitados de pasos revisados y usa el mismo resumen para warnings y tarjetas. Los configuradores individuales mantienen guardado y actualización visible inmediatos.
+`UiDialogNewCourse.html` mantiene los siete pasos en un único diálogo. Al abrir, `getNewCourseDraft_()` solo lee el borrador o construye una propuesta en memoria; no repara ni escribe hojas. `DocumentProperties` guarda el borrador por Spreadsheet en fragmentos menores de 9 KB, sin crear hojas adicionales. Seguridad guarda curso, carpeta y nombre original; los siguientes pasos actualizan únicamente datos y estados del borrador. Tutoría y actividades institucionales se reconcilian en ese borrador antes de aplicar el nuevo curso; desactivar Tutoría se confirma antes de guardarlo. Calendario y Horario se muestran como formularios embebidos; `postMessage` entrega DTO y altura, y `ResizeObserver` ajusta el iframe al contenido para mantener un único scroll. El padre distingue pasos visitados de pasos revisados y usa el mismo resumen para warnings y tarjetas. Los configuradores individuales mantienen guardado y actualización visible inmediatos.
 
 Los datos se separan en reutilizables y anuales. `_CONFIG` conserva profesor, centro y tema; `_HOR_TRAMOS` y `_HOR_ACTIVIDADES` conservan estructura, catálogo e IDs. Alumnado, `_HOR_SESIONES` y todos los valores anuales del Calendario se reinician.
 

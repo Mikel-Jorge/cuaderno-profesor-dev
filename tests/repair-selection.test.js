@@ -11,7 +11,7 @@ const context = {
 };
 [
   'initializeConfigStructure_', 'initializeCalendarStructure_',
-  'ensureScheduleTechnicalStructure_', 'ensureModuleConfigTechnicalStructure_',
+  'ensureScheduleTechnicalStructure_', 'repairTutorAndBaseActivities_', 'ensureModuleConfigTechnicalStructure_',
   'cleanupOrphanModuleConfigsWithLock_', 'initializeCoverStructure_',
   'createOrRepairCalendarSheet_', 'createOrRepairScheduleSheet_',
   'createOrRepairStudentsSheet_', 'repairExistingModuleConfigSheets_',

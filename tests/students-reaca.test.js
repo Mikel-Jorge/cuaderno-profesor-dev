@@ -17,13 +17,17 @@ const source = fs.readFileSync('Students.gs', 'utf8');
 assert.ok(source.includes('.insertCheckboxes()'));
 assert.ok(source.includes("row.slice(0, 3).every"));
 const studentRows = [
+  // Grupo introducido manualmente; no es la etiqueta del tipo técnico ONLINE.
   ['Abad', 'Ana', 'DAM 2A', '', false, '', ''],
   ['Sin grupo', 'Eva', '', '', false, '', ''],
   ['Sanz', 'Luis', 'Online', '', false, '', 'old-id'],
 ];
 let groupRule;
 let cleared = false;
-context.CP = { SHEETS: { STUDENTS: 'students', SCHEDULE_ACTIVITIES: 'activities' } };
+context.CP = { SHEETS: { STUDENTS: 'students', SCHEDULE_ACTIVITIES: 'activities' },
+  CONFIG_KEYS: { IS_TUTOR: 'es_tutor', TUTOR_GROUP: 'grupo_tutoria' } };
+context.getGeneralConfigValues_ = () => ({ es_tutor: 'false' });
+context.isTutorEnabled_ = value => value === 'true';
 context.Utilities = { getUuid: () => 'new-id' };
 context.normalizeScheduleText_ = value => String(value || '').trim();
 context.normalizeScheduleActivityCategory_ = value => String(value || '').trim().toUpperCase();
@@ -52,6 +56,10 @@ assert.strictEqual(studentRows[2][6], 'old-id');
 context.syncStudentGroupValidation_(book);
 assert.deepStrictEqual(Array.from(groupRule.groups), ['DAM 2A', 'Online']);
 assert.strictEqual(groupRule.allowInvalid, true);
+context.getGeneralConfigValues_ = () => ({ es_tutor: 'true', grupo_tutoria: 'DAM 1B' });
+context.syncStudentGroupValidation_(book);
+assert.deepStrictEqual(Array.from(groupRule.groups), ['DAM 1B', 'DAM 2A', 'Online']);
+context.getGeneralConfigValues_ = () => ({ es_tutor: 'false', grupo_tutoria: 'DAM 1B' });
 activities = [];
 context.syncStudentGroupValidation_(book);
 assert.strictEqual(cleared, true);

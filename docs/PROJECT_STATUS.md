@@ -2,8 +2,16 @@
 
 **Última actualización:** 2026-10-12
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.9.2`
-**Esquema vigente:** `11`
+**Versión vigente:** `1.10.0`
+**Esquema vigente:** `12`
+
+## Tutoría base y actividades institucionales 1.10.0
+
+- Datos generales y el asistente anual incluyen Soy tutor/a y Grupo de tutoría libre. Portada y validación de Grupo en Alumnado reflejan la Tutoría activa.
+- La actividad Tutoría gestionada conserva `actividad_id` al cambiar grupo. Desactivarla requiere confirmación y elimina solo su actividad y sesiones; el asistente lo aplaza hasta finalizar.
+- RD, ECDPI, PPPP y P se proponen una vez por curso, con ID y personalizaciones conservados. GUARDIA y estas categorías no admiten grupo ni tipo de enseñanza; DUAL solo se conserva como legado.
+- ONLINE mantiene su ID técnico y se presenta como VIRTUAL. La card de feedback centra el botón sin cambiar su enlace.
+- El esquema 12 añade estado de Tutoría y marcador de inicialización de actividades base a `_CONFIG`; no añade hojas ni permisos.
 
 ## Canal central de feedback 1.9.2
 
@@ -260,9 +268,10 @@ Pendiente de cierre del bloque:
 
 # ROADMAP futuro
 
+- Relación Alumno–Módulo, matrículas e importación de alumnado desde EDUCA: estudio y diseño pendientes.
 - Contactos y posible integración con Google People: estudiar permisos, consentimiento, duplicados y mantenimiento antes de diseñarla.
 - Sincronización opcional con Google Calendar: estudiar permisos, conflictos y calendario de destino; no se han añadido scopes ni triggers.
-- `7 Tutoría` y control de faltas: definir primero datos, privacidad y flujos docentes. No hay hoja ni estructura técnica implementada.
+- Tutoría avanzada (`7 Tutoría`, entrevistas, conversaciones y faltas): definir primero datos, privacidad y flujos docentes. No hay hoja ni estructura técnica implementada.
 
 # Regla de actualización
 

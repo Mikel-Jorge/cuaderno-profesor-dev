@@ -30,7 +30,11 @@ Durante el curso puedes usar por separado **Configuración → Configurar datos 
 
 **Dependencias:** Calendario + Horario → Config → Seg y Eval; Alumnado → Eval; ponderaciones de Config → medias de Eval. Seg es una instantánea inicial que luego refleja lo ocurrido, mientras Eval lee los pesos actuales de Config.
 
-Si llega un alumno nuevo, escribe Apellidos, Nombre y Grupo en **3 Alumnado** y ejecuta **Reparar estructura** marcando solo **Hojas 6 Eval**. Se añadirá a las evaluaciones de su grupo sin alterar las notas existentes. Grupo ofrece los grupos de actividades MODULO y permite conservar valores históricos. Las columnas Educa aceptan 1–10 o MH y mantienen esos valores al reordenar alumnos; una fila histórica ausente de Alumnado aparece gris.
+En **Configuración → Datos del docente y centro**, marca **Soy tutor/a** y escribe libremente el **Grupo de tutoría**. El grupo aparece en Portada y se ofrece en la columna Grupo de Alumnado. Horario mantiene una actividad Tutoría vinculada a ese grupo; puedes ajustar su Aula y color allí. Para dejar de ser tutor/a debes confirmar la eliminación de esa actividad y sus sesiones, sin borrar alumnado ni otros módulos.
+
+El Horario propone por curso Reunión de Departamento (RD), ECDPI, PPPP y P con aula Departamento. Puedes personalizarlas o eliminarlas; no reaparecen durante el mismo curso. Guardia conserva G y Sala de Profesores. DUAL solo se muestra en actividades antiguas; no está disponible al crear nuevas. El tipo de enseñanza antes mostrado como Online se llama **VIRTUAL**, conservando su configuración.
+
+Si llega un alumno nuevo, escribe Apellidos, Nombre y Grupo en **3 Alumnado** y ejecuta **Reparar estructura** marcando solo **Hojas 6 Eval**. Se añadirá a las evaluaciones de su grupo sin alterar las notas existentes. Grupo ofrece los grupos de actividades MODULO y el grupo de tutoría activo; permite conservar valores históricos. Las columnas Educa aceptan 1–10 o MH y mantienen esos valores al reordenar alumnos; una fila histórica ausente de Alumnado aparece gris.
 
 ## Reparar estructura
 
@@ -39,6 +43,8 @@ El menú **Reparar estructura** abre un selector. Los siete bloques visibles emp
 ## Preparar nuevo curso
 
 **Preparar nuevo curso** es una acción excepcional. Mientras recorres el diálogo solo se guarda un borrador que permanece si cancelas. En el selector de carpetas, un clic selecciona el destino del cuaderno nuevo y un doble clic abre una carpeta para ver sus subcarpetas; el breadcrumb y Atrás permiten volver. Si no seleccionas una hija, se usa la carpeta abierta. Al pulsar **Finalizar y generar cuaderno**, se crea y verifica una copia histórica completa en la carpeta original y se rehacen sus enlaces de Portada. Solo entonces se mueve el cuaderno activo a la carpeta elegida, si difiere, y se reinician alumnado, horario semanal, evaluaciones y fechas del calendario. Se conservan docente, centro, tema, tramos y actividades; Seguimiento se archiva como OLD y se eliminan Config y Eval anteriores. El resumen muestra si Calendario, Tramos, Actividades y Horario están completos o pendientes y explica los pendientes.
+
+En **Docente y centro**, el asistente propone la Tutoría y el grupo anteriores; puedes mantenerlos o cambiarlos. Si la desmarcas, pide confirmación para el borrador. Cancelar el asistente conserva el cuaderno activo; la eliminación real se realiza al finalizar el nuevo curso. Resumen muestra el grupo cuando hay Tutoría.
 
 ## Ayuda y estado
 
