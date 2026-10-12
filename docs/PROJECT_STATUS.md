@@ -2,8 +2,12 @@
 
 **Última actualización:** 2026-10-12
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.11.0`
+**Versión vigente:** `1.11.1`
 **Esquema vigente:** `13`
+
+## Correctivo del parser EDUCA 1.11.1
+
+- El informe actual coloca el descriptor de profesor/asignatura después de la cabecera. El parser lo reconoce por su firma semántica tanto antes como después de ella y excluye esa fila administrativa del alumnado. Se mantienen las cabeceras dispersas, la validación estricta y la unión de variantes «(Centro)».
 
 ## Importación EDUCA y matrículas 1.11.0
 

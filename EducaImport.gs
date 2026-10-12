@@ -220,15 +220,6 @@ function parseEducaReportSheet_(rows) {
     });
   });
   if (headerIndex < 0) throw new Error(CP_EDUCA_FORMAT_ERROR);
-  const descriptor = textRows.slice(titleIndex + 1, headerIndex).map(function(row) {
-    return row.join(' ');
-  }).join(' ');
-  const match = /;\s*([\s\S]+?)\s*-AG\s*\(/i.exec(descriptor);
-  if (!match || !match[1].trim()) throw new Error(CP_EDUCA_FORMAT_ERROR);
-  const rawSubject = match[1].trim().replace(/\s+/g, ' ');
-  const centerVariant = /\s*\(Centro\)$/i.test(rawSubject);
-  const subject = centerVariant ? rawSubject.replace(/\s*\(Centro\)$/i, '').trim() : rawSubject;
-  if (!subject) throw new Error(CP_EDUCA_FORMAT_ERROR);
   const headers = textRows[headerIndex].map(normalizeEnrollmentKey_);
   if (['Nº', 'NOMBRE', 'CURSO', 'ESTADO', 'GRUPO'].some(function(label) {
     return headers.filter(function(value) { return value === normalizeEnrollmentKey_(label); }).length !== 1;
@@ -236,9 +227,28 @@ function parseEducaReportSheet_(rows) {
   const nameColumn = headers.indexOf('NOMBRE');
   const groupColumn = headers.indexOf('GRUPO');
   const numberColumn = headers.indexOf('Nº');
+  const firstStudentIndex = textRows.findIndex(function(row, index) {
+    return index > headerIndex && row[nameColumn] && row[groupColumn];
+  });
+  const descriptorEnd = Math.min(textRows.length, titleIndex + 16,
+    firstStudentIndex < 0 ? textRows.length : firstStudentIndex);
+  const descriptors = [];
+  for (let index = titleIndex + 1; index < descriptorEnd; index += 1) {
+    if (index === headerIndex) continue;
+    const match = /;\s*([\s\S]+?)\s*-AG\s*\(/i.exec(textRows[index].join(' '));
+    if (match && match[1].trim()) descriptors.push({ index: index, subject: match[1].trim() });
+  }
+  if (descriptors.length !== 1) throw new Error(CP_EDUCA_FORMAT_ERROR);
+  const descriptorIndex = descriptors[0].index;
+  if (descriptorIndex > headerIndex && textRows.slice(headerIndex + 1, descriptorIndex)
+    .some(function(row) { return row.some(Boolean); })) throw new Error(CP_EDUCA_FORMAT_ERROR);
+  const rawSubject = descriptors[0].subject.replace(/\s+/g, ' ');
+  const centerVariant = /\s*\(Centro\)$/i.test(rawSubject);
+  const subject = centerVariant ? rawSubject.replace(/\s*\(Centro\)$/i, '').trim() : rawSubject;
+  if (!subject) throw new Error(CP_EDUCA_FORMAT_ERROR);
   const students = [];
   const seen = {};
-  textRows.slice(headerIndex + 1).forEach(function(row) {
+  textRows.slice(Math.max(headerIndex, descriptorIndex) + 1).forEach(function(row) {
     if (!row.some(Boolean)) return;
     const firstLine = String(row[nameColumn] || '').split(/\r?\n/)[0].trim();
     const group = String(row[groupColumn] || '').trim();

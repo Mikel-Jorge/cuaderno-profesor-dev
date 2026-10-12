@@ -84,17 +84,21 @@ function fixture(sheetSpecs) {
   };
   sheetSpecs.forEach((spec, index) => {
     const headerRow = spec.headerRow || 5;
+    const titleRow = spec.titleRow || 1;
+    const descriptorRow = spec.descriptorAfterHeader ? headerRow + 1 : titleRow + 1;
+    const studentStart = Math.max(headerRow, descriptorRow) + 1;
+    const columns = spec.sparseColumns ? ['B', 'E', 'F', 'G', 'H'] : ['A', 'B', 'C', 'D', 'E'];
     const headers = spec.headers || ['Nº', 'Nombre', 'Curso', 'Estado', 'Grupo'];
     const rows = [
-      `<row r="1">${cell('A', 1, spec.title || 'Alumnos por profesor y asignatura')}</row>`,
-      `<row r="2">${cell('A', 2, spec.descriptor || `Docente Ficticio ; ${spec.subject}-AG (Curso ficticio)`)}</row>`,
-      `<row r="${headerRow}">${headers.map((value, col) => cell('ABCDE'[col], headerRow, value)).join('')}</row>`,
+      { number: titleRow, xml: `<row r="${titleRow}">${cell(spec.sparseColumns ? 'C' : 'A', titleRow, spec.title || 'Alumnos por profesor y asignatura')}</row>` },
+      { number: descriptorRow, xml: `<row r="${descriptorRow}">${cell(columns[0], descriptorRow, spec.descriptor || `Docente Ficticio ; ${spec.subject}-AG (Curso ficticio)`)}</row>` },
+      { number: headerRow, xml: `<row r="${headerRow}">${headers.map((value, col) => cell(columns[col], headerRow, value)).join('')}</row>` },
       ...spec.names.map((name, rowIndex) => {
-        const row = headerRow + rowIndex + 1;
-        return `<row r="${row}">${cell('A', row, String(rowIndex + 1))}${cell('B', row, name)}${cell('C', row, '2º')}${cell('D', row, 'Activo')}${cell('E', row, spec.group === undefined ? 'DAM 2A' : spec.group)}</row>`;
+        const row = studentStart + rowIndex;
+        return { number: row, xml: `<row r="${row}">${cell(columns[0], row, String(rowIndex + 1))}${cell(columns[1], row, name)}${cell(columns[2], row, '2º')}${cell(columns[3], row, 'Activo')}${cell(columns[4], row, spec.group === undefined ? 'DAM 2A' : spec.group)}</row>` };
       }),
-    ];
-    files[`xl/worksheets/sheet${index + 1}.xml`] = `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${rows.join('')}</sheetData></worksheet>`;
+    ].sort((a, b) => a.number - b.number);
+    files[`xl/worksheets/sheet${index + 1}.xml`] = `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${rows.map(row => row.xml).join('')}</sheetData></worksheet>`;
   });
   files['xl/sharedStrings.xml'] = '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' + strings.map(value => {
     const segments = value.split('\n');
@@ -123,6 +127,38 @@ assert.equal(groupA.students.length, 3);
 assert.equal(groupA.variants, 2);
 assert.equal(groupA.students.find(student => student.name === 'Ana').surname, 'Apellido Uno');
 assert.equal(parsed.find(block => block.group === 'DAM 2B').students.length, 1);
+const realOrder = fixture([{ subject: 'Programación multimedia y dispositivos móviles',
+  titleRow: 3, headerRow: 5, descriptorAfterHeader: true, sparseColumns: true,
+  descriptor: 'Profesor Ejemplo, Docente ; Programación multimedia y dispositivos móviles-AG\n(2º Grado Superior ficticio)',
+  names: ['Apellido Uno, Ana\nConv. Ini.: 1', 'Apellido Dos, Luis\nConv. Ini.: 1'] }]);
+const realOrderBlock = context.parseEducaReport_(realOrder)[0];
+assert.equal(realOrderBlock.subject, 'Programación multimedia y dispositivos móviles');
+assert.deepEqual(Array.from(realOrderBlock.students.map(student => student.name)), ['Ana', 'Luis']);
+assert.equal(realOrderBlock.students.length, 2);
+const realCenter = context.parseEducaReport_(fixture([
+  { subject: 'Acceso a datos', titleRow: 3, headerRow: 5,
+    descriptorAfterHeader: true, sparseColumns: true,
+    names: ['Apellido Uno, Ana', 'Apellido Dos, Pedro'] },
+  { subject: 'Acceso a datos (Centro)', titleRow: 3, headerRow: 6,
+    descriptorAfterHeader: true, sparseColumns: true,
+    names: ['Apellido Uno, Ana', 'Apellido Dos, Pedro', 'Apellido Tres, Javi'] },
+]));
+assert.equal(realCenter.length, 1);
+assert.equal(realCenter[0].students.length, 3);
+assert.equal(realCenter[0].variants, 2);
+assert.throws(() => context.parseEducaReportSheet_([
+  ['Alumnos por profesor y asignatura'],
+  ['Profesor Ejemplo ; Acceso a datos-AG (Curso ficticio)'],
+  ['Profesor Ejemplo ; Otro módulo-AG (Curso ficticio)'],
+  ['Nº', 'Nombre', 'Curso', 'Estado', 'Grupo'],
+  ['1', 'Apellido Uno, Ana', '2º', '', 'DAM 2A'],
+]), /formato/);
+assert.throws(() => context.parseEducaReportSheet_([
+  ['Alumnos por profesor y asignatura'],
+  ['Nº', 'Nombre', 'Curso', 'Estado', 'Grupo'],
+  ['Profesor Ejemplo ; Acceso a datos-AG (Curso ficticio)'],
+  ['1', '', '2º', '', 'DAM 2A'],
+]), /formato/);
 const inline = context.readEducaWorksheetRows_(blob('sheet.xml',
   '<worksheet><sheetData><row r="7"><c r="B7" t="inlineStr"><is><r><t>Apellido, </t></r><r><t>Ana</t></r></is></c></row></sheetData></worksheet>'), []);
 assert.equal(inline[0][1], 'Apellido, Ana');
@@ -143,17 +179,23 @@ const invalid = [
 invalid.forEach(file => assert.throws(() => context.parseEducaReport_(file), /formato/));
 assert.throws(() => context.parseEducaReport_(invalid[1]), /No se reconoce el formato actual/);
 let writes = 0;
+const writeEducaNewStudents = context.writeEducaNewStudents_;
 context.getModuleActivitiesForEnrollment_ = () => [{ id: 'M1', category: 'MODULO', group: 'DAM 2A', name: 'Módulo' }];
 context.getEnrollmentStudents_ = () => [];
 context.readEnrollmentRows_ = () => [];
 context.readEnrollmentModes_ = () => ({});
 context.ensureEnrollmentStructure_ = () => { writes++; };
+context.writeEnrollmentState_ = () => { writes++; };
+context.writeEducaNewStudents_ = () => { writes++; };
+context.repairEvaluationsForActivities_ = () => { writes++; };
 const analysis = context.analizarArchivoEduca({ archivo: fixture([{ subject: 'Módulo', names: ['Apellido, Ana'] }]) });
 assert.equal(analysis.summary.newStudents, 1);
 assert.equal(analysis.blocks[0].activityId, 'M1');
+assert.equal(context.analizarArchivoEduca({ archivo: realOrder }).summary.detectedStudents, 2);
 assert.equal(writes, 0);
 invalid.forEach(file => assert.throws(() => context.importarAlumnadoEduca({ archivo: file }), /formato/));
 assert.equal(writes, 0);
+context.writeEducaNewStudents_ = writeEducaNewStudents;
 const studentWrites = [];
 const existingRow = ['Apellido Uno', 'Ana', 'DAM 2A', 'ana@example.invalid', true, 'Adaptación', 'ID-A'];
 const studentTable = { getLastRow: () => 2, getRange(row) { return {
