@@ -1,5 +1,6 @@
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
+  const config = getGeneralConfigValues_(SpreadsheetApp.getActiveSpreadsheet());
   const modulesMenu = ui.createMenu(CP.MENU.MODULES)
     .addItem(CP.MENU.EDUCA_IMPORT, 'abrirImportadorEduca')
     .addItem(CP.MENU.MODULE_ENROLLMENTS, 'abrirMatriculasModulos')
@@ -14,11 +15,14 @@ function onOpen() {
     .addItem(CP.MENU.CALENDAR_CONFIG, 'abrirConfiguracionCalendario')
     .addItem(CP.MENU.SCHEDULE_CONFIG, 'abrirConfiguracionHorario');
 
-  ui
-    .createMenu(CP.MENU.NAME)
+  const menu = ui.createMenu(CP.MENU.NAME)
     .addSubMenu(configMenu)
     .addSubMenu(modulesMenu)
-    .addSeparator()
+    .addSeparator();
+  if (isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR])) {
+    menu.addItem(CP.MENU.TUTOR_IMPORT, 'abrirImportadorTutoria').addSeparator();
+  }
+  menu
     .addItem(CP.MENU.INIT, 'abrirDialogoInicializacion')
     .addSeparator()
     .addItem(CP.MENU.NEW_COURSE, 'abrirPrepararNuevoCurso')

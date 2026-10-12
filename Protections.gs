@@ -73,7 +73,7 @@ function getManagedProtectionKind_(sheet) {
     CP.SHEETS.CALENDAR_DATE_TYPES, CP.SHEETS.SCHEDULE_SLOTS,
     CP.SHEETS.SCHEDULE_ACTIVITIES, CP.SHEETS.SCHEDULE_SESSIONS,
     CP.SHEETS.MODULE_CONFIG, CP.SHEETS.MODULE_PLAN,
-    CP.SHEETS.ENROLLMENTS, CP.SHEETS.ENROLLMENT_META, CP.SHEETS.META];
+    CP.SHEETS.ENROLLMENTS, CP.SHEETS.ENROLLMENT_META, CP.SHEETS.TUTOR_ROSTER, CP.SHEETS.META];
   if (technical.indexOf(name) !== -1) return 'TECNICA';
   const id = sheet.getSheetId();
   const record = readModuleConfigRegistry_(sheet.getParent()).find(function(item) {

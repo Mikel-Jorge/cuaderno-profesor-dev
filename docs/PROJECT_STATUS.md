@@ -2,8 +2,15 @@
 
 **Última actualización:** 2026-10-12
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.12.1`
-**Esquema vigente:** `13`
+**Versión vigente:** `1.13.0`
+**Esquema vigente:** `14`
+
+## Importador de Tutoría 1.13.0
+
+- Menú condicional para docentes con Tutoría. El XLS real «Por grupo» se procesa mediante un parser OLE/BIFF8 separado del importador OOXML de módulos.
+- El análisis no escribe y presenta todo el grupo con Email existente precargado y editable; la importación exige todos los Email válidos, conserva ID/REACA/Medidas y guarda el valor confirmado en 3 Alumnado.
+- `_TUT_ALUMNADO` registra el roster anual completo, desactiva ausentes y no modifica `_MATRICULAS`, Config, Seg ni Eval. Repair crea y protege la hoja; el nuevo curso la vacía tras el backup.
+- Contacts gestiona la etiqueta general del grupo de Tutoría solo con roster importado, aparte de las etiquetas de módulo. El fallo de People no revierte los datos académicos. Los loading de importación, Matrículas y Contacts quedan dentro del área de contenido.
 
 ## Google Contacts y Ayuda 1.12.1
 
@@ -309,8 +316,6 @@ Pendiente de cierre del bloque:
 
 # ROADMAP futuro
 
-- Importador específico del grupo completo de Tutoría: pendiente.
-- Tutoría: cuando exista el importador de su alumnado completo, gestionar la etiqueta general `AACC · Grupo` con todo el grupo que tenga Email. No crear una etiqueta `AACC · Grupo · T`.
 - Sincronización opcional con Google Calendar: estudiar permisos, conflictos y calendario de destino; no se han añadido scopes ni triggers.
 - Tutoría avanzada (`7 Tutoría`, entrevistas, conversaciones y faltas): definir primero datos, privacidad y flujos docentes. No hay hoja ni estructura técnica implementada.
 

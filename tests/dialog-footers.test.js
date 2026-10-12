@@ -22,4 +22,20 @@ assert(!contacts.includes('>Analizar Google Contacts</button>'));
 assert(!contacts.includes('Confirmar sincronización'));
 assert(contacts.includes("document.getElementById('intro').hidden=true"));
 assert(contacts.includes('Google Contacts actualizado con incidencias'));
+const tutor = fs.readFileSync('UiDialogTutorImport.html', 'utf8');
+for (const step of ['Alumnado', 'Informes', 'Listado mi alumnado', 'Por grupo', 'Excel',
+  'Todos los alumnos', 'Enviar']) assert(tutor.includes(step));
+assert(tutor.includes('input.value=student.email||'));
+assert(tutor.includes('complete!==inputs.length'));
+assert(tutor.includes('importarAlumnadoTutoria(form)'));
+for (const name of ['UiDialogMatriculas.html', 'UiDialogEducaImport.html',
+  'UiDialogContacts.html', 'UiDialogTutorImport.html']) {
+  const html = fs.readFileSync(name, 'utf8');
+  const bodyStart = html.indexOf('class="' + ({
+    'UiDialogMatriculas.html': 'enrollment-body', 'UiDialogEducaImport.html': 'educa-body',
+    'UiDialogContacts.html': 'contacts-body', 'UiDialogTutorImport.html': 'tutor-body',
+  }[name]) + '"');
+  assert(bodyStart > 0 && bodyStart < html.indexOf('id="loading"'), name + ' loading fuera del contenido');
+  assert(html.indexOf('id="loading"') < html.indexOf('<footer class="author-footer"'), name);
+}
 console.log('Dialog footers and Contacts UI: ok');

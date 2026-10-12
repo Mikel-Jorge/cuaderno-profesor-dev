@@ -47,6 +47,7 @@ const context = {
   initializeMetaStructure_: () => calls.push('meta'),
   installAllManagedProtections_: () => calls.push('protect'),
   syncStudentGroupValidation_: () => calls.push('groups'),
+  onOpen: () => {},
 };
 vm.createContext(context);
 const generalSource = fs.readFileSync('GeneralConfig.gs', 'utf8');

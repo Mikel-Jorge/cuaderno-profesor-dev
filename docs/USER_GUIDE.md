@@ -1,8 +1,8 @@
-# Guía de uso · Cuaderno del Profesor 1.12.1
+# Guía de uso · Cuaderno del Profesor 1.13.0
 
 ## Empezar un curso
 
-El cuaderno se distribuye como copia de una plantilla inicializada. Usa el único menú **📘 Cuaderno del Profesor 📘**. Sus submenús son **Configuración** (datos del docente y centro, calendario y horario) y **Módulos** (importar desde EDUCA, Matrículas de módulos, sincronizar Google Contacts, crear y recalcular Config, crear Seguimiento y Evaluación). Después aparecen **Reparar estructura**, **Preparar nuevo curso** y **Ayuda**. No hay un asistente de configuración independiente.
+El cuaderno se distribuye como copia de una plantilla inicializada. Usa el único menú **📘 Cuaderno del Profesor 📘**. Sus submenús son **Configuración** (datos del docente y centro, calendario y horario) y **Módulos** (importar desde EDUCA, Matrículas de módulos, sincronizar Google Contacts, crear y recalcular Config, crear Seguimiento y Evaluación). Si está marcado **Soy tutor/a**, aparece **Importar alumnado de tutoría** después de Módulos. Después aparecen **Reparar estructura**, **Preparar nuevo curso** y **Ayuda**. No hay un asistente de configuración independiente.
 
 Para pasar de un curso a otro, abre **Preparar nuevo curso**. Un único diálogo guía siete pasos. Abrirlo no modifica el cuaderno. **Siguiente** guarda un borrador del paso actual sin redibujar las hojas. Puedes volver a pasos visitados desde el indicador superior; Atrás y el indicador descartan los cambios que aún no hayas guardado. Los pasos pendientes muestran un aviso ámbar con su motivo. **Cancelar** conserva el borrador para retomarlo. **Finalizar y generar cuaderno** crea la copia, prepara el nuevo curso y aplica las vistas en una espera final.
 
@@ -44,11 +44,19 @@ El informe **no incluye correo electrónico**. Los alumnos nuevos llegan con Ema
 
 En **Módulos → Matrículas de módulos** puedes elegir manualmente quién cursa cada módulo entre el alumnado de grupo equivalente y quienes ya tengan una matrícula registrada en él. Al guardar, la Eval correspondiente se sincroniza y el diálogo se cierra. Desmarcar manualmente a un alumno impide que la siguiente importación lo reactive; las relaciones que no cambies siguen gestionadas por EDUCA. Las filas inactivas de Eval muestran advertencia de protección: el propietario de la hoja conserva el control de esas protecciones.
 
+## Importar alumnado de tutoría
+
+La opción aparece solo si marcas **Soy tutor/a** en **Configuración → Datos del docente y centro** y configuras el grupo. En EDUCA sigue exactamente **Alumnado → Informes → Listado mi alumnado → pestaña «Por grupo» → Tipo «Excel» → seleccionar el grupo de Tutoría → «Todos los alumnos» → «Enviar»**. Selecciona el archivo descargado sin modificarlo en **Importar alumnado de tutoría** y pulsa **Analizar archivo**. Este informe XLS binario es diferente del informe **Por profesor → Asignatura** que alimenta las matrículas de módulos.
+
+El análisis muestra a todo el alumnado detectado y sus Email. Si el alumno ya existe en **3 Alumnado**, su Email aparece precargado en un campo editable; si falta, el campo queda vacío. Puedes corregir cualquiera. **Todos los alumnos deben tener un Email válido** para habilitar la importación. El valor final confirmado se guarda en **3 Alumnado** junto con el grupo oficial de EDUCA; se conservan el ID, REACA y las Medidas existentes. Un alumno nuevo también se incorpora a **3 Alumnado**. El informe completo se guarda como roster anual de Tutoría: reimportar marca inactivos a los ausentes, pero no borra alumnado, matrículas ni notas. **_MATRICULAS permanece intacta.**
+
+Tras importar se crea o actualiza la etiqueta general de Tutoría, por ejemplo **2627 · DAM 2A**, con el grupo completo y sus correos confirmados. El Cuaderno reutiliza o crea contactos por Email; si corriges uno, usa el nuevo Email y no borra el contacto anterior. Si People API falla, el alumnado queda importado y aparece un aviso para reintentar desde **Módulos → Sincronizar Google Contacts**. Cada curso debes volver a importar **Por grupo → Todos los alumnos**; el roster del curso nuevo parte vacío.
+
 ## Google Contacts
 
 Completa primero los **Email** que conozcas en **3 Alumnado**. Abre **Módulos → Sincronizar Google Contacts**: el análisis comienza automáticamente y muestra contactos nuevos, reutilizados y ambiguos, alumnado sin Email o con Email inválido, etiquetas de módulo y cambios de pertenencia. La consulta no modifica Contacts. Tras revisar el resumen, pulsa **Sincronizar Google Contacts** una sola vez. Google puede solicitar permiso. El Cuaderno reutiliza el contacto con un único correo coincidente sin cambiar sus datos, crea el que falte y nunca elimina contactos.
 
-En esta versión solo se gestionan etiquetas de módulo como **2627 · DAM 2A · PMDM**, según la matrícula activa y los Email válidos. La etiqueta general **2627 · DAM 2A** llegará con el futuro importador del grupo completo de Tutoría. Las etiquetas generales creadas en pruebas anteriores no se modifican ni eliminan automáticamente.
+Se gestionan etiquetas de módulo como **2627 · DAM 2A · PMDM**, según la matrícula activa y los Email válidos. Si se ha importado el grupo completo de Tutoría, se gestiona además **una** etiqueta general como **2627 · DAM 2A**. No se crean etiquetas generales de otros grupos. La sincronización manual actualiza ambas familias; importar Tutoría actualiza su etiqueta. Los contactos y etiquetas de cursos anteriores no se eliminan automáticamente.
 
 Una primera sincronización manual correcta activa la actualización automática de Contacts para ese curso. A partir de entonces, guardar Matrículas o importar EDUCA sincroniza únicamente los módulos afectados. Si People API falla, el cambio académico se conserva y aparece un aviso; puedes reintentar la sincronización manual. Añadir solo un Email en **3 Alumnado** no sincroniza al instante: se incorporará tras el siguiente guardado de Matrículas del módulo, importación EDUCA que lo afecte o sincronización manual. Cada curso nuevo requiere su primera sincronización manual; las etiquetas anteriores permanecen.
 
@@ -60,7 +68,7 @@ El menú **Reparar estructura** abre un selector. Los siete bloques visibles emp
 
 **Preparar nuevo curso** es una acción excepcional. Mientras recorres el diálogo solo se guarda un borrador que permanece si cancelas. En el selector de carpetas, un clic selecciona el destino del cuaderno nuevo y un doble clic abre una carpeta para ver sus subcarpetas; el breadcrumb y Atrás permiten volver. Si no seleccionas una hija, se usa la carpeta abierta. Al pulsar **Finalizar y generar cuaderno**, se crea y verifica una copia histórica completa en la carpeta original y se rehacen sus enlaces de Portada. Solo entonces se mueve el cuaderno activo a la carpeta elegida, si difiere, y se reinician alumnado, matrículas, horario semanal, evaluaciones y fechas del calendario. Se conservan docente, centro, tema, tramos y actividades; Seguimiento se archiva como OLD y se eliminan Config y Eval anteriores. El resumen muestra si Calendario, Tramos, Actividades y Horario están completos o pendientes y explica los pendientes.
 
-En **Docente y centro**, el asistente propone la Tutoría y el grupo anteriores; puedes mantenerlos o cambiarlos. Si la desmarcas, pide confirmación para el borrador. Cancelar el asistente conserva el cuaderno activo; la eliminación real se realiza al finalizar el nuevo curso. Resumen muestra el grupo cuando hay Tutoría.
+En **Docente y centro**, el asistente propone la Tutoría y el grupo anteriores; puedes mantenerlos o cambiarlos. Si la desmarcas, pide confirmación para el borrador. Cancelar el asistente conserva el cuaderno activo; la eliminación real se realiza al finalizar el nuevo curso. Resumen muestra el grupo cuando hay Tutoría. El roster anual de Tutoría del nuevo curso queda vacío hasta importar otra vez el informe completo.
 
 ## Ayuda y estado
 

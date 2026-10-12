@@ -11,6 +11,7 @@ const context = {
 };
 [
   'initializeConfigStructure_', 'initializeCalendarStructure_',
+  'ensureTutorRosterStructure_',
   'ensureScheduleTechnicalStructure_', 'ensureEnrollmentStructure_',
   'repairTutorAndBaseActivities_', 'ensureModuleConfigTechnicalStructure_',
   'cleanupOrphanModuleConfigsWithLock_', 'initializeCoverStructure_',

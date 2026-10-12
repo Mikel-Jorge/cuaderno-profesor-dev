@@ -276,7 +276,8 @@ function aplicarBorradorNuevoCurso() {
   if (draft.generationPhase >= 2) return 'Datos del borrador aplicados.';
   if (draft.generationPhase !== 1) throw new Error('Primero debe crearse la copia de seguridad.');
   saveGeneralConfig_(draft.config, { updateCover: false, showToast: false,
-    includeTheme: true, confirmedTutorRemoval: true, updateScheduleView: false });
+    includeTheme: true, confirmedTutorRemoval: true, updateScheduleView: false,
+    deactivateRoster: false, refreshMenu: false });
   guardarConfiguracionCalendario_(draft.calendar, { renderViews: false, showToast: false });
   guardarConfiguracionHorario_(draft.schedule, { renderViews: false, showToast: false });
   draft.generationPhase = 2;
@@ -316,6 +317,7 @@ function finalizarEstructuraNuevoCurso() {
   syncStudentGroupValidation_(spreadsheet);
   clearNewCourseDraft_();
   spreadsheet.toast('Nuevo curso preparado.', CP.PROJECT_NAME, 5);
+  onOpen();
   return 'Cuaderno preparado.';
 }
 
@@ -569,6 +571,8 @@ function applyNewCourseConfigKeys_(processInput, keys, options) {
     saveGeneralConfig_(values, Object.assign({
       updateCover: false,
       showToast: false,
+      deactivateRoster: false,
+      refreshMenu: false,
     }, options || {}));
   } catch (error) {
     rollbackNewCoursePreparation_(processInput, error);
@@ -587,6 +591,7 @@ function prepareNewCourseAnnualData_(processInput) {
     try {
       clearStudentsForNewCourse_();
       clearEnrollmentsForNewCourse_();
+      clearTutorRosterForNewCourse_();
       clearWeeklyScheduleForNewCourse_();
       resetCalendarForNewCourse_(processInput.config[CP.CONFIG_KEYS.ACADEMIC_YEAR]);
       archiveTrackingAndDeleteModuleSheetsForNewCourse_(spreadsheet);
@@ -630,6 +635,7 @@ function captureNewCourseAnnualSnapshots_(spreadsheet) {
     },
     schedule: captureScheduleSnapshots_(spreadsheet),
     enrollments: captureNewCourseEnrollmentSnapshots_(spreadsheet),
+    tutorRoster: captureTutorRosterSnapshot_(spreadsheet),
     calendar: captureCalendarTableSnapshots_(spreadsheet),
   };
 }
@@ -640,6 +646,7 @@ function restoreNewCourseAnnualSnapshots_(spreadsheet, snapshots) {
     function() { restoreNewCourseStudentsSnapshot_(spreadsheet, snapshots.students); },
     function() { restoreScheduleSnapshots_(spreadsheet, snapshots.schedule); },
     function() { restoreNewCourseEnrollmentSnapshots_(spreadsheet, snapshots.enrollments); },
+    function() { restoreTutorRosterSnapshot_(spreadsheet, snapshots.tutorRoster); },
     function() { restoreCalendarTableSnapshots_(spreadsheet, snapshots.calendar); },
   ].forEach(function(restore) {
     try {

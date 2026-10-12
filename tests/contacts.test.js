@@ -13,6 +13,7 @@ const modules = [
   { id: 'C', category: 'MODULO', group: 'DAM 2A', acronym: 'ACDA' },
 ];
 let enrolled = { P: ['A'], C: ['L'] }, course = '2026-2027', activatedCourse = '';
+let tutorActive = false;
 const remote = { people: [{ resourceName: 'people/existing',
   emailAddresses: [{ value: 'luis@example.test' }],
   names: [{ givenName: 'Nombre personal' }], memberships: [] }],
@@ -64,11 +65,15 @@ const People = {
 };
 const context = vm.createContext({
   People,
-  CP: { CONFIG_KEYS: { ACADEMIC_YEAR: 'curso_academico', CONTACTS_SYNC_COURSE: 'contacts_sync_course' },
+  CP: { CONFIG_KEYS: { ACADEMIC_YEAR: 'curso_academico', CONTACTS_SYNC_COURSE: 'contacts_sync_course',
+    IS_TUTOR: 'es_tutor', TUTOR_GROUP: 'grupo_tutoria' },
     SHEETS: { CONFIG: '_CONFIG' } },
   SpreadsheetApp: { getActiveSpreadsheet: () => ({ getSheetByName: () => ({}) }) },
   LockService: { getDocumentLock: () => ({ tryLock: () => true, releaseLock() {} }) },
-  getGeneralConfigValues_: () => ({ curso_academico: course }),
+  getGeneralConfigValues_: () => ({ curso_academico: course, es_tutor: tutorActive,
+    grupo_tutoria: 'DAM 2A' }),
+  getActiveTutorRoster_: () => tutorActive ? [{ studentId: 'A' }, { studentId: 'L' }] : [],
+  isTutorEnabled_: value => value === true,
   getStoredConfigMap_: () => ({ contacts_sync_course: activatedCourse }),
   updateConfigValues_: (_sheet, values) => { activatedCourse = values.contacts_sync_course; },
   getEnrollmentStudents_: () => students,
@@ -166,6 +171,17 @@ context.syncContactsForModule_('P', 'DAM 2A');
 assert(remote.groups.some(group => group.name === '2728 · DAM 2B · PMDM'));
 assert(!remote.groups.some(group => group.name === '2728 · DAM 2A · PMDM'));
 modules[0].group = 'DAM 2A';
+
+tutorActive = true;
+const tutorPreview = context.analizarGoogleContacts();
+assert.strictEqual(tutorPreview.moduleLabels, 2);
+assert.strictEqual(tutorPreview.tutorLabels, 1);
+context.syncGoogleContacts();
+assert.deepStrictEqual(members('2728 · DAM 2A'), ['ana@example.test', 'luis@example.test']);
+const tutorGroupCount = remote.groups.length;
+tutorActive = false;
+context.syncGoogleContacts();
+assert.strictEqual(remote.groups.length, tutorGroupCount);
 
 const anaContact = remote.people.find(item => item.emailAddresses[0].value.trim().toLowerCase() ===
   'ana@example.test');

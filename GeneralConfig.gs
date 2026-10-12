@@ -95,7 +95,8 @@ function saveGeneralConfig_(input, options) {
   const previousValues = getStoredConfigMap_(spreadsheet);
   values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] = normalizeConfigValue_(previousValues[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID]);
   values[CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR] = normalizeConfigValue_(previousValues[CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR]);
-  if (isTutorEnabled_(previousValues[CP.CONFIG_KEYS.IS_TUTOR]) &&
+  if (saveOptions.deactivateRoster !== false &&
+      isTutorEnabled_(previousValues[CP.CONFIG_KEYS.IS_TUTOR]) &&
       !isTutorEnabled_(values[CP.CONFIG_KEYS.IS_TUTOR]) && saveOptions.confirmedTutorRemoval !== true &&
       input.confirmedTutorRemoval !== true) {
     throw new Error('Confirma que deseas eliminar la actividad Tutoría y sus sesiones.');
@@ -155,6 +156,14 @@ function saveGeneralConfig_(input, options) {
   if (saveOptions.showToast !== false) {
     spreadsheet.toast('Configuración guardada.', CP.PROJECT_NAME, 4);
   }
+  if (isTutorEnabled_(previousValues[CP.CONFIG_KEYS.IS_TUTOR]) &&
+      (!isTutorEnabled_(values[CP.CONFIG_KEYS.IS_TUTOR]) ||
+      normalizeTutorText_(previousValues[CP.CONFIG_KEYS.TUTOR_GROUP]) !==
+        normalizeTutorText_(values[CP.CONFIG_KEYS.TUTOR_GROUP]))) {
+    deactivateTutorRoster_();
+  }
+  if (saveOptions.refreshMenu !== false &&
+      changedKeys.indexOf(CP.CONFIG_KEYS.IS_TUTOR) !== -1) onOpen();
   return {
     message: changedKeys.length
       ? 'La configuración se ha guardado y sus vistas se han actualizado.'

@@ -23,13 +23,14 @@ function isValidContactEmail_(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
-function buildContactsSource_(book, activityId) {
-  const course = getGeneralConfigValues_(book)[CP.CONFIG_KEYS.ACADEMIC_YEAR];
+function buildContactsSource_(book, activityId, tutorOnly) {
+  const config = getGeneralConfigValues_(book);
+  const course = config[CP.CONFIG_KEYS.ACADEMIC_YEAR];
   const prefix = contactsCoursePrefix_(course);
   const students = getEnrollmentStudents_(book);
   if (!students.length) throw new Error('Primero importa alumnado en 3 Alumnado.');
   const modules = getModuleActivitiesForEnrollment_().filter(function(module) {
-    return !activityId || module.id === activityId;
+    return !tutorOnly && (!activityId || module.id === activityId);
   });
   const emailByStudentId = {};
   const withoutEmail = [], invalidEmail = [];
@@ -51,13 +52,25 @@ function buildContactsSource_(book, activityId) {
     labels.push({ name: prefix + ' · ' + module.group + ' · ' + module.acronym, kind: 'module',
       emails: ids.map(function(id) { return emailByStudentId[id]; }).filter(Boolean) });
   });
+  if (!activityId) {
+    const roster = getActiveTutorRoster_(book, config);
+    if (roster.length) {
+      const ids = {};
+      roster.forEach(function(row) { ids[row.studentId] = true; });
+      labels.push({ name: prefix + ' · ' + config[CP.CONFIG_KEYS.TUTOR_GROUP],
+        kind: 'tutor', emails: students.filter(function(student) { return ids[student.id]; })
+          .map(function(student) { return emailByStudentId[student.id]; }).filter(Boolean) });
+    }
+  }
   const names = {};
   labels.forEach(function(label) {
     if (names[label.name]) throw new Error('Hay etiquetas de módulo con el mismo nombre. Revisa las siglas.');
     names[label.name] = true;
   });
   return { course: String(course), prefix: prefix, students: students, labels: labels,
-    withoutEmail: withoutEmail, invalidEmail: invalidEmail };
+    withoutEmail: withoutEmail, invalidEmail: invalidEmail,
+    tutorConfiguredWithoutRoster: isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR]) &&
+      !labels.some(function(label) { return label.kind === 'tutor'; }) };
 }
 
 function listAllPersonalContacts_() {
@@ -169,7 +182,9 @@ function analizarGoogleContacts() {
   const plan = planContactsSync_(source, readContactsState_());
   return { course: source.course, prefix: source.prefix, moduleLabels: source.labels.filter(function(label) {
     return label.kind === 'module';
-  }).length, withEmail: source.students.length - source.withoutEmail.length - source.invalidEmail.length,
+  }).length, tutorLabels: source.labels.filter(function(label) { return label.kind === 'tutor'; }).length,
+  tutorConfiguredWithoutRoster: source.tutorConfiguredWithoutRoster,
+  withEmail: source.students.length - source.withoutEmail.length - source.invalidEmail.length,
   withoutEmail: source.withoutEmail, invalidEmail: source.invalidEmail, ambiguous: plan.ambiguous,
   newContacts: plan.newContacts, existingContacts: plan.existingContacts,
   newGroups: plan.newGroups, existingGroups: plan.existingGroups,
@@ -180,7 +195,8 @@ function obtenerResumenSincronizacionContactos() {
   const source = buildContactsSource_(SpreadsheetApp.getActiveSpreadsheet());
   return { course: source.course, moduleLabels: source.labels.filter(function(label) {
     return label.kind === 'module';
-  }).length, labelNames: source.labels.map(function(label) { return label.name; }) };
+  }).length, tutorLabels: source.labels.filter(function(label) { return label.kind === 'tutor'; }).length,
+  labelNames: source.labels.map(function(label) { return label.name; }) };
 }
 
 function isContactsAutoSyncEnabledForCurrentCourse_(book) {
@@ -239,14 +255,22 @@ function syncGoogleContacts() {
   return result;
 }
 
-function executeContactsSync_(source, previousLabelName, activityId) {
+function executeContactsSync_(source, previousLabelName, activityId, tutorOnly) {
   const lock = LockService.getDocumentLock();
   if (!lock || !lock.tryLock(30000)) throw new Error('Ya hay una sincronización en curso. Inténtalo de nuevo.');
   try {
-    source = source || buildContactsSource_(SpreadsheetApp.getActiveSpreadsheet(), activityId);
-    if (activityId && source.labels.length !== 1) throw new Error('La etiqueta del módulo no es inequívoca.');
+    source = source || buildContactsSource_(SpreadsheetApp.getActiveSpreadsheet(), activityId, tutorOnly);
+    if ((activityId || tutorOnly) && source.labels.length !== 1) {
+      throw new Error('La etiqueta de Contacts no es inequívoca.');
+    }
     const plan = planContactsSync_(source, readContactsState_());
-    const result = { created: 0, reused: plan.existingContacts, labelsUpdated: 0, incidents: 0 };
+    const result = { created: 0, reused: plan.existingContacts, labelsUpdated: 0,
+      moduleLabelsUpdated: 0, tutorLabelsUpdated: 0, incidents: 0 };
+    function markLabelUpdated(label) {
+      result.labelsUpdated++;
+      if (label.kind === 'tutor') result.tutorLabelsUpdated++;
+      else result.moduleLabelsUpdated++;
+    }
     if (previousLabelName && previousLabelName !== source.labels[0].name &&
         !plan.groupByName[source.labels[0].name] && plan.groupByName[previousLabelName]) {
       try {
@@ -294,7 +318,7 @@ function executeContactsSync_(source, previousLabelName, activityId) {
       });
       const changes = add.map(function(resource) { return { add: resource }; })
         .concat(remove.map(function(resource) { return { remove: resource }; }));
-      if (!changes.length) { result.labelsUpdated++; return; }
+      if (!changes.length) { markLabelUpdated(label); return; }
       let successful = true;
       for (let offset = 0; offset < changes.length; offset += 1000) {
         const chunk = changes.slice(offset, offset + 1000);
@@ -311,7 +335,7 @@ function executeContactsSync_(source, previousLabelName, activityId) {
           }
         } catch (error) { result.incidents++; successful = false; }
       }
-      if (successful) result.labelsUpdated++;
+      if (successful) markLabelUpdated(label);
     });
     result.status = result.incidents ? 'Sincronización completada con incidencias' : 'Google Contacts actualizado';
     return result;
