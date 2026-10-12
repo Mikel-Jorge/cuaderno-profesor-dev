@@ -1,8 +1,8 @@
-# Guía de uso · Cuaderno del Profesor 1.9.0
+# Guía de uso · Cuaderno del Profesor 1.12.0
 
 ## Empezar un curso
 
-El cuaderno se distribuye como copia de una plantilla inicializada. Usa el único menú **📘 Cuaderno del Profesor 📘**. Sus submenús son **Configuración** (🪪 Configurar datos del docente y centro, 📅 Configurar calendario, 🕒 Configurar horario) y **Módulos** (Crear configuración, Recalcular, Crear seguimiento y evaluación). Después aparecen **Reparar estructura**, **Preparar nuevo curso** y **Ayuda**. No hay un asistente de configuración independiente.
+El cuaderno se distribuye como copia de una plantilla inicializada. Usa el único menú **📘 Cuaderno del Profesor 📘**. Sus submenús son **Configuración** (datos del docente y centro, calendario y horario) y **Módulos** (importar desde EDUCA, Matrículas de módulos, sincronizar Google Contacts, crear y recalcular Config, crear Seguimiento y Evaluación). Después aparecen **Reparar estructura**, **Preparar nuevo curso** y **Ayuda**. No hay un asistente de configuración independiente.
 
 Para pasar de un curso a otro, abre **Preparar nuevo curso**. Un único diálogo guía siete pasos. Abrirlo no modifica el cuaderno. **Siguiente** guarda un borrador del paso actual sin redibujar las hojas. Puedes volver a pasos visitados desde el indicador superior; Atrás y el indicador descartan los cambios que aún no hayas guardado. Los pasos pendientes muestran un aviso ámbar con su motivo. **Cancelar** conserva el borrador para retomarlo. **Finalizar y generar cuaderno** crea la copia, prepara el nuevo curso y aplica las vistas en una espera final.
 
@@ -32,7 +32,7 @@ Durante el curso puedes usar por separado **Configuración → Configurar datos 
 
 En **Configuración → Datos del docente y centro**, marca **Soy tutor/a** y escribe libremente el **Grupo de tutoría**. El grupo aparece en Portada y se ofrece en la columna Grupo de Alumnado. Horario mantiene una actividad Tutoría vinculada a ese grupo, con aula Departamento por defecto; puedes ajustar su Aula y color allí. Para dejar de ser tutor/a debes confirmar la eliminación de esa actividad y sus sesiones, sin borrar alumnado ni otros módulos.
 
-El Horario propone por curso Reunión de Departamento (RD), ECDPI, PPPP y P con aula Departamento. Puedes personalizarlas o eliminarlas; no reaparecen durante el mismo curso. Guardia conserva G y Sala de Profesores. DUAL solo se muestra en actividades antiguas; no está disponible al crear nuevas. El tipo de enseñanza antes mostrado como Online se llama **Virtual**, conservando su configuración.
+El Horario propone por curso Reunión de Departamento (RD), ECDPI, PPPP y P con aula Departamento. Puedes personalizarlas o eliminarlas; no reaparecen durante el mismo curso. Guardia conserva G y Sala de Profesores. DUAL solo se muestra en actividades antiguas; no está disponible al crear nuevas. El tipo de enseñanza **Virtual** conserva su configuración.
 
 Si llega un alumno nuevo, vuelve a importar el informe actualizado de EDUCA y revisa su selección en **Módulos → Matrículas de módulos**. Si el módulo ya tiene 6 Eval, el alumno se incorpora sin Reparar estructura. Grupo ofrece los grupos de actividades MODULO y el grupo de tutoría activo. Las columnas Educa aceptan 1–10 o MH. Al desmatricular, la fila de Eval conserva notas y aparece gris, sin controles de entrada; al rematricular, recupera su estilo y validaciones.
 
@@ -43,6 +43,12 @@ En EDUCA abre **Alumnado → Informes → Listado mi alumnado → Por profesor**
 El informe **no incluye correo electrónico**. Los alumnos nuevos llegan con Email vacío; complétalo manualmente en **3 Alumnado**. Los existentes conservan Email, REACA, Medidas e identidad. Reimportar actualiza las relaciones procedentes de EDUCA; las decisiones manuales de Matrículas tienen prioridad, tanto para matricular como para desmatricular. Una baja no borra al alumno ni sus notas históricas. El diálogo se cierra al completar la importación. El archivo se procesa para importar y no se guarda como archivo en Drive. Solo se acepta este informe concreto de EDUCA.
 
 En **Módulos → Matrículas de módulos** puedes elegir manualmente quién cursa cada módulo entre el alumnado de grupo equivalente y quienes ya tengan una matrícula registrada en él. Al guardar, la Eval correspondiente se sincroniza y el diálogo se cierra. Desmarcar manualmente a un alumno impide que la siguiente importación lo reactive; las relaciones que no cambies siguen gestionadas por EDUCA. Las filas inactivas de Eval muestran advertencia de protección: el propietario de la hoja conserva el control de esas protecciones.
+
+## Google Contacts
+
+Completa primero los **Email** que conozcas en **3 Alumnado**. Después abre **Módulos → Sincronizar Google Contacts** y pulsa **Analizar Google Contacts**. Revisa la vista previa: muestra contactos nuevos y existentes, etiquetas, cambios de pertenencia y alumnado sin Email, con Email inválido o con un contacto ambiguo. La consulta no modifica tus contactos. Al confirmar, Google solicitará permiso para gestionarlos. El Cuaderno crea los que faltan y reutiliza los que tienen un único correo coincidente, sin cambiar los datos de estos últimos. Nunca elimina contactos.
+
+Las etiquetas tienen prefijo del curso: **2627 · DAM 2A** reúne al alumnado de ese grupo que exista en 3 Alumnado y tenga Email; **2627 · DAM 2A · PMDM** reúne solo a quienes estén matriculados en ese módulo y tengan Email. Una baja de matrícula retira al alumno de la etiqueta del módulo, pero mantiene su contacto y, si sigue en el grupo, su etiqueta de grupo. Los contactos ambiguos y los alumnos sin Email se omiten; puedes corregirlos y repetir la sincronización. La operación es repetible y las etiquetas de cursos anteriores permanecen. El importador EDUCA actual no incluye necesariamente al grupo completo de Tutoría.
 
 ## Reparar estructura
 

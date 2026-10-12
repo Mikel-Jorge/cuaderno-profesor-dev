@@ -3,6 +3,7 @@ function onOpen() {
   const modulesMenu = ui.createMenu(CP.MENU.MODULES)
     .addItem(CP.MENU.EDUCA_IMPORT, 'abrirImportadorEduca')
     .addItem(CP.MENU.MODULE_ENROLLMENTS, 'abrirMatriculasModulos')
+    .addItem(CP.MENU.CONTACTS_SYNC, 'abrirSincronizacionContactos')
     .addSeparator()
     .addItem(CP.MENU.MODULE_CONFIG_CREATE, 'abrirCreacionConfiguracionModulo')
     .addItem(CP.MENU.MODULE_CONFIG_RECALCULATE, 'recalcularConfiguracionModulo')

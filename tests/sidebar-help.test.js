@@ -19,7 +19,8 @@ assert.strictEqual(context.getSidebarData_().feedbackFormUrl, feedbackUrl);
 const sections = context.getSidebarHelpSections_('evaluation');
 const importHelp = sections.find(item => item.id === 'educa-import');
 const enrollmentHelp = sections.find(item => item.id === 'module-enrollments');
-assert(importHelp && enrollmentHelp);
+const contactsHelp = sections.find(item => item.id === 'google-contacts');
+assert(importHelp && enrollmentHelp && contactsHelp);
 const helpSearch = value => String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 ['EDUCA', 'importar', 'alumnado', 'Excel', 'XLS', 'Centro', 'correo', 'email'].forEach(term => {
   assert(helpSearch([importHelp.title, importHelp.text, importHelp.keywords,
@@ -29,6 +30,14 @@ const helpSearch = value => String(value).normalize('NFD').replace(/[\u0300-\u03
   assert(helpSearch([enrollmentHelp.title, enrollmentHelp.text, enrollmentHelp.keywords]
     .join(' ')).includes(helpSearch(term)), term);
 });
+['contacto', 'contacts', 'etiqueta', 'grupo', 'correo', 'email', 'tutoría'].forEach(term => {
+  assert(helpSearch([contactsHelp.title, contactsHelp.text, contactsHelp.keywords,
+    contactsHelp.bullets.join(' ')].join(' ')).includes(helpSearch(term)), term);
+});
+assert(contactsHelp.text.includes('Nunca elimina contactos'));
+assert(!sections.some(item => /Después de añadir un alumno|matrícula explícita|selecciona solo 6 Eval en Reparar/i
+  .test([item.text, ...item.bullets, ...(item.faqs || []).flat()].join(' '))));
+assert(sections.find(item => item.id === 'evaluation').text.includes('se actualiza automáticamente'));
 assert.strictEqual(sections[0].id, 'evaluation');
 assert.strictEqual(sections.filter(item => item.open).length, 1);
 assert(sections.every(item => item.icon && item.subtitle && item.keywords));

@@ -2,8 +2,14 @@
 
 **Última actualización:** 2026-10-12
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.11.4`
+**Versión vigente:** `1.12.0`
 **Esquema vigente:** `13`
+
+## Google Contacts y Ayuda 1.12.0
+
+- Módulos incorpora una sincronización con Google Contacts con análisis de solo lectura, vista previa y confirmación. Reutiliza contactos personales por email inequívoco, omite los casos sin email, inválidos o ambiguos, y crea los contactos que faltan sin modificar los existentes.
+- Las etiquetas `AACC · Grupo` reflejan Alumnado con email; `AACC · Grupo · Sigla` refleja la matrícula activa del módulo. La sincronización ajusta solo esas etiquetas del curso actual; nunca borra contactos ni etiquetas de cursos anteriores. No se usa People Directory ni se crean hojas técnicas.
+- Se habilita Advanced People Service v1 y se incorpora el permiso `https://www.googleapis.com/auth/contacts` mediante la autodetección vigente de Apps Script. La Ayuda se ha auditado para explicar el flujo actual de EDUCA, Matrículas, Eval y Contacts. El esquema permanece en 13.
 
 ## Flujo EDUCA y matrículas 1.11.4
 

@@ -1,6 +1,6 @@
 const CP = Object.freeze({
   PROJECT_NAME: 'Cuaderno del Profesor',
-  NOTEBOOK_VERSION: '1.11.4',
+  NOTEBOOK_VERSION: '1.12.0',
   SCHEMA_VERSION: '13',
   FEEDBACK_FORM_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSeGNIgzDp0hLj8vymzhPSuRBqkS1RNe5l2pRughEmRmwNjNBw/viewform?usp=publish-editor',
   TAB_COLORS: Object.freeze({
@@ -61,6 +61,7 @@ const CP = Object.freeze({
     MODULE_TRACKING_CREATE: '📋 Crear seguimiento y evaluación',
     EDUCA_IMPORT: '📥 Importar alumnado desde EDUCA',
     MODULE_ENROLLMENTS: '👥 Matrículas de módulos',
+    CONTACTS_SYNC: '📇 Sincronizar Google Contacts',
     HELP: '❓ Ayuda',
   }),
   UI: Object.freeze({
@@ -84,6 +85,8 @@ const CP = Object.freeze({
     EDUCA_IMPORT_DIALOG_HEIGHT: 780,
     MODULE_ENROLLMENTS_DIALOG_WIDTH: 760,
     MODULE_ENROLLMENTS_DIALOG_HEIGHT: 720,
+    CONTACTS_SYNC_DIALOG_WIDTH: 760,
+    CONTACTS_SYNC_DIALOG_HEIGHT: 700,
     NEW_COURSE_DIALOG_WIDTH: 1000,
     NEW_COURSE_DIALOG_HEIGHT: 850,
     PROGRESS_DIALOG_WIDTH: 480,

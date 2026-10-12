@@ -129,7 +129,7 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'students',
       title: 'Alumnado',
-      text: 'Importa Apellidos, Nombre y Grupo desde EDUCA. En 3 Alumnado puedes completar Email y editar REACA e Información / Medidas. Grupo incluye módulos y, si está activa, Tutoría. La matrícula indica qué módulos cursa cada alumno.',
+      text: 'Importa Apellidos, Nombre y Grupo desde Módulos → Importar alumnado desde EDUCA. Estas columnas están protegidas. En 3 Alumnado puedes completar Email y editar REACA e Información / Medidas. El informe EDUCA no incluye Email. Importar actualiza también matrículas y Evaluaciones existentes; no necesitas Reparar estructura.',
     },
     {
       id: 'educa-import',
@@ -140,6 +140,11 @@ function getSidebarHelpSections_(contextSectionId) {
       id: 'module-enrollments',
       title: 'Matrículas de módulos',
       text: 'Grupo indica el grupo general del alumno; la matrícula indica qué módulos concretos cursa. Para matricular o desmatricular, abre Módulos → Matrículas de módulos, marca o desmarca y guarda. Si existe 6 Eval, la evaluación se actualiza automáticamente: las bajas conservan notas en una fila gris y las altas recuperan su fila. Los cambios manuales tienen prioridad sobre futuras importaciones de EDUCA.',
+    },
+    {
+      id: 'google-contacts',
+      title: 'Google Contacts',
+      text: 'Abre Módulos → Sincronizar Google Contacts. Google solicitará permiso para gestionar tus contactos. El Cuaderno crea o reutiliza contactos por Email y administra las etiquetas de este curso. Nunca elimina contactos de tu cuenta. La etiqueta «2627 · DAM 2A» reúne al alumnado de ese Grupo que exista en 3 Alumnado y tenga Email; «2627 · DAM 2A · PMDM» reúne solo a quienes cursan ese módulo. Si alguien deja un módulo, sale de esa etiqueta sin borrar su contacto. Las etiquetas de cursos anteriores permanecen. El grupo completo de Tutoría puede no estar aún en 3 Alumnado: el importador actual solo obtiene alumnado de módulos.',
     },
     {
       id: 'module-config',
@@ -154,7 +159,7 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'evaluation',
       title: 'Evaluación',
-      text: 'Introduce la nota final de cada UT. Revisa las medias calculadas y escribe manualmente las notas Educa. Importar alumnado o guardar Matrículas de módulos actualiza la Eval existente sin ejecutar Reparar estructura. Las filas de alumnos desmatriculados conservan sus notas y aparecen inactivas.',
+      text: 'Introduce la nota final de cada UT. Revisa las medias calculadas y escribe manualmente las notas Educa. Si falta un alumno en una Evaluación, revisa primero Módulos → Matrículas de módulos. Si ya aparece en 3 Alumnado, basta con matricularlo y guardar: 6 Eval se actualiza automáticamente. Desmarcarlo conserva sus notas en una fila histórica gris protegida; si vuelve a matricularse, recupera la misma fila y sus datos.',
     },
     {
       id: 'new-course',
@@ -164,7 +169,7 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'initialize',
       title: 'Reparar estructura',
-      text: 'Marca solo las hojas que necesiten mantenimiento y pulsa Reparar. Tus datos se conservan.',
+      text: 'Reparar estructura sirve para mantenimiento y recuperación de fórmulas, formatos y protecciones. Importar alumnado y guardar Matrículas actualizan Eval directamente; no necesitas Reparar para altas o bajas habituales.',
     },
     {
       id: 'troubleshooting',
@@ -184,7 +189,10 @@ function getSidebarHelpSections_(contextSectionId) {
         ['¿Qué ocurre si vuelvo a importar el Excel?', 'No duplica alumnos existentes y conserva Email, REACA y Medidas. Actualiza el Grupo con el dato de EDUCA y las matrículas gestionadas por el informe. Los cambios manuales en Matrículas de módulos tienen prioridad: si desmatriculaste a un alumno, reimportar no lo matriculará otra vez. Nadie se borra de Alumnado ni pierde sus notas.'],
         ['¿Por qué no acepta mi archivo?', 'El importador está diseñado solo para Listado mi alumnado → Por profesor → Excel → Asignatura de EDUCA, no para cualquier Excel.'],
         ['¿Importa el grupo de Tutoría?', 'No. Por ahora importa solo alumnado relacionado con los módulos del informe. El importador específico de Tutoría queda para una versión futura.'],
-        ['¿Qué hago si llega un alumno nuevo?', 'Para un nuevo alumno, vuelve a importar el informe actualizado de EDUCA y revisa su matrícula en Módulos → Matrículas de módulos si hace falta. Si el módulo ya tiene 6 Eval, se incorporará automáticamente. Completa Email manualmente en 3 Alumnado si falta.'],
+        ['¿Qué hago si llega un nuevo alumno?', 'Descarga de nuevo el informe actualizado de EDUCA e impórtalo desde Módulos → Importar alumnado desde EDUCA. Revisa Matrículas de módulos si necesitas una excepción y completa su Email manualmente. Si ya existe 6 Eval, se incorporará automáticamente cuando esté matriculado.'],
+        ['¿Qué ocurre si un alumno no tiene Email?', 'No se crea ni sincroniza su contacto hasta que completes Email en 3 Alumnado. El resto puede sincronizarse normalmente.'],
+        ['¿Qué ocurre si ya tengo a ese alumno en Google Contacts?', 'Si existe un único contacto con el mismo correo, el Cuaderno lo reutiliza sin cambiar sus datos personales.'],
+        ['¿El Cuaderno puede borrar mis contactos?', 'No. La sincronización no elimina contactos de Google Contacts; solo crea los que faltan y actualiza las etiquetas gestionadas por el Cuaderno.'],
         ['¿Qué hago si una media parece incorrecta?', 'Revisa las notas y los pesos de Config. Si la hoja tiene un problema de formato o cálculo, selecciona su bloque en Reparar estructura.'],
         ['¿Por qué Sheets avisa de una celda protegida?', 'Es una advertencia para evitar cambios accidentales en celdas derivadas. Puedes continuar si sabes lo que haces.'],
         ['¿Cambiar Config cambia Seguimiento?', 'No. Seg conserva la instantánea capturada al crearse.'],
@@ -217,6 +225,7 @@ function getSidebarHelpSections_(contextSectionId) {
       students: ['👥', 'Identidad, REACA y Medidas', 'alumnado'],
       'educa-import': ['📥', 'Informe Excel XLS por profesor y asignatura', 'educa importar alumnado excel xls centro correo email'],
       'module-enrollments': ['👥', 'Pertenencia a cada módulo', 'matricula matriculas modulo grupo'],
+      'google-contacts': ['📇', 'Contactos y etiquetas del curso', 'google contacts contacto correo email etiqueta grupo modulo tutoría'],
       'module-config': ['📚', 'UT, horas y pesos', 'modulo config peso'],
       'module-tracking': ['📝', 'Registro de lo impartido', 'seguimiento old'],
       evaluation: ['📊', 'Notas, medias y Educa', 'evaluacion eval peso mh'],
@@ -229,9 +238,10 @@ function getSidebarHelpSections_(contextSectionId) {
       'general-data': ['Actualiza docente y centro cuando cambien.', 'Revisa el curso académico antes de configurar el calendario.'],
       calendar: ['Revisa festivos, Navidad y Semana Santa con el calendario oficial.', 'Indica FEOE y repaso cuando afecten a tus módulos.'],
       schedule: ['Crea los tramos y las actividades antes de asignar sesiones.', 'En un curso nuevo se conservan tramos y actividades; la semana empieza vacía.'],
-      students: ['Después de añadir un alumno, revisa su matrícula si el módulo es explícito; después selecciona solo 6 Eval en Reparar estructura.'],
+      students: ['El importador EDUCA gestiona Apellidos, Nombre y Grupo y sincroniza Evaluaciones existentes.', 'Completa Email manualmente y edita REACA y Medidas en 3 Alumnado.'],
       'educa-import': ['Abre Módulos → Importar alumnado desde EDUCA y analiza el archivo antes de confirmar.', 'Comprueba el destino de cada asignatura y las posibles bajas de matrícula.'],
       'module-enrollments': ['Marca solo los alumnos que cursan el módulo y guarda.', 'Una baja conserva el alumno y sus notas, que quedan como histórico en Eval.'],
+      'google-contacts': ['Analiza Google Contacts y revisa la vista previa antes de sincronizar.', 'Los alumnos sin Email o con Email inválido se omiten; los contactos ambiguos requieren revisión.', 'Las etiquetas del curso reflejan el grupo y las matrículas actuales; nunca se borran contactos ni etiquetas anteriores.'],
       'module-config': ['Cada módulo + grupo se configura por separado.', 'Las UT se sitúan en la evaluación donde terminan. Si borras Config, se pierden sus UT.'],
       'module-tracking': ['Fecha y Total se calculan automáticamente.', 'Los cambios posteriores de Config no reescriben lo ya registrado en Seg.'],
       evaluation: ['Las notas UT admiten 0–10 con decimales; una casilla vacía cuenta como cero en la media.', 'Los pesos de Config actualizan las medias. Educa admite 1–10 o MH.', 'Las recuperaciones se gestionan en Moodle.'],
