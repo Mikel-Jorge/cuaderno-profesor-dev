@@ -1,0 +1,121 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+
+const context = vm.createContext({
+  CP: { SHEETS: { STUDENTS: '3 Alumnado', ENROLLMENTS: '_MATRICULAS',
+    ENROLLMENT_META: '_MATRICULAS_META' } },
+  SpreadsheetApp: { getActiveSpreadsheet: () => book },
+  LockService: { getDocumentLock: () => ({ tryLock: () => true, releaseLock() {} }) },
+});
+['Matriculas.gs', 'EducaImport.gs', 'Evaluation.gs'].forEach(file =>
+  vm.runInContext(fs.readFileSync(file, 'utf8'), context, { filename: file }));
+const ana = { id: 'A', surname: 'Apellido Uno', name: 'Ana', group: 'DAM 2A',
+  email: 'existing@example.invalid', reaca: true, measures: 'Tiempo extra' };
+const javi = { id: 'J', surname: 'Apellido Dos', name: 'Javi', group: 'DAM 2A',
+  email: '', reaca: false, measures: '' };
+const other = { id: 'X', surname: 'Apellido Tres', name: 'Xavi', group: 'DAM 2B' };
+const acda = { id: 'ACDA', category: 'MODULO', name: 'Acceso a datos', acronym: 'ACDA', group: 'DAM 2A' };
+const pmdm = { id: 'PMDM', category: 'MODULO', name: 'Programación multimedia', acronym: 'PMDM', group: 'DAM 2A' };
+const pmdmB = { id: 'PMDM-B', category: 'MODULO', name: 'Programación multimedia', acronym: 'PMDM', group: 'DAM 2B' };
+const tutor = { id: 'T', category: 'TUTORIA', name: 'Tutoría', group: 'DAM 2A' };
+const modules = [acda, pmdm, pmdmB];
+context.getScheduleActivities_ = () => [...modules, tutor];
+assert.deepEqual(Array.from(context.getModuleActivitiesForEnrollment_().map(item => item.id)),
+  ['ACDA', 'PMDM', 'PMDM-B']);
+const block = (subject, students, group = 'DAM 2A') => ({
+  key: subject + '\n' + group, subject, group, variants: 1, students,
+});
+const blocks = [block('Acceso a datos', [ana]), block('Programación multimedia', [ana, javi])];
+const plan = context.buildEducaImportPlan_(blocks, {}, modules, [ana, javi], [], {});
+assert.equal(plan.summary.modules, 2);
+assert.equal(plan.summary.newStudents, 0);
+assert.equal(plan.summary.existingStudents, 2);
+assert.equal(plan.summary.deactivations, 1); // Javi deja ACDA, no PMDM.
+assert.equal(plan.blocks[0].activityId, 'ACDA');
+assert.equal(plan.blocks[1].activityId, 'PMDM');
+assert.equal(plan.blocks[1].candidates.some(item => item.id === 'PMDM-B'), false);
+assert.equal(ana.email, 'existing@example.invalid');
+assert.equal(ana.reaca, true);
+assert.equal(ana.measures, 'Tiempo extra');
+assert.throws(() => context.buildEducaImportPlan_(blocks,
+  { [blocks[0].key]: 'PMDM-B' }, modules, [ana, javi], [], {}), /mismo grupo/);
+assert.throws(() => context.buildEducaImportPlan_(blocks,
+  { [blocks[0].key]: 'PMDM', [blocks[1].key]: 'PMDM' }, modules, [ana, javi], [], {}), /mismo módulo/);
+assert.equal(context.buildEducaImportPlan_(blocks, {}, modules, [ana, javi], [], {})
+  .summary.detectedStudents, 2);
+const repeated = context.buildEducaImportPlan_([block('Programación multimedia', [ana])],
+  {}, modules, [ana, javi], [
+    { studentId: 'A', activityId: 'PMDM', active: true },
+    { studentId: 'J', activityId: 'PMDM', active: true },
+  ], { PMDM: true });
+assert.equal(repeated.summary.deactivations, 1);
+assert.equal(repeated.summary.newStudents, 0);
+assert.throws(() => context.buildEducaImportPlan_(blocks, {}, modules,
+  [ana, { ...ana, id: 'A-duplicate' }], [], {}), /dos alumnos/);
+
+let students = [ana, javi, other], rows = [], modes = {}, saved;
+const book = {};
+context.getModuleActivitiesForEnrollment_ = () => modules;
+context.getEnrollmentStudents_ = () => students;
+context.readEnrollmentRows_ = () => rows;
+context.readEnrollmentModes_ = () => modes;
+context.ensureEnrollmentStructure_ = () => {};
+context.writeEnrollmentState_ = (_book, nextRows, nextModes) => {
+  saved = { rows: nextRows, modes: nextModes }; rows = nextRows; modes = nextModes;
+};
+context.repairEvaluationsForActivities_ = () => {};
+assert.throws(() => context.saveModuleEnrollments({ activityId: 'ACDA', studentIds: ['X'] }),
+  /ajeno al grupo/);
+assert.throws(() => context.saveModuleEnrollments({ activityId: 'T', studentIds: [] }),
+  /módulo válido/);
+context.saveModuleEnrollments({ activityId: 'ACDA', studentIds: ['A'] });
+assert.equal(saved.modes.ACDA, true);
+assert.deepEqual(Array.from(saved.rows.filter(row => row.activityId === 'ACDA')
+  .map(row => [row.studentId, row.active, row.origin])),
+[['A', true, 'MANUAL'], ['J', false, 'MANUAL']]);
+context.saveModuleEnrollments({ activityId: 'PMDM', studentIds: [] });
+assert.equal(modes.PMDM, true);
+assert.equal(rows.filter(row => row.activityId === 'PMDM' && row.active).length, 0);
+context.saveModuleEnrollments({ activityId: 'ACDA', studentIds: ['A'] });
+assert.equal(rows.filter(row => row.activityId === 'ACDA').length, 2);
+context.getEvaluationStudents_ = () => [
+  ...students.filter(student => student.group === 'DAM 2A')
+    .map(student => ({ id: student.id, surname: student.surname,
+      name: student.name, group: student.group, measures: student.measures })),
+];
+assert.deepEqual(Array.from(context.getStudentsForModuleActivity_(book, acda).map(item => item.id)), ['A']);
+students = [{ ...ana, group: 'DAM 2B' }, javi, other];
+assert.deepEqual(Array.from(context.getStudentsForModuleActivity_(book, acda).map(item => item.id)), []);
+students = [ana, javi, other];
+modes = {}; // Legacy: todo el grupo continúa activo.
+assert.deepEqual(Array.from(context.getStudentsForModuleActivity_(book, acda).map(item => item.id)), ['A', 'J']);
+modes = { ACDA: true };
+const evalRows = context.buildEvaluationStudentRows_(
+  [[javi.surname, javi.name, '', '8', 'J']],
+  [['', '', '', '', '']], [['', '', 'Nota histórica', '', '']],
+  context.getStudentsForModuleActivity_(book, acda), 5, [4]);
+assert.equal(evalRows.additions, 1);
+assert.equal(evalRows.items.find(item => item.id === 'J').inactive, true);
+assert.equal(evalRows.items.find(item => item.id === 'J').values[3], '8');
+assert.equal(evalRows.items.find(item => item.id === 'J').notes[2], 'Nota histórica');
+assert.equal(evalRows.items.find(item => item.id === 'A').inactive, false);
+const html = fs.readFileSync('UiDialogMatriculas.html', 'utf8');
+assert.match(html, /checkbox\.checked=explicit\?selected\[student\.id\]===true:true/);
+assert.match(fs.readFileSync('NewCourse.gs', 'utf8'), /clearEnrollmentsForNewCourse_\(\)/);
+context.clearEnrollmentsForNewCourse_();
+assert.equal(rows.length, 0);
+assert.deepEqual(Object.keys(modes), []);
+rows = [
+  { studentId: 'A', activityId: 'ACDA', active: true, origin: 'EDUCA_XLS' },
+  { studentId: 'A', activityId: 'ACDA', active: false, origin: 'MANUAL' },
+  { studentId: 'X', activityId: 'ACDA', active: true, origin: 'MANUAL' },
+];
+modes = { ACDA: true, REMOVED: true };
+book.getSheetByName = () => ({ getLastRow: () => 3 });
+context.normalizeEnrollmentStorage_(book);
+assert.equal(rows.length, 2);
+assert.equal(rows.find(row => row.studentId === 'A').active, false);
+assert.equal(rows.find(row => row.studentId === 'X').active, false); // Grupo DAM 2B.
+assert.deepEqual(Object.keys(modes), ['ACDA']);
+console.log('legacy, manual and EDUCA memberships; Eval history and annual reset: ok');

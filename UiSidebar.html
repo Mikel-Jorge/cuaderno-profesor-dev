@@ -21,15 +21,15 @@ function renderHelpSections(){const query=normalize(search.value.trim());clear.h
 function renderSectionBody(body,section){
   if(section.id==='first-steps'){
     const list=element('ol','timeline');
-    ['Prepara o configura el curso','Completa Alumnado','Crea 4 Config de cada módulo','Define UT y ponderaciones','Recalcula Config','Crea Seguimiento y Evaluación','Trabaja durante el curso'].forEach(function(text){list.appendChild(element('li','',text))});
+    ['Prepara o configura el curso','Completa o importa Alumnado','Revisa matrículas de módulos','Crea 4 Config de cada módulo','Define UT y ponderaciones','Recalcula Config','Crea Seguimiento y Evaluación','Trabaja durante el curso'].forEach(function(text){list.appendChild(element('li','',text))});
     body.appendChild(list);return;
   }
   if(section.id==='dependencies'){
     const flow=element('div','dependency');
-    ['Calendario + Horario','↓','4 Config','↓','5 Seg + 6 Eval','Alumnado ↓ 6 Eval'].forEach(function(text){flow.appendChild(element('span','',text))});
+    ['Calendario + Horario','↓','4 Config','↓','5 Seg + 6 Eval','Alumnado + matrículas ↓ 6 Eval'].forEach(function(text){flow.appendChild(element('span','',text))});
     body.append(element('p','',section.text),flow);return;
   }
-  const paths={'general-data':['Configuración','🪪 Configurar datos del docente y centro'],calendar:['Configuración','📅 Configurar calendario'],schedule:['Configuración','🕒 Configurar horario'],'module-config':['Módulos','Crear configuración de módulo'],'module-tracking':['Módulos','Crear seguimiento y evaluación'],evaluation:['Módulos','Crear seguimiento y evaluación'],initialize:['Reparar estructura'],'new-course':['Preparar nuevo curso']};
+  const paths={'general-data':['Configuración','🪪 Configurar datos del docente y centro'],calendar:['Configuración','📅 Configurar calendario'],schedule:['Configuración','🕒 Configurar horario'],'module-config':['Módulos','Crear configuración de módulo'],'module-tracking':['Módulos','Crear seguimiento y evaluación'],evaluation:['Módulos','Crear seguimiento y evaluación'],'educa-import':['Módulos','Importar alumnado desde EDUCA'],'module-enrollments':['Módulos','Matrículas de módulos'],initialize:['Reparar estructura'],'new-course':['Preparar nuevo curso']};
   if(paths[section.id]){
     const breadcrumb=element('div','menu-path');
     ['Cuaderno del Profesor'].concat(paths[section.id]).forEach(function(part,index){if(index)breadcrumb.append(element('i','','›'));breadcrumb.append(element('span','',part))});
@@ -44,8 +44,8 @@ function renderSectionBody(body,section){
   if(section.id==='module-config')body.appendChild(element('div','callout','Consejo · Recalcula Config después de cambiar las horas de una UT.'));
   if(section.id==='new-course')body.appendChild(element('div','callout warning','Atención · El curso activo cambia después de crear la copia.'));
 }
-function faqGroup(item){const question=normalize(item[0]);if(/nuevo curso|preparar/.test(question))return'Nuevo curso';if(/reparar|borro|protegida|formula/.test(question))return'Mantenimiento';if(/eval|ut vacia|mh|alumno|peso/.test(question))return'Evaluación';if(/config|modulo|seg|old/.test(question))return'Módulos';return'Calendario y horario'}
-function renderFaq(body,faqs,query){const groups={};faqs.forEach(function(item){const group=faqGroup(item);(groups[group]||(groups[group]=[])).push(item)});['Módulos','Evaluación','Calendario y horario','Mantenimiento','Nuevo curso'].forEach(function(group){if(!groups[group])return;body.appendChild(element('h3','faq-group',group));groups[group].forEach(function(item){const details=element('details','faq-item'),summary=element('summary','',item[0]);details.append(summary,element('p','',item[1]));details.open=Boolean(query);body.appendChild(details)})})}
+function faqGroup(item){const question=normalize(item[0]);if(/import|correo|archivo|tutoria/.test(question))return'Importación y matrículas';if(/nuevo curso|preparar/.test(question))return'Nuevo curso';if(/reparar|borro|protegida|formula/.test(question))return'Mantenimiento';if(/eval|ut vacia|mh|alumno|peso/.test(question))return'Evaluación';if(/config|modulo|seg|old/.test(question))return'Módulos';return'Calendario y horario'}
+function renderFaq(body,faqs,query){const groups={};faqs.forEach(function(item){const group=faqGroup(item);(groups[group]||(groups[group]=[])).push(item)});['Módulos','Importación y matrículas','Evaluación','Calendario y horario','Mantenimiento','Nuevo curso'].forEach(function(group){if(!groups[group])return;body.appendChild(element('h3','faq-group',group));groups[group].forEach(function(item){const details=element('details','faq-item'),summary=element('summary','',item[0]);details.append(summary,element('p','',item[1]));details.open=Boolean(query);body.appendChild(details)})})}
 function render(){renderStatus();renderHelpSections()}
 search.addEventListener('input',renderHelpSections);clear.addEventListener('click',function(){search.value='';search.focus();renderHelpSections()});document.getElementById('status-toggle').addEventListener('click',function(){const detail=document.getElementById('status-detail'),open=detail.hidden;detail.hidden=!open;this.textContent=open?'Ocultar completados':'Ver '+detail.childElementCount+' completados';this.setAttribute('aria-expanded',String(open))});document.getElementById('refresh').addEventListener('click',function(){const button=this;button.disabled=true;google.script.run.withSuccessHandler(function(next){data=next;document.getElementById('active-theme').textContent=next.themeCss;render();button.disabled=false}).withFailureHandler(function(){button.disabled=false}).obtenerDatosPanelLateral()});render();
 </script></body></html>

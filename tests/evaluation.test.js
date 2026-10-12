@@ -6,6 +6,8 @@ const context = {
   Object, Number, String, Array, Math,
   CP: { SHEETS: { STUDENTS: '3 Alumnado' } },
   normalizeScheduleText_: value => String(value == null ? '' : value).trim(),
+  normalizeEnrollmentKey_: value => String(value == null ? '' : value).trim()
+    .replace(/\s+/g, ' ').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase(),
   columnToLetter_: column => {
     let result = '';
     while (column) { column--; result = String.fromCharCode(65 + column % 26) + result;

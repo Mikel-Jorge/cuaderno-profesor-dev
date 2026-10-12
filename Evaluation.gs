@@ -90,12 +90,12 @@ function getEvaluationMeasuresDisplay_(student) {
 function getEvaluationStudents_(spreadsheet, group) {
   const sheet = spreadsheet.getSheetByName(CP.SHEETS.STUDENTS);
   if (!sheet || sheet.getLastRow() < 2) return [];
-  const target = normalizeScheduleText_(group).replace(/\s+/g, ' ').toLocaleUpperCase();
+  const target = normalizeEnrollmentKey_(group);
   return sheet.getRange(2, 1, sheet.getLastRow() - 1, 7).getValues()
     .filter(function(row) {
       return row.slice(0, 3).every(function(value) { return String(value).trim(); }) &&
         String(row[6]).trim() &&
-        normalizeScheduleText_(row[2]).replace(/\s+/g, ' ').toLocaleUpperCase() === target;
+        normalizeEnrollmentKey_(row[2]) === target;
     }).map(function(row) {
       return { surname: row[0], name: row[1], reaca: row[4] === true,
         measures: String(row[5] || ''), id: String(row[6]) };
@@ -217,7 +217,7 @@ function repairEvaluationSheet_(sheet, configSheet, context, activity) {
   const formulas = existingRange ? existingRange.getFormulas() : [];
   const notes = existingRange ? existingRange.getNotes() : [];
   ensureStudentIdsForValidRows_(spreadsheet);
-  const students = getEvaluationStudents_(spreadsheet, activity.group);
+  const students = getStudentsForModuleActivity_(spreadsheet, activity);
   const educaColumns = layout.groups.map(function(group) { return group.educaColumn; })
     .concat([layout.finalEducaColumn]);
   if (existingCount) educaColumns.forEach(function(column) {

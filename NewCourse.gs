@@ -586,6 +586,7 @@ function prepareNewCourseAnnualData_(processInput) {
 
     try {
       clearStudentsForNewCourse_();
+      clearEnrollmentsForNewCourse_();
       clearWeeklyScheduleForNewCourse_();
       resetCalendarForNewCourse_(processInput.config[CP.CONFIG_KEYS.ACADEMIC_YEAR]);
       archiveTrackingAndDeleteModuleSheetsForNewCourse_(spreadsheet);
@@ -628,6 +629,7 @@ function captureNewCourseAnnualSnapshots_(spreadsheet) {
         : [],
     },
     schedule: captureScheduleSnapshots_(spreadsheet),
+    enrollments: captureNewCourseEnrollmentSnapshots_(spreadsheet),
     calendar: captureCalendarTableSnapshots_(spreadsheet),
   };
 }
@@ -637,6 +639,7 @@ function restoreNewCourseAnnualSnapshots_(spreadsheet, snapshots) {
   [
     function() { restoreNewCourseStudentsSnapshot_(spreadsheet, snapshots.students); },
     function() { restoreScheduleSnapshots_(spreadsheet, snapshots.schedule); },
+    function() { restoreNewCourseEnrollmentSnapshots_(spreadsheet, snapshots.enrollments); },
     function() { restoreCalendarTableSnapshots_(spreadsheet, snapshots.calendar); },
   ].forEach(function(restore) {
     try {

@@ -2,8 +2,16 @@
 
 **Última actualización:** 2026-10-12
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.10.1`
-**Esquema vigente:** `12`
+**Versión vigente:** `1.11.0`
+**Esquema vigente:** `13`
+
+## Importación EDUCA y matrículas 1.11.0
+
+- El informe «Listado mi alumnado» por profesor y asignatura se analiza como OOXML aunque se descargue como `.xls`. Se validan firma, cabeceras, hojas y límites; las variantes finales «(Centro)» se unen por asignatura y grupo. El archivo se revalida al importar y no se guarda en Drive.
+- El importador previsualiza destinos MODULO del mismo grupo, altas y bajas. El informe no contiene email: los alumnos nuevos lo dejan vacío y los existentes conservan Email, REACA, Medidas y `alumno_id`.
+- `_MATRICULAS` y `_MATRICULAS_META` guardan pertenencia y modo explícito por módulo. Los módulos legacy mantienen selección por Grupo; el gestor manual y la importación activan el modo explícito. Eval usa matrículas y conserva notas de bajas como histórico gris.
+- Repair crea y normaliza las tablas técnicas sin convertir módulos legacy. Preparar nuevo curso conserva las matrículas en el backup y las vacía en el cuaderno nuevo. No se añaden scopes ni servicios externos.
+- People Directory investigado: el directorio no está disponible para la cuenta docente probada; no se usa como dependencia.
 
 ## Correctivos de Tutoría y etiqueta Virtual 1.10.1
 
@@ -274,8 +282,8 @@ Pendiente de cierre del bloque:
 
 # ROADMAP futuro
 
-- Relación Alumno–Módulo, matrículas e importación de alumnado desde EDUCA: estudio y diseño pendientes.
-- Contactos y posible integración con Google People: estudiar permisos, consentimiento, duplicados y mantenimiento antes de diseñarla.
+- Importador específico del grupo completo de Tutoría: pendiente.
+- Google Contacts y etiquetas: estudiar permisos, consentimiento, duplicados y mantenimiento antes de diseñar la integración.
 - Sincronización opcional con Google Calendar: estudiar permisos, conflictos y calendario de destino; no se han añadido scopes ni triggers.
 - Tutoría avanzada (`7 Tutoría`, entrevistas, conversaciones y faltas): definir primero datos, privacidad y flujos docentes. No hay hoja ni estructura técnica implementada.
 

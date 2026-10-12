@@ -6,6 +6,7 @@ function inicializarCuaderno() {
   initializeConfigStructure_();
   initializeCalendarStructure_();
   ensureScheduleTechnicalStructure_();
+  ensureEnrollmentStructure_();
   repairTutorAndBaseActivities_();
   ensureModuleConfigTechnicalStructure_();
   cleanupOrphanModuleConfigsWithLock_();

@@ -203,13 +203,15 @@ Grupo ofrece la unión deduplicada y ordenada de grupos de actividades MODULO y,
 - `Pendiente`: no existe ninguna fila con Apellidos, Nombre y Grupo informados.
 - `Configurado`: existe al menos una fila con esos tres campos.
 
-Email no interviene en el estado. La ayuda explica que el alumnado se introduce una sola vez y que Evaluación lo selecciona por grupo.
+Email no interviene en el estado. La ayuda explica que el alumnado se introduce una sola vez y que Evaluación usa la matrícula del módulo cuando existe; los módulos antiguos conservan la selección por grupo.
 
 ## 10.3. Relación con módulos
 
-En V1 no existe `_MATRICULAS`. `6 Eval <SIGLA> · <GRUPO>` selecciona inicialmente las filas cuyo Grupo coincida con el grupo de la actividad `MODULO`, con normalización de espacios y mayúsculas. Seguimiento no usa alumnado.
+`_MATRICULAS` relaciona `alumno_id` y `actividad_id` de MODULO, con `activo` y origen `EDUCA_XLS` o `MANUAL`. `_MATRICULAS_META` conserva el modo `EXPLICITA` por actividad, incluso cuando tiene cero alumnos. Sin modo explícito, Eval sigue seleccionando todo el alumnado cuyo Grupo coincide; al importar o guardar Matrículas de módulos, solo cuenta la relación activa del mismo grupo. Cambiar el Grupo invalida una relación con otro grupo. Seguimiento y Config no usan matrículas.
 
-Si aparecen casos reales de convalidaciones, bajas, matrícula parcial u otras excepciones, se añadirá entonces una capa explícita de matrícula.
+La importación se limita al informe EDUCA «Listado mi alumnado» → «Por profesor» → Excel → Asignatura, seleccionando todas las asignaturas y las variantes finales «(Centro)». El `.xls` actual contiene OOXML/ZIP: se valida el contenido, se rechaza el XLS binario y se detectan hojas, descriptores y cabeceras sin posiciones fijas. Se concatena el rich text de shared strings, pero de Nombre solo se usa la primera línea y se separa por la primera coma. Las variantes normal y «(Centro)» se unen por asignatura normalizada y grupo, sin mezclar grupos. El informe no incluye ID estable ni email: la comparación de existentes usa Apellidos, Nombre y Grupo normalizados; una coincidencia ambigua se rechaza. Alumnado nuevo recibe UUID y Email vacío; el existente conserva ID, Email, REACA y Medidas. No se excluye automáticamente por Estado, no se usa Nº como identidad y nunca se borran alumnos ausentes.
+
+Analizar y previsualizar no escribe hojas. Cada asignatura solo puede mapearse a una actividad MODULO del mismo grupo y dos fuentes no pueden compartir destino. Al confirmar, el servidor vuelve a validar y parsear el mismo archivo, sincroniza los alumnos del grupo como matrículas activas o inactivas únicamente en los módulos elegidos y pide confirmación ante bajas. El archivo no se almacena en Drive ni en propiedades. Las bajas conservan filas y notas de Eval con estilo histórico gris. Matrículas de módulos ofrece selección manual por grupo y activa el modo explícito al guardar. Repair crea las tablas técnicas sin convertir módulos legacy; nuevo curso las vacía después del backup.
 
 # 11. Configuración de una impartición
 
@@ -433,7 +435,7 @@ No todo debe completarse al principio del curso.
 - Cada actividad `MODULO` es una impartición independiente identificada por `actividad_id`.
 - No existe configuración automática compartida entre grupos.
 - `3 Alumnado` es global y editable.
-- No existe matrícula explícita en V1.
+- La matrícula explícita existe desde el esquema 13; los módulos legacy conservan la pertenencia por Grupo hasta su primera importación o guardado manual.
 - Config, Seg y Eval se agrupan por tipo en las pestañas.
 - Cada impartición tiene calendario propio calculado desde sesiones reales.
 - Las horas de UT son manuales y equivalen a sesiones.
@@ -441,7 +443,7 @@ No todo debe completarse al principio del curso.
 - Los días con varias UT usan el estado visual `DÍA MIXTO` y una nota explicativa.
 - `4 Config` es autoridad sobre UT y ponderaciones.
 - `5 Seg` no utiliza alumnado.
-- `6 Eval` selecciona alumnado por grupo y referencia dinámicamente `4 Config`.
+- `6 Eval` usa matrícula explícita cuando existe y, en módulos legacy, Grupo; referencia dinámicamente `4 Config`.
 - Las notas Educa son manuales e independientes.
 - Preparar nuevo curso conserva datos reutilizables y reinicia datos anuales solo después del backup verificado.
 - Las hojas 4 y 6 anteriores se eliminan del activo; las hojas 5 se archivan sin referencias rotas.

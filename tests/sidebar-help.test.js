@@ -17,6 +17,18 @@ context.getActiveTheme_ = () => ({});
 context.createUiThemeCss_ = () => '';
 assert.strictEqual(context.getSidebarData_().feedbackFormUrl, feedbackUrl);
 const sections = context.getSidebarHelpSections_('evaluation');
+const importHelp = sections.find(item => item.id === 'educa-import');
+const enrollmentHelp = sections.find(item => item.id === 'module-enrollments');
+assert(importHelp && enrollmentHelp);
+const helpSearch = value => String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+['EDUCA', 'importar', 'alumnado', 'Excel', 'XLS', 'Centro', 'correo', 'email'].forEach(term => {
+  assert(helpSearch([importHelp.title, importHelp.text, importHelp.keywords,
+    importHelp.bullets.join(' ')].join(' ')).includes(helpSearch(term)), term);
+});
+['matrícula', 'módulo'].forEach(term => {
+  assert(helpSearch([enrollmentHelp.title, enrollmentHelp.text, enrollmentHelp.keywords]
+    .join(' ')).includes(helpSearch(term)), term);
+});
 assert.strictEqual(sections[0].id, 'evaluation');
 assert.strictEqual(sections.filter(item => item.open).length, 1);
 assert(sections.every(item => item.icon && item.subtitle && item.keywords));

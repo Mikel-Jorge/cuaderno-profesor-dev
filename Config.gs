@@ -1,7 +1,7 @@
 const CP = Object.freeze({
   PROJECT_NAME: 'Cuaderno del Profesor',
-  NOTEBOOK_VERSION: '1.10.1',
-  SCHEMA_VERSION: '12',
+  NOTEBOOK_VERSION: '1.11.0',
+  SCHEMA_VERSION: '13',
   FEEDBACK_FORM_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSeGNIgzDp0hLj8vymzhPSuRBqkS1RNe5l2pRughEmRmwNjNBw/viewform?usp=publish-editor',
   TAB_COLORS: Object.freeze({
     GENERAL: '#546E7A',
@@ -15,6 +15,8 @@ const CP = Object.freeze({
     CALENDAR: '1 Calendario',
     SCHEDULE: '2 Horario',
     STUDENTS: '3 Alumnado',
+    ENROLLMENTS: '_MATRICULAS',
+    ENROLLMENT_META: '_MATRICULAS_META',
     CONFIG: '_CONFIG',
     CALENDAR_TYPES: '_CAL_TIPOS',
     CALENDAR_EVALUATIONS: '_CAL_EVALUACIONES',
@@ -57,6 +59,8 @@ const CP = Object.freeze({
     MODULE_CONFIG_CREATE: '🗓️ Crear configuración de módulo',
     MODULE_CONFIG_RECALCULATE: '🔄 Recalcular configuración del módulo',
     MODULE_TRACKING_CREATE: '📋 Crear seguimiento y evaluación',
+    EDUCA_IMPORT: '📥 Importar alumnado desde EDUCA',
+    MODULE_ENROLLMENTS: '👥 Matrículas de módulos',
     HELP: '❓ Ayuda',
   }),
   UI: Object.freeze({
@@ -76,6 +80,10 @@ const CP = Object.freeze({
     MODULE_CONFIG_DIALOG_HEIGHT: 440,
     MODULE_TRACKING_DIALOG_WIDTH: 580,
     MODULE_TRACKING_DIALOG_HEIGHT: 440,
+    EDUCA_IMPORT_DIALOG_WIDTH: 900,
+    EDUCA_IMPORT_DIALOG_HEIGHT: 780,
+    MODULE_ENROLLMENTS_DIALOG_WIDTH: 760,
+    MODULE_ENROLLMENTS_DIALOG_HEIGHT: 720,
     NEW_COURSE_DIALOG_WIDTH: 1000,
     NEW_COURSE_DIALOG_HEIGHT: 850,
     PROGRESS_DIALOG_WIDTH: 480,

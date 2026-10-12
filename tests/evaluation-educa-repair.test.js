@@ -85,7 +85,7 @@ const sheet = {
 const spreadsheet = { toast() {} };
 context.getEvaluationConfig_ = () => blocks;
 context.ensureStudentIdsForValidRows_ = () => {};
-context.getEvaluationStudents_ = () => Object.values(byId);
+context.getStudentsForModuleActivity_ = () => Object.values(byId);
 context.ensureSheetSize_ = () => {};
 context.getModuleFormulaSeparator_ = () => ';';
 context.styleEvaluationSheet_ = () => {};
