@@ -14,6 +14,7 @@
   <form class="config-form" id="schedule-form">
     <div class="config-scroll">
       <div class="result" id="blocking-error" role="alert"></div>
+      <button class="button button-secondary" id="retry-load" type="button" hidden>Reintentar</button>
       <section class="schedule-accordion" id="slots-section">
         <button class="schedule-accordion-toggle" type="button" data-action="toggle-section" data-section="slots" aria-expanded="false"><span class="calendar-accordion-indicator">&#9656;</span><span>Tramos horarios</span></button>
         <div class="schedule-accordion-panel is-hidden" id="slots-panel"><div id="slots-list"></div><div class="schedule-add-row"><button class="button button-secondary compact-button" type="button" data-action="add-slot">+ A&ntilde;adir tramo</button></div></div>
@@ -50,6 +51,7 @@
   const saveButton = document.getElementById('save-button');
   const resultElement = document.getElementById('form-result');
   const blockingErrorElement = document.getElementById('blocking-error');
+  const retryLoadButton = document.getElementById('retry-load');
   const saveLoading = document.getElementById('save-loading');
   const confirmationOverlay = document.getElementById('confirmation-overlay');
   const confirmationTitle = document.getElementById('confirmation-title');
@@ -62,9 +64,9 @@
   let pendingConfirmation = null;
   const expandedSections = { slots: WIZARD_STEP === 3, activities: WIZARD_STEP === 4, weekly: WIZARD_STEP === 5 };
   const expandedActivities = {};
-  const isBlocked = Boolean(data.blockingError);
+  let isBlocked = Boolean(data.blockingError);
 
-  if (isBlocked) { blockingErrorElement.textContent = data.blockingError; blockingErrorElement.className = 'result visible error'; }
+  if (isBlocked) { blockingErrorElement.textContent = data.blockingError; blockingErrorElement.className = 'result visible error'; retryLoadButton.hidden = false; }
   sortSlotsChronologically();
   normalizeSlotChain();
   renderAll();
@@ -86,12 +88,29 @@
     }).withFailureHandler(handleSaveError).guardarConfiguracionHorario(getPayload());
   });
   closeButton.addEventListener('click', function() { google.script.host.close(); });
+  retryLoadButton.addEventListener('click', function() {
+    retryLoadButton.disabled = true;
+    google.script.run.withSuccessHandler(function(config) {
+      data = clone(config); isBlocked = false; retryLoadButton.hidden = true;
+      blockingErrorElement.textContent = ''; blockingErrorElement.className = 'result';
+      form.querySelectorAll('input, select, button').forEach(function(control) {
+        if (control !== saveButton && control !== closeButton && control !== retryLoadButton) control.disabled = false;
+      });
+      sortSlotsChronologically(); normalizeSlotChain(); renderAll(); baseline = serialize(); updateSaveButton();
+    }).withFailureHandler(function() {
+      retryLoadButton.disabled = false;
+      blockingErrorElement.textContent = 'No se ha podido cargar la configuración del horario.';
+    }).obtenerConfiguracionHorario();
+  });
   confirmationCancel.addEventListener('click', closeConfirmation);
   confirmationAccept.addEventListener('click', acceptConfirmation);
   confirmationOverlay.addEventListener('click', function(event) { if (event.target === confirmationOverlay) closeConfirmation(); });
   document.addEventListener('keydown', function(event) { if (event.key === 'Escape' && pendingConfirmation) closeConfirmation(); });
 
   function renderAll() {
+    ['slots', 'activities', 'weekly'].forEach(function(section) {
+      document.getElementById(section + '-section').hidden = isBlocked;
+    });
     renderSections(); renderSlots(); renderActivities(); renderWeeklyGrid();
     if (WIZARD_STEP) ['slots', 'activities', 'weekly'].forEach(function(section) {
       const inactive = section !== ({3:'slots',4:'activities',5:'weekly'})[WIZARD_STEP];
@@ -102,7 +121,7 @@
       });
     });
     if (isBlocked) form.querySelectorAll('input, select, button').forEach(function(control) {
-      if (control !== closeButton) control.disabled = true;
+      if (control !== closeButton && control !== retryLoadButton) control.disabled = true;
     });
   }
   function renderSections() {

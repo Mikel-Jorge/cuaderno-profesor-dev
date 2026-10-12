@@ -110,7 +110,7 @@ function saveGeneralConfig_(input, options) {
   });
 
   const tutorNeedsClassroom = isTutorEnabled_(values[CP.CONFIG_KEYS.IS_TUTOR]) &&
-    values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] && getScheduleActivities_().some(function(activity) {
+    values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] && getScheduleActivities_(spreadsheet).some(function(activity) {
       return activity.id === values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] &&
         !normalizeScheduleText_(activity.classroom);
     });

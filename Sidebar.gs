@@ -129,7 +129,7 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'students',
       title: 'Alumnado',
-      text: 'Importa Apellidos, Nombre y Grupo desde Módulos → Importar alumnado desde EDUCA o, si eres tutor/a, desde Importar alumnado de tutoría. Las columnas de identidad están protegidas. En 3 Alumnado puedes completar Email y editar REACA e Información / Medidas. El informe EDUCA no incluye Email. Solo el importador de módulos actualiza matrículas y Evaluaciones existentes.',
+      text: 'Importa Apellidos, Nombre y Grupo desde Alumnado → Importar alumnado desde EDUCA o, si eres tutor/a, desde Alumnado → Importar alumnado de tutoría. Las columnas de identidad están protegidas. En 3 Alumnado puedes completar Email y editar REACA e Información / Medidas. El informe EDUCA no incluye Email. Solo el importador de módulos actualiza matrículas y Evaluaciones existentes.',
     },
     {
       id: 'educa-import',
@@ -144,12 +144,12 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'module-enrollments',
       title: 'Matrículas de módulos',
-      text: 'Grupo indica el grupo general del alumno; la matrícula indica qué módulos concretos cursa. Para matricular o desmatricular, abre Módulos → Matrículas de módulos, marca o desmarca y guarda. Si existe 6 Eval, la evaluación se actualiza automáticamente: las bajas conservan notas en una fila gris y las altas recuperan su fila. Los cambios manuales tienen prioridad sobre futuras importaciones de EDUCA.',
+      text: 'Grupo indica el grupo general del alumno; la matrícula indica qué módulos concretos cursa. Para matricular o desmatricular, abre Alumnado → Matrículas de módulos, marca o desmarca y guarda. Si existe 6 Eval, la evaluación se actualiza automáticamente: las bajas conservan notas en una fila gris y las altas recuperan su fila. Los cambios manuales tienen prioridad sobre futuras importaciones de EDUCA.',
     },
     {
       id: 'google-contacts',
       title: 'Google Contacts',
-      text: 'Abre Módulos → Sincronizar Google Contacts: el análisis empieza automáticamente y puedes revisar la vista previa antes de pulsar Sincronizar. Google puede solicitar permiso para gestionar tus contactos. El Cuaderno crea o reutiliza contactos por Email. Nunca elimina contactos. Gestiona etiquetas de módulo como «2627 · DAM 2A · PMDM» y, solo tras importar el grupo completo de Tutoría, su etiqueta general «2627 · DAM 2A». No crea etiquetas generales para otros grupos. Ambas familias son independientes. Tras la primera sincronización manual de cada curso, guardar Matrículas o importar EDUCA actualiza automáticamente las etiquetas de los módulos afectados. Un Email editado directamente en 3 Alumnado se incorpora a Tutoría al reimportar su grupo o sincronizar Contacts manualmente. Las etiquetas de cursos anteriores permanecen.',
+      text: 'Abre Alumnado → Sincronizar Google Contacts: el análisis empieza automáticamente y puedes revisar la vista previa antes de pulsar Sincronizar. Google puede solicitar permiso para gestionar tus contactos. El Cuaderno crea o reutiliza contactos por Email. Nunca elimina contactos. Gestiona etiquetas de módulo como «2627 · DAM 2A · PMDM» y, solo tras importar el grupo completo de Tutoría, su etiqueta general «2627 · DAM 2A». No crea etiquetas generales para otros grupos. Ambas familias son independientes. Tras la primera sincronización manual de cada curso, guardar Matrículas o importar EDUCA actualiza automáticamente las etiquetas de los módulos afectados. Un Email editado directamente en 3 Alumnado se incorpora a Tutoría al reimportar su grupo o sincronizar Contacts manualmente. Las etiquetas de cursos anteriores permanecen.',
     },
     {
       id: 'module-config',
@@ -164,7 +164,7 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'evaluation',
       title: 'Evaluación',
-      text: 'Introduce la nota final de cada UT. Revisa las medias calculadas y escribe manualmente las notas Educa. Si falta un alumno en una Evaluación, revisa primero Módulos → Matrículas de módulos. Si ya aparece en 3 Alumnado, basta con matricularlo y guardar: 6 Eval se actualiza automáticamente. Desmarcarlo conserva sus notas en una fila histórica gris protegida; si vuelve a matricularse, recupera la misma fila y sus datos.',
+      text: 'Introduce la nota final de cada UT. Revisa las medias calculadas y escribe manualmente las notas Educa. Si falta un alumno en una Evaluación, revisa primero Alumnado → Matrículas de módulos. Si ya aparece en 3 Alumnado, basta con matricularlo y guardar: 6 Eval se actualiza automáticamente. Desmarcarlo conserva sus notas en una fila histórica gris protegida; si vuelve a matricularse, recupera la misma fila y sus datos.',
     },
     {
       id: 'new-course',
@@ -196,7 +196,7 @@ function getSidebarHelpSections_(contextSectionId) {
         ['¿Por qué tengo que revisar los correos de Tutoría?', 'El informe «Por grupo» de EDUCA no incluye el correo electrónico. El Cuaderno precarga los Email ya disponibles en 3 Alumnado y te pide completar o corregir los restantes antes de crear la etiqueta de Google Contacts.'],
         ['¿Qué ocurre si un alumno deja mi grupo de Tutoría?', 'Vuelve a importar el informe actualizado. El alumno permanece en 3 Alumnado y conserva matrículas y notas; deja de estar activo en Tutoría y se retira únicamente de la etiqueta general del grupo.'],
         ['¿Qué pasa si corrijo un Email durante la importación de Tutoría?', 'El nuevo Email se guarda en 3 Alumnado y se usa para Google Contacts. El Cuaderno no borra contactos anteriores asociados a otros correos.'],
-        ['¿Qué hago si llega un nuevo alumno?', 'Descarga de nuevo el informe actualizado de EDUCA e impórtalo desde Módulos → Importar alumnado desde EDUCA. Revisa Matrículas de módulos si necesitas una excepción y completa su Email manualmente. Si ya existe 6 Eval, se incorporará automáticamente cuando esté matriculado.'],
+        ['¿Qué hago si llega un nuevo alumno?', 'Descarga de nuevo el informe actualizado de EDUCA e impórtalo desde Alumnado → Importar alumnado desde EDUCA. Revisa Matrículas de módulos si necesitas una excepción y completa su Email manualmente. Si ya existe 6 Eval, se incorporará automáticamente cuando esté matriculado.'],
         ['¿Qué ocurre si un alumno no tiene Email?', 'No se crea ni sincroniza su contacto hasta que completes Email en 3 Alumnado. El resto puede sincronizarse normalmente.'],
         ['¿Qué ocurre si ya tengo a ese alumno en Google Contacts?', 'Si existe un único contacto con el mismo correo, el Cuaderno lo reutiliza sin cambiar sus datos personales.'],
         ['¿El Cuaderno puede borrar mis contactos?', 'No. La sincronización no elimina contactos de Google Contacts; solo crea los que faltan y actualiza las etiquetas gestionadas por el Cuaderno.'],
@@ -247,7 +247,7 @@ function getSidebarHelpSections_(contextSectionId) {
       calendar: ['Revisa festivos, Navidad y Semana Santa con el calendario oficial.', 'Indica FEOE y repaso cuando afecten a tus módulos.'],
       schedule: ['Crea los tramos y las actividades antes de asignar sesiones.', 'En un curso nuevo se conservan tramos y actividades; la semana empieza vacía.'],
       students: ['El importador EDUCA gestiona Apellidos, Nombre y Grupo y sincroniza Evaluaciones existentes.', 'Completa Email manualmente y edita REACA y Medidas en 3 Alumnado.'],
-      'educa-import': ['Abre Módulos → Importar alumnado desde EDUCA y analiza el archivo antes de confirmar.', 'Comprueba el destino de cada asignatura y las posibles bajas de matrícula.'],
+      'educa-import': ['Abre Alumnado → Importar alumnado desde EDUCA y analiza el archivo antes de confirmar.', 'Comprueba el destino de cada asignatura y las posibles bajas de matrícula.'],
       'tutor-import': ['Descarga Por grupo → Todos los alumnos y analiza el XLS sin modificarlo.', 'Revisa todos los Email; se precargan los existentes y puedes corregirlos.', 'Tutoría mantiene un roster anual y no cambia matrículas de módulos.'],
       'module-enrollments': ['Marca solo los alumnos que cursan el módulo y guarda.', 'Una baja conserva el alumno y sus notas, que quedan como histórico en Eval.'],
       'google-contacts': ['Al abrir Google Contacts se analiza automáticamente; revisa la vista previa y pulsa Sincronizar.', 'Los alumnos sin Email o con Email inválido se omiten; los contactos ambiguos requieren revisión.', 'Las etiquetas de módulo reflejan las matrículas actuales. Después de la primera sincronización manual del curso, Matrículas y EDUCA las actualizan automáticamente.'],

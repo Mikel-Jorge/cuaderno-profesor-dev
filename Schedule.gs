@@ -154,15 +154,20 @@ function assertScheduleStructureReady_(spreadsheet) {
     [CP.SHEETS.SCHEDULE_ACTIVITIES, CP_SCHEDULE_HEADERS.ACTIVITIES],
     [CP.SHEETS.SCHEDULE_SESSIONS, CP_SCHEDULE_HEADERS.SESSIONS],
   ].forEach(function(definition) {
-    const sheet = spreadsheet.getSheetByName(definition[0]);
-    if (!sheet) throw new Error('Falta la hoja técnica ' + definition[0] + '. Usa «Reparar estructura».');
-    if (sheet.getLastRow() < 1 || sheet.getLastColumn() < definition[1].length) {
-      throw new Error('La hoja técnica ' + definition[0] + ' no tiene la estructura esperada. Usa «Reparar estructura».');
-    }
-    const headers = sheet.getRange(1, 1, 1, definition[1].length).getValues()[0].map(normalizeScheduleText_);
-    if (headers.some(function(header, index) { return header !== definition[1][index]; })) {
-      throw new Error('La hoja técnica ' + definition[0] + ' no tiene las cabeceras esperadas. Usa «Reparar estructura».');
-    }
+    let stage = 'GET_SHEET';
+    try {
+      const sheet = spreadsheet.getSheetByName(definition[0]);
+      if (!sheet) throw new Error('Falta la hoja técnica ' + definition[0] + '. Usa «Reparar estructura».');
+      stage = 'GET_BOUNDS';
+      if (sheet.getLastRow() < 1 || sheet.getLastColumn() < definition[1].length) {
+        throw new Error('La hoja técnica ' + definition[0] + ' no tiene la estructura esperada. Usa «Reparar estructura».');
+      }
+      stage = 'GET_HEADERS';
+      const headers = sheet.getRange(1, 1, 1, definition[1].length).getValues()[0].map(normalizeScheduleText_);
+      if (headers.some(function(header, index) { return header !== definition[1][index]; })) {
+        throw new Error('La hoja técnica ' + definition[0] + ' no tiene las cabeceras esperadas. Usa «Reparar estructura».');
+      }
+    } catch (error) { console.warn('SCHEDULE_STRUCTURE=' + definition[0] + ':' + stage); throw error; }
   });
 }
 
@@ -170,11 +175,10 @@ function abrirConfiguracionHorario(wizardStep) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   let scheduleConfig;
   try {
-    assertScheduleStructureReady_(spreadsheet);
-    scheduleConfig = getScheduleConfigForUi_(spreadsheet);
+    scheduleConfig = obtenerConfiguracionHorario_(spreadsheet);
   } catch (error) {
     scheduleConfig = {
-      blockingError: error && error.message ? error.message : 'La estructura del horario necesita reparación.',
+      blockingError: 'No se ha podido cargar la configuración del horario.',
       slots: [],
       activities: [],
       sessions: [],
@@ -196,24 +200,44 @@ function abrirConfiguracionHorario(wizardStep) {
   SpreadsheetApp.getUi().showModalDialog(output, CP.MENU.SCHEDULE_CONFIG);
 }
 
+function obtenerConfiguracionHorario() {
+  return obtenerConfiguracionHorario_(SpreadsheetApp.getActiveSpreadsheet());
+}
+
+function obtenerConfiguracionHorario_(spreadsheet) {
+  try { assertScheduleStructureReady_(spreadsheet); }
+  catch (error) { console.warn('SCHEDULE_LOAD_STAGE=STRUCTURE'); throw error; }
+  return getScheduleConfigForUi_(spreadsheet);
+}
+
 function getScheduleConfigForUi_(spreadsheet) {
-  const config = getGeneralConfigValues_(spreadsheet);
-  const storedActivities = getScheduleActivities_();
-  return {
-    blockingError: '',
-    slots: getScheduleTimeSlots_().map(function(slot) { return Object.assign({}, slot); }),
-    activities: (config[CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR] === config[CP.CONFIG_KEYS.ACADEMIC_YEAR]
-      ? storedActivities : addMissingBaseActivities_(storedActivities)).map(function(activity) { return Object.assign({}, activity); }),
-    managedTutorActivityId: isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR])
-      ? config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] : '',
-    sessions: getWeeklySchedule_().map(function(session) { return Object.assign({}, session); }),
-    days: CP_SCHEDULE_DAYS,
-    slotTypes: CP_SCHEDULE_SLOT_TYPES,
-    categories: CP_SCHEDULE_ACTIVITY_CATEGORIES,
-    activityDefaults: CP_SCHEDULE_ACTIVITY_DEFAULTS,
-    teachingTypes: getScheduleTeachingTypesForUi_(spreadsheet),
-    supportMaxLength: CP_SCHEDULE_SUPPORT_MAX_LENGTH,
-  };
+  let stage = 'CONFIG';
+  try {
+    const config = getGeneralConfigValues_(spreadsheet);
+    stage = 'ACTIVITIES';
+    const storedActivities = getScheduleActivities_(spreadsheet);
+    const activities = config[CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR] === config[CP.CONFIG_KEYS.ACADEMIC_YEAR]
+      ? storedActivities : addMissingBaseActivities_(storedActivities);
+    const activityIds = activities.reduce(function(ids, activity) { ids[activity.id] = true; return ids; }, {});
+    stage = 'SLOTS';
+    const slots = getScheduleTimeSlots_(spreadsheet).map(function(slot) { return Object.assign({}, slot); });
+    stage = 'SESSIONS';
+    const sessions = getWeeklySchedule_(spreadsheet).filter(function(session) {
+      return activityIds[session.activityId];
+    }).map(function(session) { return Object.assign({}, session); });
+    stage = 'TEACHING_TYPES';
+    const teachingTypes = getScheduleTeachingTypesForUi_(spreadsheet);
+    return {
+      blockingError: '', slots: slots, activities: activities.map(function(activity) {
+        return Object.assign({}, activity);
+      }),
+      managedTutorActivityId: isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR])
+        ? config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] : '',
+      sessions: sessions, days: CP_SCHEDULE_DAYS, slotTypes: CP_SCHEDULE_SLOT_TYPES,
+      categories: CP_SCHEDULE_ACTIVITY_CATEGORIES, activityDefaults: CP_SCHEDULE_ACTIVITY_DEFAULTS,
+      teachingTypes: teachingTypes, supportMaxLength: CP_SCHEDULE_SUPPORT_MAX_LENGTH,
+    };
+  } catch (error) { console.warn('SCHEDULE_LOAD_STAGE=' + stage); throw error; }
 }
 
 function getScheduleTeachingTypesForUi_(spreadsheet) {
@@ -469,16 +493,16 @@ function syncManagedTutorActivity_(spreadsheet, values, previousValues) {
     }
     return '';
   }
-  const activities = getScheduleActivities_();
-  const sessions = getWeeklySchedule_();
+  const activities = getScheduleActivities_(spreadsheet);
+  const sessions = getWeeklySchedule_(spreadsheet);
   const config = Object.assign({}, values);
   config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] = previousValues[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] || '';
   const reconciled = reconcileTutorActivityInModel_(activities, sessions, config);
-  if (JSON.stringify(reconciled.activities) !== JSON.stringify(activities)) {
-    persistScheduleConfig_(spreadsheet, { activities: reconciled.activities }, 'activities');
-  }
   if (reconciled.sessions.length !== sessions.length) {
     persistScheduleConfig_(spreadsheet, { sessions: reconciled.sessions }, 'sessions');
+  }
+  if (JSON.stringify(reconciled.activities) !== JSON.stringify(activities)) {
+    persistScheduleConfig_(spreadsheet, { activities: reconciled.activities }, 'activities');
   }
   return reconciled.id;
 }
@@ -601,17 +625,17 @@ function restoreScheduleSnapshots_(spreadsheet, snapshots) {
   });
 }
 
-function getScheduleTimeSlots_() {
-  const slots = readScheduleRows_(CP.SHEETS.SCHEDULE_SLOTS, CP_SCHEDULE_HEADERS.SLOTS.length).map(function(row) {
-    return { id: normalizeScheduleText_(row[0]), type: normalizeScheduleText_(row[1]), name: normalizeScheduleText_(row[2]), startTime: normalizeScheduleTime_(row[3]), durationMinutes: Number(row[4]) };
+function getScheduleTimeSlots_(spreadsheet) {
+  const slots = readScheduleRows_(CP.SHEETS.SCHEDULE_SLOTS, CP_SCHEDULE_HEADERS.SLOTS.length, spreadsheet).map(function(row) {
+    return { id: normalizeScheduleText_(row[0]), type: normalizeScheduleText_(row[1]), name: normalizeScheduleText_(row[2]), startTime: normalizeScheduleTime_(row[3], spreadsheet), durationMinutes: Number(row[4]) };
   });
   return normalizeScheduleSlotChain_(sortScheduleSlots_(slots));
 }
 
 function getTeachingTimeSlots_() { return getScheduleTimeSlots_().filter(function(slot) { return slot.type === 'SESION'; }); }
 
-function getScheduleActivities_() {
-  return readScheduleRows_(CP.SHEETS.SCHEDULE_ACTIVITIES, CP_SCHEDULE_HEADERS.ACTIVITIES.length).map(function(row) {
+function getScheduleActivities_(spreadsheet) {
+  return readScheduleRows_(CP.SHEETS.SCHEDULE_ACTIVITIES, CP_SCHEDULE_HEADERS.ACTIVITIES.length, spreadsheet).map(function(row) {
     return { id: normalizeScheduleText_(row[0]), category: normalizeScheduleActivityCategory_(row[1]), name: normalizeScheduleText_(row[2]), acronym: normalizeScheduleText_(row[3]), teachingTypeId: normalizeScheduleText_(row[4]), group: normalizeScheduleText_(row[5]), classroom: normalizeScheduleText_(row[6]), color: normalizeScheduleColor_(row[7]) };
   });
 }
@@ -636,8 +660,8 @@ function getModuleDisplayName_(activity) {
   return [acronym, group].filter(Boolean).join(' · ');
 }
 
-function getWeeklySchedule_() {
-  return readScheduleRows_(CP.SHEETS.SCHEDULE_SESSIONS, CP_SCHEDULE_HEADERS.SESSIONS.length).map(function(row) {
+function getWeeklySchedule_(spreadsheet) {
+  return readScheduleRows_(CP.SHEETS.SCHEDULE_SESSIONS, CP_SCHEDULE_HEADERS.SESSIONS.length, spreadsheet).map(function(row) {
     return { id: normalizeScheduleText_(row[0]), day: normalizeScheduleText_(row[1]), slotId: normalizeScheduleText_(row[2]), activityId: normalizeScheduleText_(row[3]), support: normalizeScheduleText_(row[4]) };
   });
 }
@@ -658,14 +682,23 @@ function getCurrentScheduleSlot_(date) {
   return getScheduleTimeSlots_().find(function(slot) { return timeToMinutes_(slot.startTime) <= minutes && minutes < getTimeSlotEndMinutes_(slot); }) || null;
 }
 
-function readScheduleRows_(sheetName, width) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
-  if (!sheet || sheet.getLastRow() < 2) return [];
-  return sheet.getRange(2, 1, sheet.getLastRow() - 1, width).getValues().filter(function(row) { return row.some(function(value) { return normalizeScheduleText_(value); }); });
+function readScheduleRows_(sheetName, width, spreadsheet) {
+  let stage = 'GET_SHEET';
+  try {
+    const sheet = (spreadsheet || SpreadsheetApp.getActiveSpreadsheet()).getSheetByName(sheetName);
+    stage = 'GET_LAST_ROW';
+    if (!sheet || sheet.getLastRow() < 2) return [];
+    const rowCount = sheet.getLastRow() - 1;
+    stage = 'GET_VALUES';
+    return sheet.getRange(2, 1, rowCount, width).getValues().filter(function(row) {
+      return row.some(function(value) { return normalizeScheduleText_(value); });
+    });
+  } catch (error) { console.warn('SCHEDULE_READ=' + sheetName + ':' + stage); throw error; }
 }
 function normalizeScheduleText_(value) { return value === null || value === undefined ? '' : String(value).trim(); }
-function normalizeScheduleTime_(value) {
-  if (value instanceof Date) return Utilities.formatDate(value, SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'HH:mm');
+function normalizeScheduleTime_(value, spreadsheet) {
+  if (value instanceof Date) return Utilities.formatDate(value,
+    (spreadsheet || SpreadsheetApp.getActiveSpreadsheet()).getSpreadsheetTimeZone(), 'HH:mm');
   const text = normalizeScheduleText_(value);
   if (!CP_SCHEDULE_TIME_PATTERN.test(text)) throw new Error('Las horas deben utilizar el formato HH:mm.');
   return text;

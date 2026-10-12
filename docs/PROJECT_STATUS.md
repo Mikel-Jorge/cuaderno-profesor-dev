@@ -2,8 +2,14 @@
 
 **Última actualización:** 2026-10-12
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.13.0`
+**Versión vigente:** `1.13.1`
 **Esquema vigente:** `14`
+
+## Estabilización Tutoría y menú 1.13.1
+
+- El menú separa Alumnado (importadores, Matrículas y Contacts) de Módulos (Config, Seguimiento y Evaluación); Tutoría aparece solo con Soy tutor/a activo.
+- El ciclo Tutoría desactivada/reactivada elimina primero sus sesiones y después su actividad, limpia el ID gestionado y conserva las demás asignaciones. El modelo de Horario ignora referencias huérfanas a actividades eliminadas sin modificar las hojas al abrir. Si falla la lectura, el diálogo muestra un error claro y permite reintentar o cerrar.
+- El importador de Tutoría muestra el preview de Email al acabar el análisis y usa una respuesta final explícita: error académico visible sin cerrar, o importación académica correcta con cierre aunque Contacts falle. El diagnóstico registra solo la etapa, sin datos personales.
 
 ## Importador de Tutoría 1.13.0
 

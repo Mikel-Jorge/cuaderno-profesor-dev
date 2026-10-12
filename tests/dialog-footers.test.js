@@ -31,11 +31,26 @@ assert(tutor.includes('importarAlumnadoTutoria(form)'));
 for (const name of ['UiDialogMatriculas.html', 'UiDialogEducaImport.html',
   'UiDialogContacts.html', 'UiDialogTutorImport.html']) {
   const html = fs.readFileSync(name, 'utf8');
-  const bodyStart = html.indexOf('class="' + ({
+  const bodyClass = ({
     'UiDialogMatriculas.html': 'enrollment-body', 'UiDialogEducaImport.html': 'educa-body',
     'UiDialogContacts.html': 'contacts-body', 'UiDialogTutorImport.html': 'tutor-body',
-  }[name]) + '"');
-  assert(bodyStart > 0 && bodyStart < html.indexOf('id="loading"'), name + ' loading fuera del contenido');
-  assert(html.indexOf('id="loading"') < html.indexOf('<footer class="author-footer"'), name);
+  }[name]);
+  const loadingClass = bodyClass.replace('-body', '-loading');
+  assert(html.includes('.' + bodyClass + '{position:relative'), name + ' sin contenedor relativo');
+  assert(html.includes('.' + loadingClass + '{position:absolute;inset:0') ||
+    html.includes('.' + loadingClass + '{display:grid'), name + ' sin loading dentro del contenido');
+  const markup = html.slice(0, html.indexOf('<script>')).replace(/<style>[\s\S]*?<\/style>/g, '');
+  const stack = [], parents = {};
+  for (const match of markup.matchAll(/<(\/)?([a-z][\w-]*)([^>]*)>/gi)) {
+    if (match[1]) { stack.pop(); continue; }
+    const id = match[3].match(/\bid="([^"]+)"/);
+    const classes = match[3].match(/\bclass="([^"]+)"/);
+    if (id) parents[id[1]] = stack.map(item => item.classes).join(' ');
+    if (!/^(base|meta|img|input|br|hr|link)$/i.test(match[2]) && !/\/\s*$/.test(match[3])) {
+      stack.push({ classes: classes ? classes[1] : '' });
+    }
+  }
+  assert(parents.loading.includes(bodyClass), name + ' loading fuera del contenido');
+  assert(!parents.close?.includes(bodyClass), name + ' botón cubierto por contenido');
 }
 console.log('Dialog footers and Contacts UI: ok');

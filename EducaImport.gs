@@ -636,7 +636,7 @@ function importarAlumnadoEduca(form) {
   result.contactsWarning = syncContactsAfterAcademicChange_(affectedIds, previousGroups);
   if (result.contactsWarning) {
     try { SpreadsheetApp.getActiveSpreadsheet().toast(
-      'Importación completada. No se ha podido actualizar Google Contacts; puedes reintentarlo desde Módulos → Sincronizar Google Contacts.'); }
+      'Importación completada. No se ha podido actualizar Google Contacts; puedes reintentarlo desde Alumnado → Sincronizar Google Contacts.'); }
     catch (error) { console.warn('No se pudo mostrar el aviso de Google Contacts.'); }
   }
   return result;

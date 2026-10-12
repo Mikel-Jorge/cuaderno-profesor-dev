@@ -12,7 +12,7 @@ const context = vm.createContext({});
 });
 context.createCalendarRecordId_ = createId;
 const evaluate = source => JSON.parse(vm.runInContext('JSON.stringify(' + source + ')', context));
-assert.strictEqual(evaluate('CP.NOTEBOOK_VERSION'), '1.13.0');
+assert.strictEqual(evaluate('CP.NOTEBOOK_VERSION'), '1.13.1');
 assert.strictEqual(evaluate('CP.SCHEMA_VERSION'), '14');
 assert.strictEqual(evaluate('CP_CALENDAR_TYPE_DEFINITIONS.find(type => type.id === "ONLINE").name'), 'Virtual');
 for (const previousName of ['Online', 'VIRTUAL']) {
@@ -137,9 +137,11 @@ context.seedBaseScheduleActivities_(book);
 assert.strictEqual(persistedActivities.length, 4);
 let liveActivities = [tutor, moduleActivity];
 let liveSessions = sessions;
+const writes = [];
 context.getScheduleActivities_ = () => liveActivities;
 context.getWeeklySchedule_ = () => liveSessions;
 context.persistScheduleConfig_ = (_book, payload, section) => {
+  writes.push(section);
   if (section === 'activities') liveActivities = payload.activities;
   if (section === 'sessions') liveSessions = payload.sessions;
 };
@@ -152,6 +154,45 @@ assert.strictEqual(context.syncManagedTutorActivity_(book,
   { ...active, es_tutor: 'false' }, existingTutorConfig), '');
 assert.deepStrictEqual(Array.from(liveActivities.map(item => item.id)), ['MOD-1']);
 assert.deepStrictEqual(Array.from(liveSessions.map(item => item.id)), ['S3']);
+assert.deepStrictEqual(writes.slice(-2), ['sessions', 'activities']);
+const reactivated = context.syncManagedTutorActivity_(book,
+  { ...active, es_tutor: 'true', grupo_tutoria: 'DAM 2A', actividad_tutoria_id: '' },
+  { actividad_tutoria_id: '' });
+assert(reactivated && reactivated !== 'TUT-1');
+assert.strictEqual(liveActivities.find(item => item.id === reactivated).classroom, 'Departamento');
+assert.strictEqual(liveActivities.find(item => item.id === reactivated).color, '#E5E7EB');
+assert.deepStrictEqual(Array.from(liveSessions.map(item => item.id)), ['S3']);
+context.getGeneralConfigValues_ = () => ({ ...active, grupo_tutoria: 'DAM 2A',
+  actividad_tutoria_id: reactivated, actividades_base_curso: '2026-2027', curso_academico: '2026-2027' });
+context.getScheduleTimeSlots_ = () => [{ id: 'T1', type: 'SESION', startTime: '08:00', durationMinutes: 60 }];
+context.getScheduleTeachingTypesForUi_ = () => [];
+liveSessions = liveSessions.concat({ id: 'ORPHAN', activityId: 'TUT-1', day: 'MAR', slotId: 'T1' });
+const modelAfterReactivation = context.getScheduleConfigForUi_(book);
+assert.deepStrictEqual(Array.from(modelAfterReactivation.sessions.map(item => item.id)), ['S3']);
+vm.runInContext(fs.readFileSync('ScheduleView.gs', 'utf8'), context);
+context.getWeeklySchedule_ = () => [
+  { id: 'S3', activityId: 'MOD-1', day: 'LUN', slotId: 'T1' },
+  { id: 'ORPHAN', activityId: 'TUT-1', day: 'MAR', slotId: 'T1' },
+];
+context.getActiveTheme_ = () => ({ colors: {} });
+const renderedModel = context.buildScheduleRenderModel_(book,
+  [{ id: 'T1', type: 'SESION', startTime: '08:00', durationMinutes: 60 }]);
+assert.deepStrictEqual(Object.keys(renderedModel.sessionByKey), ['LUN|T1']);
+let shownTemplate;
+context.SpreadsheetApp = { getActiveSpreadsheet: () => book,
+  getUi: () => ({ showModalDialog() {} }) };
+context.HtmlService = { createTemplateFromFile: () => {
+  shownTemplate = { evaluate: () => ({ setWidth() { return this; }, setHeight() { return this; } }) };
+  return shownTemplate;
+} };
+context.setCommonUiTemplateData_ = () => {};
+context.assertScheduleStructureReady_ = () => { throw new Error('Spreadsheet service failed with ID'); };
+context.abrirConfiguracionHorario();
+assert.strictEqual(shownTemplate.scheduleConfig.blockingError,
+  'No se ha podido cargar la configuración del horario.');
+assert(!JSON.stringify(shownTemplate.scheduleConfig).includes('Spreadsheet service failed'));
+context.assertScheduleStructureReady_ = () => {};
+assert.deepStrictEqual(Array.from(context.obtenerConfiguracionHorario().sessions.map(item => item.id)), ['S3']);
 
 const institutional = base.map(item => ({ ...item, teachingTypeId: 'FP1', group: 'X' }));
 institutional.push({ id: 'G', category: 'GUARDIA', name: 'Guardia', acronym: 'G',

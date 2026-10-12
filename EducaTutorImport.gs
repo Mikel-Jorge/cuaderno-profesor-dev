@@ -161,6 +161,7 @@ function importarAlumnadoTutoria(form) {
   const lock = LockService.getDocumentLock();
   if (!lock || !lock.tryLock(30000)) throw new Error('Hay otra importación en curso. Inténtalo de nuevo.');
   let result;
+  let stage = 'VALIDATION';
   try {
     const book = SpreadsheetApp.getActiveSpreadsheet();
     const config = assertTutorImportEnabled_();
@@ -169,32 +170,48 @@ function importarAlumnadoTutoria(form) {
     const emails = validateTutorEmails_(plan, form.emails);
     const snapshot = captureTutorImportSnapshots_(book);
     try {
+      stage = 'STUDENTS';
       const ids = applyTutorStudents_(book, plan, emails);
+      stage = 'ROSTER';
       applyTutorRoster_(book, report, config[CP.CONFIG_KEYS.ACADEMIC_YEAR], ids);
       if (config[CP.CONFIG_KEYS.TUTOR_GROUP] !== report.group) {
+        stage = 'TUTOR_CONFIG';
         config[CP.CONFIG_KEYS.TUTOR_GROUP] = report.group;
         saveGeneralConfig_(config, { showToast: false, updateCover: true });
       }
-      createOrRepairStudentsSheet_();
-      result = { imported: plan.length, group: report.group };
+      result = { ok: true, academicImported: true, contactsOk: false,
+        contactsWarning: '', imported: plan.length };
     } catch (error) {
       try { restoreTutorImportSnapshots_(book, snapshot); }
       catch (restoreError) { console.warn('No se pudieron restaurar todos los datos de Tutoría.'); }
       throw error;
     }
+  } catch (error) {
+    console.warn('TUTOR_IMPORT_STAGE=' + stage);
+    return { ok: false, academicImported: false, contactsOk: false,
+      contactsWarning: '', message: tutorImportErrorMessage_(error) };
   } finally { lock.releaseLock(); }
   try {
+    stage = 'CONTACTS';
     const sync = executeContactsSync_(null, null, null, true);
     if (sync.incidents) throw new Error('Sincronización parcial');
     const book = SpreadsheetApp.getActiveSpreadsheet();
     const values = {};
     values[CP.CONFIG_KEYS.CONTACTS_SYNC_COURSE] = getGeneralConfigValues_(book)[CP.CONFIG_KEYS.ACADEMIC_YEAR];
     updateConfigValues_(book.getSheetByName(CP.SHEETS.CONFIG), values, [CP.CONFIG_KEYS.CONTACTS_SYNC_COURSE]);
+    result.contactsOk = true;
   } catch (error) {
-    result.contactsWarning = true;
+    console.warn('TUTOR_IMPORT_STAGE=' + stage);
+    result.contactsWarning = 'No se ha podido actualizar Google Contacts.';
     try { SpreadsheetApp.getActiveSpreadsheet().toast(
-      'Alumnado de tutoría importado. No se ha podido actualizar Google Contacts. Puedes reintentarlo desde Módulos → Sincronizar Google Contacts.'); }
+      'Alumnado de tutoría importado. No se ha podido actualizar Google Contacts; puedes reintentarlo desde Alumnado → Sincronizar Google Contacts.'); }
     catch (toastError) { console.warn('No se pudo mostrar el aviso de Google Contacts.'); }
   }
   return result;
+}
+
+function tutorImportErrorMessage_(error) {
+  const message = error && error.message ? String(error.message).split('\n')[0] : '';
+  return /informe|archivo|correo|Email|grupo|Tutoría|Alumnado|Reparar|importación/.test(message)
+    ? message : 'No se ha podido completar la importación de Tutoría. Revisa el archivo y vuelve a intentarlo.';
 }

@@ -39,7 +39,8 @@ function buildScheduleRenderModel_(spreadsheet, slots) {
 
   sessions.forEach(function(session) {
     const slot = slotById[session.slotId];
-    if (!validDays[session.day] || !slot || slot.type !== 'SESION' || !activityById[session.activityId]) {
+    if (!activityById[session.activityId]) return;
+    if (!validDays[session.day] || !slot || slot.type !== 'SESION') {
       throw new Error('Hay una sesión que referencia un tramo o una actividad no válidos.');
     }
     const key = session.day + '|' + session.slotId;

@@ -227,7 +227,7 @@ function saveModuleEnrollments(input) {
   result.contactsWarning = syncContactsAfterAcademicChange_([String(input.activityId)]);
   if (result.contactsWarning) {
     try { SpreadsheetApp.getActiveSpreadsheet().toast(
-      'Matrículas guardadas. No se ha podido actualizar Google Contacts; puedes reintentarlo desde Módulos → Sincronizar Google Contacts.'); }
+      'Matrículas guardadas. No se ha podido actualizar Google Contacts; puedes reintentarlo desde Alumnado → Sincronizar Google Contacts.'); }
     catch (error) { console.warn('No se pudo mostrar el aviso de Google Contacts.'); }
   }
   return result;

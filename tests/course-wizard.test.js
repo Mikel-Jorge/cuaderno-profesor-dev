@@ -15,10 +15,12 @@ function menu(label) {
   };
 }
 const ctx = {
-  CP: { MENU: { NAME: '📘 Cuaderno del Profesor 📘', CONFIG: '⚙️ Configuración', MODULES: '📚 Módulos',
+  CP: { MENU: { NAME: '📘 Cuaderno del Profesor 📘', CONFIG: '⚙️ Configuración', STUDENTS: 'Alumnado', MODULES: '📚 Módulos',
     GENERAL_DATA: '🪪 Configurar datos del docente y centro', CALENDAR_CONFIG: '📅 Configurar calendario', SCHEDULE_CONFIG: '🕒 Configurar horario',
     MODULE_CONFIG_CREATE: 'Crear Config', MODULE_CONFIG_RECALCULATE: 'Recalcular', MODULE_TRACKING_CREATE: 'Crear Seg/Eval',
-    TUTOR_IMPORT: 'Importar alumnado de tutoría', INIT: 'Reparar', NEW_COURSE: 'Preparar nuevo curso', HELP: 'Ayuda' },
+    EDUCA_IMPORT: 'Importar EDUCA', TUTOR_IMPORT: 'Importar alumnado de tutoría',
+    MODULE_ENROLLMENTS: 'Matrículas', CONTACTS_SYNC: 'Contacts',
+    INIT: 'Reparar', NEW_COURSE: 'Preparar nuevo curso', HELP: 'Ayuda' },
     CONFIG_KEYS: { ACADEMIC_YEAR: 'curso_academico', IS_TUTOR: 'es_tutor' } },
   SpreadsheetApp: { getUi: () => ({ createMenu: menu }), getActiveSpreadsheet: () => ({}) },
   abrirAsistenteNuevoCurso: () => { ctx.opened = (ctx.opened || 0) + 1; },
@@ -38,20 +40,24 @@ ctx.onOpen();
 assert.strictEqual(menuCalls.length, 1);
 assert.strictEqual(menuCalls[0].label, '📘 Cuaderno del Profesor 📘');
 assert.strictEqual(menuCalls[0].items[0].label, '⚙️ Configuración');
-assert.strictEqual(menuCalls[0].items[1].label, '📚 Módulos');
+assert.strictEqual(menuCalls[0].items[1].label, 'Alumnado');
+assert.strictEqual(menuCalls[0].items[2].label, '📚 Módulos');
+assert.deepStrictEqual(menuCalls[0].items[1].items.map(item => item[0]),
+  ['Importar EDUCA', 'Matrículas', 'Contacts']);
+assert.deepStrictEqual(menuCalls[0].items[2].items.map(item => item[0]),
+  ['Crear Config', 'Recalcular', 'Crear Seg/Eval']);
 assert.strictEqual(menuCalls[0].items[0].items[0][0], '🪪 Configurar datos del docente y centro');
 assert.strictEqual(menuCalls[0].items[0].items[1][0], '📅 Configurar calendario');
 assert.strictEqual(menuCalls[0].items[0].items[2][0], '🕒 Configurar horario');
 assert.deepStrictEqual(menuCalls[0].items.at(-2), ['Preparar nuevo curso', 'abrirPrepararNuevoCurso']);
 assert.deepStrictEqual(menuCalls[0].items.at(-1), ['Ayuda', 'mostrarAyuda']);
-assert(!menuCalls[0].items.some(item => Array.isArray(item) && item[0] === 'Importar alumnado de tutoría'));
+assert(!menuCalls[0].items[1].items.some(item => item[0] === 'Importar alumnado de tutoría'));
 tutorActive = true;
 ctx.onOpen();
 assert.strictEqual(menuCalls.length, 2);
-const tutorItem = menuCalls[1].items.findIndex(item => Array.isArray(item) &&
-  item[0] === 'Importar alumnado de tutoría');
-assert(tutorItem > 1);
-assert(tutorItem < menuCalls[1].items.findIndex(item => Array.isArray(item) && item[0] === 'Reparar'));
+assert.deepStrictEqual(menuCalls[1].items[1].items.map(item => item[0]),
+  ['Importar EDUCA', 'Importar alumnado de tutoría', 'Matrículas', 'Contacts']);
+assert.strictEqual(menuCalls[1].items.length, menuCalls[0].items.length);
 assert(!JSON.stringify(menuCalls).includes('Asistente de configuración'));
 ctx.abrirPrepararNuevoCurso();
 assert.strictEqual(ctx.opened, 1);

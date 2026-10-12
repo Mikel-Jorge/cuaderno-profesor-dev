@@ -54,6 +54,7 @@ const ctx = vm.createContext({
 for (const file of ['EducaTutorBiff.gs', 'TutorRoster.gs', 'EducaTutorImport.gs']) {
   vm.runInContext(fs.readFileSync(file, 'utf8'), ctx);
 }
+const realParser = ctx.parseTutorEducaFile_;
 const makeReport = names => ({ group: 'DAM 2A', students: names.map(([surname, name]) => ({
   surname, name, key: ctx.tutorStudentKey_(surname, name, 'DAM 2A'),
 })) });
@@ -115,6 +116,9 @@ book.toast = () => {};
 const finalEmails = JSON.stringify({ [one.students[0].key]: 'final@example.test' });
 const academic = ctx.importarAlumnadoTutoria({ archivo: {}, emails: finalEmails });
 assert.strictEqual(academic.imported, 1);
+assert.strictEqual(academic.academicImported, true);
+assert.strictEqual(academic.contactsOk, true);
+assert.strictEqual(JSON.parse(JSON.stringify(academic)).academicImported, true);
 assert.strictEqual(config.group, 'DAM 2A');
 assert.strictEqual(config.marker, config.course);
 assert.strictEqual(sheets.students.rows[1][3], 'final@example.test');
@@ -122,10 +126,37 @@ assert.strictEqual(JSON.stringify(sheets.enrollment.rows), enrollmentBefore);
 const beforeMismatch = JSON.stringify(sheets.students.rows);
 ctx.parseTutorEducaFile_ = () => ({ ...one, group: 'SMR 1A' });
 assert.throws(() => ctx.analizarArchivoTutorEduca({ archivo: {} }), /SMR 1A/);
+const rejectedGroup = ctx.importarAlumnadoTutoria({ archivo: {}, emails: finalEmails });
+assert.strictEqual(rejectedGroup.academicImported, false);
 assert.strictEqual(JSON.stringify(sheets.students.rows), beforeMismatch);
 ctx.parseTutorEducaFile_ = () => one;
+const rejectedEmail = ctx.importarAlumnadoTutoria({ archivo: {},
+  emails: JSON.stringify({ [one.students[0].key]: 'invalid' }) });
+assert.strictEqual(rejectedEmail.academicImported, false);
+assert.strictEqual(JSON.stringify(sheets.students.rows), beforeMismatch);
 ctx.executeContactsSync_ = () => { throw new Error('People unavailable'); };
 const warning = ctx.importarAlumnadoTutoria({ archivo: {}, emails: finalEmails });
-assert.strictEqual(warning.contactsWarning, true);
+assert.strictEqual(warning.academicImported, true);
+assert.strictEqual(warning.contactsOk, false);
+assert.match(warning.contactsWarning, /Google Contacts/);
 assert.strictEqual(JSON.stringify(sheets.enrollment.rows), enrollmentBefore);
+if (fs.existsSync(localXls)) {
+  const blob = { getBytes: () => [...fs.readFileSync(localXls)] };
+  const reportFromRealFile = realParser(blob);
+  sheets.students.rows = [sheets.students.rows[0]];
+  sheets.roster.rows = [sheets.roster.rows[0]];
+  config.group = reportFromRealFile.group;
+  ctx.parseTutorEducaFile_ = realParser;
+  ctx.executeContactsSync_ = () => ({ incidents: 0 });
+  const planFromRealFile = ctx.buildTutorImportPlan_(book, reportFromRealFile);
+  const emailsFromRealFile = JSON.stringify(Object.fromEntries(planFromRealFile.map((student, index) =>
+    [student.key, `synthetic${index}@example.test`])));
+  const importedRealFile = ctx.importarAlumnadoTutoria({ archivo: blob, emails: emailsFromRealFile });
+  assert.strictEqual(importedRealFile.academicImported, true);
+  assert.strictEqual(importedRealFile.contactsOk, true);
+  assert.strictEqual(importedRealFile.imported, 5);
+  assert.strictEqual(ctx.getActiveTutorRoster_(book, config).length, 5);
+  assert.strictEqual(JSON.stringify(sheets.enrollment.rows), enrollmentBefore);
+  console.log('Real XLS final import: 1 sheet; group DAM 2A; 5 students; academic and Contacts success');
+}
 console.log('Tutor emails, identity, roster, reimport, annual reset and matrícula isolation: ok');
