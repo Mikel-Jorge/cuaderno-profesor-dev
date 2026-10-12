@@ -44,6 +44,10 @@ El menú **Reparar estructura** abre un selector. Los siete bloques visibles emp
 
 **Ayuda** abre una barra lateral adaptada al espacio estrecho de Sheets. Muestra un resumen dinámico de controles correctos y los pendientes. **Ver completados** aparece solo cuando hay elementos completos adicionales; al abrirlo no repite los pendientes. Durante la búsqueda se oculta el estado para dejar espacio a los resultados. Las secciones se despliegan una a una y la FAQ tiene preguntas propias. El buscador funciona sin tildes ni distinción de mayúsculas: por ejemplo, `evaluacion`, `peso`, `protegida` o `REACA`. La X limpia la búsqueda. **Actualizar estado** vuelve a cargar los datos una vez, sin consultas continuas.
 
+## Feedback y propuestas
+
+Desde **Ayuda**, pulsa **Enviar error o propuesta** para abrir el formulario en otra pestaña. Sirve para comunicar errores, sugerencias, dudas y comentarios. Todas las copias del Cuaderno del Profesor usan el mismo formulario central.
+
 ## Preguntas frecuentes
 
 **No aparece un módulo para configurar.** Comprueba que la actividad es MODULO, tiene grupo, está en el horario y cuenta con sesiones lectivas según Calendario y FEOE.

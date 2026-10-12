@@ -20,6 +20,7 @@ function getSidebarData_() {
   return {
     stateItems: getSidebarStateItems_(config),
     helpSections: getSidebarHelpSections_(contextSectionId),
+    feedbackFormUrl: CP.FEEDBACK_FORM_URL,
     contextSectionId: contextSectionId,
     activeSheetName: activeSheet ? activeSheet.getName() : '',
     themeCss: createUiThemeCss_(getActiveTheme_(spreadsheet, config)),

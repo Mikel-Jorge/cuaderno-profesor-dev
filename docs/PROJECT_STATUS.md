@@ -1,9 +1,14 @@
 # Estado del proyecto
 
-**Última actualización:** 2026-10-11
+**Última actualización:** 2026-10-12
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.9.1`
+**Versión vigente:** `1.9.2`
 **Esquema vigente:** `11`
+
+## Canal central de feedback 1.9.2
+
+- Ayuda ofrece, antes del pie de autoría, acceso buscable al formulario externo permanente para errores, propuestas, dudas y comentarios.
+- Todas las copias del cuaderno usan el mismo formulario central. No se crean formularios ni hojas de respuestas por copia; no hay permisos ni triggers nuevos.
 
 ## Correctivo visual de Preparar nuevo curso 1.8.7
 

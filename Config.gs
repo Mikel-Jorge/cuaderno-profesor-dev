@@ -1,7 +1,8 @@
 const CP = Object.freeze({
   PROJECT_NAME: 'Cuaderno del Profesor',
-  NOTEBOOK_VERSION: '1.9.1',
+  NOTEBOOK_VERSION: '1.9.2',
   SCHEMA_VERSION: '11',
+  FEEDBACK_FORM_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSeGNIgzDp0hLj8vymzhPSuRBqkS1RNe5l2pRughEmRmwNjNBw/viewform?usp=publish-editor',
   TAB_COLORS: Object.freeze({
     GENERAL: '#546E7A',
     CONFIG: '#2E7D32',
