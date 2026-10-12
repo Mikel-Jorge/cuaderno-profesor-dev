@@ -2,8 +2,12 @@
 
 **Última actualización:** 2026-10-12
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.11.1`
+**Versión vigente:** `1.11.2`
 **Esquema vigente:** `13`
+
+## Correctivo de descompresión EDUCA 1.11.2
+
+- El `.xls` actual de EDUCA contiene bytes OOXML/ZIP, pero el formulario puede entregarlo con MIME de Excel antiguo. Tras validar firma, directorio y límites, el parser crea en memoria un Blob ZIP con los mismos bytes para descomprimirlo. El parser completo se ha comprobado con el fichero local anonimizado sin incorporarlo al repositorio.
 
 ## Correctivo del parser EDUCA 1.11.1
 

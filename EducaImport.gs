@@ -66,7 +66,10 @@ function readEducaPackage_(blob) {
   if (bytes.length > CP_EDUCA_MAX_FILE_BYTES) throw new Error('El archivo supera el límite de 5 MB.');
   validateEducaZipDirectory_(bytes);
   let parts;
-  try { parts = Utilities.unzip(blob); } catch (error) { throw new Error(CP_EDUCA_FORMAT_ERROR); }
+  try {
+    const zipBlob = Utilities.newBlob(bytes, 'application/zip', 'educa-import.zip');
+    parts = Utilities.unzip(zipBlob);
+  } catch (error) { throw new Error(CP_EDUCA_FORMAT_ERROR); }
   if (parts.length > CP_EDUCA_MAX_ZIP_ENTRIES) throw new Error(CP_EDUCA_FORMAT_ERROR);
   const files = {};
   let total = 0;

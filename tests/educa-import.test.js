@@ -33,9 +33,24 @@ function crc32(data) {
   }
   return (crc ^ 0xffffffff) >>> 0;
 }
+const archiveParts = new Map();
+let zipBlobCreations = 0;
 const context = vm.createContext({ CP: { SHEETS: { STUDENTS: '3 Alumnado' } },
   XmlService: { parse: parseXml },
-  Utilities: { unzip: blob => blob.parts },
+  Utilities: {
+    newBlob: (bytes, contentType, name) => {
+      assert.equal(contentType, 'application/zip');
+      assert.equal(name, 'educa-import.zip');
+      const key = Buffer.from(bytes.map(value => value & 255)).toString('base64');
+      zipBlobCreations++;
+      return { getContentType: () => contentType, parts: archiveParts.get(key) };
+    },
+    unzip: blob => {
+      assert.equal(blob.getContentType(), 'application/zip');
+      if (!blob.parts) throw new Error('ZIP sintético no registrado');
+      return blob.parts;
+    },
+  },
   LockService: { getDocumentLock: () => ({ tryLock: () => true, releaseLock() {} }) },
   SpreadsheetApp: { getActiveSpreadsheet: () => ({}) },
 });
@@ -107,8 +122,9 @@ function fixture(sheetSpecs) {
       : `<si><t>${value}</t></si>`;
   }).join('') + '</sst>';
   const packed = zip(files);
-  return { name: 'rptALMPorProfesorAsignatura.xls', parts: Object.entries(files).map(([name, value]) => blob(name, value)),
-    getBytes: () => [...packed] };
+  archiveParts.set(packed.toString('base64'), Object.entries(files).map(([name, value]) => blob(name, value)));
+  return { name: 'rptALMPorProfesorAsignatura.xls',
+    getContentType: () => 'application/vnd.ms-excel', getBytes: () => [...packed] };
 }
 
 const report = fixture([
@@ -119,7 +135,9 @@ const report = fixture([
   { subject: 'Acceso a datos', headerRow: 5, group: 'DAM 2B', names: ['Apellido Uno, Ana'] },
 ]);
 assert.equal(report.name.endsWith('.xls'), true);
+assert.equal(report.getContentType(), 'application/vnd.ms-excel');
 const parsed = context.parseEducaReport_(report);
+assert.ok(zipBlobCreations > 0);
 assert.equal(parsed.length, 2);
 const groupA = parsed.find(block => block.group === 'DAM 2A');
 assert.equal(groupA.subject, 'Acceso a datos');
@@ -177,7 +195,9 @@ const invalid = [
   fixture([{ subject: 'Módulo', group: '', names: ['Apellido, Ana'] }]),
 ];
 invalid.forEach(file => assert.throws(() => context.parseEducaReport_(file), /formato/));
+const conversionsBeforeBiff = zipBlobCreations;
 assert.throws(() => context.parseEducaReport_(invalid[1]), /No se reconoce el formato actual/);
+assert.equal(zipBlobCreations, conversionsBeforeBiff);
 let writes = 0;
 const writeEducaNewStudents = context.writeEducaNewStudents_;
 context.getModuleActivitiesForEnrollment_ = () => [{ id: 'M1', category: 'MODULO', group: 'DAM 2A', name: 'Módulo' }];
