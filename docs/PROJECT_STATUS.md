@@ -2,14 +2,15 @@
 
 **Última actualización:** 2026-10-12
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.12.0`
+**Versión vigente:** `1.12.1`
 **Esquema vigente:** `13`
 
-## Google Contacts y Ayuda 1.12.0
+## Google Contacts y Ayuda 1.12.1
 
-- Módulos incorpora una sincronización con Google Contacts con análisis de solo lectura, vista previa y confirmación. Reutiliza contactos personales por email inequívoco, omite los casos sin email, inválidos o ambiguos, y crea los contactos que faltan sin modificar los existentes.
-- Las etiquetas `AACC · Grupo` reflejan Alumnado con email; `AACC · Grupo · Sigla` refleja la matrícula activa del módulo. La sincronización ajusta solo esas etiquetas del curso actual; nunca borra contactos ni etiquetas de cursos anteriores. No se usa People Directory ni se crean hojas técnicas.
-- Se habilita Advanced People Service v1 y se incorpora el permiso `https://www.googleapis.com/auth/contacts` mediante la autodetección vigente de Apps Script. La Ayuda se ha auditado para explicar el flujo actual de EDUCA, Matrículas, Eval y Contacts. El esquema permanece en 13.
+- El diálogo analiza Contacts al abrir, sincroniza con un único clic después del preview y muestra una card final limpia. Los diálogos usan el mismo pie con correo enlazado.
+- Solo se gestionan etiquetas `AACC · Grupo · Sigla`. Las etiquetas generales de grupo creadas en 1.12.0 quedan intactas.
+- La primera sincronización manual correcta activa `contacts_sync_course` en `_CONFIG`. Matrículas y EDUCA sincronizan después los módulos afectados; un fallo externo no revierte el guardado académico. Sin primera sincronización del curso no hay llamadas automáticas a People API.
+- El esquema permanece en 13, Advanced People Service v1 y el permiso `https://www.googleapis.com/auth/contacts` no cambian.
 
 ## Flujo EDUCA y matrículas 1.11.4
 
@@ -309,7 +310,7 @@ Pendiente de cierre del bloque:
 # ROADMAP futuro
 
 - Importador específico del grupo completo de Tutoría: pendiente.
-- Google Contacts y etiquetas: estudiar permisos, consentimiento, duplicados y mantenimiento antes de diseñar la integración.
+- Tutoría: cuando exista el importador de su alumnado completo, gestionar la etiqueta general `AACC · Grupo` con todo el grupo que tenga Email. No crear una etiqueta `AACC · Grupo · T`.
 - Sincronización opcional con Google Calendar: estudiar permisos, conflictos y calendario de destino; no se han añadido scopes ni triggers.
 - Tutoría avanzada (`7 Tutoría`, entrevistas, conversaciones y faltas): definir primero datos, privacidad y flujos docentes. No hay hoja ni estructura técnica implementada.
 

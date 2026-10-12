@@ -1,4 +1,4 @@
-// Google Contacts is read only for preview. No student or People resource is persisted.
+// Preview is read only. Only the course activation marker is persisted locally.
 function abrirSincronizacionContactos() {
   const template = HtmlService.createTemplateFromFile('UiDialogContacts');
   setCommonUiTemplateData_(template);
@@ -23,13 +23,14 @@ function isValidContactEmail_(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
-function buildContactsSource_(book) {
+function buildContactsSource_(book, activityId) {
   const course = getGeneralConfigValues_(book)[CP.CONFIG_KEYS.ACADEMIC_YEAR];
   const prefix = contactsCoursePrefix_(course);
   const students = getEnrollmentStudents_(book);
   if (!students.length) throw new Error('Primero importa alumnado en 3 Alumnado.');
-  const modules = getModuleActivitiesForEnrollment_();
-  const groups = {};
+  const modules = getModuleActivitiesForEnrollment_().filter(function(module) {
+    return !activityId || module.id === activityId;
+  });
   const emailByStudentId = {};
   const withoutEmail = [], invalidEmail = [];
   students.forEach(function(student) {
@@ -39,16 +40,9 @@ function buildContactsSource_(book) {
       name: student.name, group: student.group, email: String(student.email).trim() });
     else {
       emailByStudentId[student.id] = email;
-      if (!groups[student.group]) groups[student.group] = [];
-      groups[student.group].push(email);
     }
   });
   const labels = [];
-  const groupNames = {};
-  students.forEach(function(student) { groupNames[student.group] = true; });
-  Object.keys(groupNames).sort().forEach(function(group) {
-    labels.push({ name: prefix + ' · ' + group, kind: 'group', emails: groups[group] || [] });
-  });
   modules.forEach(function(module) {
     if (!module.group || !module.acronym) {
       throw new Error('Completa Grupo y Sigla de tus módulos antes de sincronizar Google Contacts.');
@@ -59,7 +53,7 @@ function buildContactsSource_(book) {
   });
   const names = {};
   labels.forEach(function(label) {
-    if (names[label.name]) throw new Error('Hay etiquetas de grupo o módulo con el mismo nombre. Revisa las siglas.');
+    if (names[label.name]) throw new Error('Hay etiquetas de módulo con el mismo nombre. Revisa las siglas.');
     names[label.name] = true;
   });
   return { course: String(course), prefix: prefix, students: students, labels: labels,
@@ -124,9 +118,11 @@ function planContactsSync_(source, state) {
     groupByName[group.name] = group;
   });
   const studentsByEmail = {};
+  const relevantEmails = {};
+  source.labels.forEach(function(label) { label.emails.forEach(function(email) { relevantEmails[email] = true; }); });
   source.students.forEach(function(student) {
     const email = normalizeContactEmail_(student.email);
-    if (isValidContactEmail_(email)) {
+    if (isValidContactEmail_(email) && relevantEmails[email]) {
       if (!studentsByEmail[email]) studentsByEmail[email] = [];
       studentsByEmail[email].push(student);
     }
@@ -171,9 +167,7 @@ function planContactsSync_(source, state) {
 function analizarGoogleContacts() {
   const source = buildContactsSource_(SpreadsheetApp.getActiveSpreadsheet());
   const plan = planContactsSync_(source, readContactsState_());
-  return { course: source.course, prefix: source.prefix, groupLabels: source.labels.filter(function(label) {
-    return label.kind === 'group';
-  }).length, moduleLabels: source.labels.filter(function(label) {
+  return { course: source.course, prefix: source.prefix, moduleLabels: source.labels.filter(function(label) {
     return label.kind === 'module';
   }).length, withEmail: source.students.length - source.withoutEmail.length - source.invalidEmail.length,
   withoutEmail: source.withoutEmail, invalidEmail: source.invalidEmail, ambiguous: plan.ambiguous,
@@ -184,20 +178,85 @@ function analizarGoogleContacts() {
 
 function obtenerResumenSincronizacionContactos() {
   const source = buildContactsSource_(SpreadsheetApp.getActiveSpreadsheet());
-  return { course: source.course, groupLabels: source.labels.filter(function(label) {
-    return label.kind === 'group';
-  }).length, moduleLabels: source.labels.filter(function(label) {
+  return { course: source.course, moduleLabels: source.labels.filter(function(label) {
     return label.kind === 'module';
   }).length, labelNames: source.labels.map(function(label) { return label.name; }) };
 }
 
+function isContactsAutoSyncEnabledForCurrentCourse_(book) {
+  const config = getStoredConfigMap_(book);
+  const initializedCourse = String(config[CP.CONFIG_KEYS.CONTACTS_SYNC_COURSE] || '').trim();
+  return Boolean(initializedCourse) && initializedCourse ===
+    getGeneralConfigValues_(book)[CP.CONFIG_KEYS.ACADEMIC_YEAR];
+}
+
+function syncContactsForModule_(activityId, previousGroup) {
+  const book = SpreadsheetApp.getActiveSpreadsheet();
+  if (!isContactsAutoSyncEnabledForCurrentCourse_(book)) return null;
+  const modules = getModuleActivitiesForEnrollment_();
+  const module = modules.find(function(item) { return item.id === activityId; });
+  if (!module) throw new Error('El módulo ya no existe.');
+  if (modules.some(function(item) { return item.id !== activityId &&
+      item.group === module.group && item.acronym === module.acronym; })) {
+    throw new Error('La etiqueta del módulo no es inequívoca.');
+  }
+  if (previousGroup && modules.some(function(item) { return item.id !== activityId &&
+      item.group === previousGroup && item.acronym === module.acronym; })) {
+    previousGroup = '';
+  }
+  const course = getGeneralConfigValues_(book)[CP.CONFIG_KEYS.ACADEMIC_YEAR];
+  const prefix = contactsCoursePrefix_(course);
+  return executeContactsSync_(null, previousGroup &&
+    prefix + ' · ' + previousGroup + ' · ' + module.acronym, activityId);
+}
+
+function syncContactsAfterAcademicChange_(activityIds, previousGroups) {
+  try {
+    if (!isContactsAutoSyncEnabledForCurrentCourse_(SpreadsheetApp.getActiveSpreadsheet())) return false;
+    let warning = false;
+    activityIds.forEach(function(id) {
+      try {
+        const result = syncContactsForModule_(id, previousGroups && previousGroups[id]);
+        if (result && result.incidents) warning = true;
+      } catch (error) { warning = true; }
+    });
+    if (warning) console.warn('No se pudo completar Google Contacts después del cambio académico.');
+    return warning;
+  } catch (error) {
+    console.warn('No se pudo actualizar Google Contacts después del cambio académico.');
+    return true;
+  }
+}
+
 function syncGoogleContacts() {
+  const book = SpreadsheetApp.getActiveSpreadsheet();
+  const result = executeContactsSync_();
+  if (!result.incidents) {
+    const values = {};
+    values[CP.CONFIG_KEYS.CONTACTS_SYNC_COURSE] = getGeneralConfigValues_(book)[CP.CONFIG_KEYS.ACADEMIC_YEAR];
+    updateConfigValues_(book.getSheetByName(CP.SHEETS.CONFIG), values, [CP.CONFIG_KEYS.CONTACTS_SYNC_COURSE]);
+  }
+  return result;
+}
+
+function executeContactsSync_(source, previousLabelName, activityId) {
   const lock = LockService.getDocumentLock();
   if (!lock || !lock.tryLock(30000)) throw new Error('Ya hay una sincronización en curso. Inténtalo de nuevo.');
   try {
-    const source = buildContactsSource_(SpreadsheetApp.getActiveSpreadsheet());
+    source = source || buildContactsSource_(SpreadsheetApp.getActiveSpreadsheet(), activityId);
+    if (activityId && source.labels.length !== 1) throw new Error('La etiqueta del módulo no es inequívoca.');
     const plan = planContactsSync_(source, readContactsState_());
     const result = { created: 0, reused: plan.existingContacts, labelsUpdated: 0, incidents: 0 };
+    if (previousLabelName && previousLabelName !== source.labels[0].name &&
+        !plan.groupByName[source.labels[0].name] && plan.groupByName[previousLabelName]) {
+      try {
+        const oldGroup = plan.groupByName[previousLabelName];
+        const renamed = People.ContactGroups.update({ contactGroup: {
+          resourceName: oldGroup.resourceName, name: source.labels[0].name },
+        updateGroupFields: 'name' }, oldGroup.resourceName);
+        plan.groupByName[source.labels[0].name] = renamed || oldGroup;
+      } catch (error) { result.incidents++; }
+    }
     // Mutations are sequential, and every retry recomputes the plan from the APIs.
     Object.keys(plan.resolved).forEach(function(email) {
       if (plan.resolved[email]) return;
@@ -235,7 +294,7 @@ function syncGoogleContacts() {
       });
       const changes = add.map(function(resource) { return { add: resource }; })
         .concat(remove.map(function(resource) { return { remove: resource }; }));
-      if (!changes.length) return;
+      if (!changes.length) { result.labelsUpdated++; return; }
       let successful = true;
       for (let offset = 0; offset < changes.length; offset += 1000) {
         const chunk = changes.slice(offset, offset + 1000);

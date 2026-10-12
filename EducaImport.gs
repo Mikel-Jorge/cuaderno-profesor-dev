@@ -541,6 +541,7 @@ function applyEducaModuleGroupChanges_(change) {
 function importarAlumnadoEduca(form) {
   const lock = LockService.getDocumentLock();
   if (!lock.tryLock(30000)) throw new Error('Hay otra importación en curso. Inténtalo de nuevo.');
+  let result, affectedIds, previousGroups;
   try {
     const modules = getModuleActivitiesForEnrollment_();
     if (!modules.length) throw new Error('Primero configura tus módulos en Configuración → Horario → Actividades.');
@@ -557,6 +558,10 @@ function importarAlumnadoEduca(form) {
       throw new Error('Las bajas de matrícula han cambiado. Analiza de nuevo el archivo antes de importar.');
     }
     const groupChanges = prepareEducaModuleGroupChanges_(book, plan);
+    previousGroups = plan.selected.reduce(function(map, item) {
+      map[item.activity.id] = item.activity.group;
+      return map;
+    }, {});
     const studentSheet = book.getSheetByName(CP.SHEETS.STUDENTS);
     const originalStudentRows = studentSheet.getLastRow();
     const studentSnapshot = studentSheet.getRange(1, 1, originalStudentRows, 7).getValues();
@@ -625,6 +630,14 @@ function importarAlumnadoEduca(form) {
       }
       throw error;
     }
-    return { summary: plan.summary, emailNotice: CP_EDUCA_EMAIL_NOTICE };
+    affectedIds = plan.selected.map(function(item) { return item.activity.id; });
+    result = { summary: plan.summary, emailNotice: CP_EDUCA_EMAIL_NOTICE };
   } finally { lock.releaseLock(); }
+  result.contactsWarning = syncContactsAfterAcademicChange_(affectedIds, previousGroups);
+  if (result.contactsWarning) {
+    try { SpreadsheetApp.getActiveSpreadsheet().toast(
+      'Importación completada. No se ha podido actualizar Google Contacts; puedes reintentarlo desde Módulos → Sincronizar Google Contacts.'); }
+    catch (error) { console.warn('No se pudo mostrar el aviso de Google Contacts.'); }
+  }
+  return result;
 }

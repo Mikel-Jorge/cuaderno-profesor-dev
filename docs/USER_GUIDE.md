@@ -1,4 +1,4 @@
-# Guía de uso · Cuaderno del Profesor 1.12.0
+# Guía de uso · Cuaderno del Profesor 1.12.1
 
 ## Empezar un curso
 
@@ -46,9 +46,11 @@ En **Módulos → Matrículas de módulos** puedes elegir manualmente quién cur
 
 ## Google Contacts
 
-Completa primero los **Email** que conozcas en **3 Alumnado**. Después abre **Módulos → Sincronizar Google Contacts** y pulsa **Analizar Google Contacts**. Revisa la vista previa: muestra contactos nuevos y existentes, etiquetas, cambios de pertenencia y alumnado sin Email, con Email inválido o con un contacto ambiguo. La consulta no modifica tus contactos. Al confirmar, Google solicitará permiso para gestionarlos. El Cuaderno crea los que faltan y reutiliza los que tienen un único correo coincidente, sin cambiar los datos de estos últimos. Nunca elimina contactos.
+Completa primero los **Email** que conozcas en **3 Alumnado**. Abre **Módulos → Sincronizar Google Contacts**: el análisis comienza automáticamente y muestra contactos nuevos, reutilizados y ambiguos, alumnado sin Email o con Email inválido, etiquetas de módulo y cambios de pertenencia. La consulta no modifica Contacts. Tras revisar el resumen, pulsa **Sincronizar Google Contacts** una sola vez. Google puede solicitar permiso. El Cuaderno reutiliza el contacto con un único correo coincidente sin cambiar sus datos, crea el que falte y nunca elimina contactos.
 
-Las etiquetas tienen prefijo del curso: **2627 · DAM 2A** reúne al alumnado de ese grupo que exista en 3 Alumnado y tenga Email; **2627 · DAM 2A · PMDM** reúne solo a quienes estén matriculados en ese módulo y tengan Email. Una baja de matrícula retira al alumno de la etiqueta del módulo, pero mantiene su contacto y, si sigue en el grupo, su etiqueta de grupo. Los contactos ambiguos y los alumnos sin Email se omiten; puedes corregirlos y repetir la sincronización. La operación es repetible y las etiquetas de cursos anteriores permanecen. El importador EDUCA actual no incluye necesariamente al grupo completo de Tutoría.
+En esta versión solo se gestionan etiquetas de módulo como **2627 · DAM 2A · PMDM**, según la matrícula activa y los Email válidos. La etiqueta general **2627 · DAM 2A** llegará con el futuro importador del grupo completo de Tutoría. Las etiquetas generales creadas en pruebas anteriores no se modifican ni eliminan automáticamente.
+
+Una primera sincronización manual correcta activa la actualización automática de Contacts para ese curso. A partir de entonces, guardar Matrículas o importar EDUCA sincroniza únicamente los módulos afectados. Si People API falla, el cambio académico se conserva y aparece un aviso; puedes reintentar la sincronización manual. Añadir solo un Email en **3 Alumnado** no sincroniza al instante: se incorporará tras el siguiente guardado de Matrículas del módulo, importación EDUCA que lo afecte o sincronización manual. Cada curso nuevo requiere su primera sincronización manual; las etiquetas anteriores permanecen.
 
 ## Reparar estructura
 

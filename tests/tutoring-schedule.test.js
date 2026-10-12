@@ -12,7 +12,7 @@ const context = vm.createContext({});
 });
 context.createCalendarRecordId_ = createId;
 const evaluate = source => JSON.parse(vm.runInContext('JSON.stringify(' + source + ')', context));
-assert.strictEqual(evaluate('CP.NOTEBOOK_VERSION'), '1.12.0');
+assert.strictEqual(evaluate('CP.NOTEBOOK_VERSION'), '1.12.1');
 assert.strictEqual(evaluate('CP.SCHEMA_VERSION'), '13');
 assert.strictEqual(evaluate('CP_CALENDAR_TYPE_DEFINITIONS.find(type => type.id === "ONLINE").name'), 'Virtual');
 for (const previousName of ['Online', 'VIRTUAL']) {

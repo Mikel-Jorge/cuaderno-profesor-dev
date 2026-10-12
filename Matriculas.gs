@@ -174,6 +174,7 @@ function getModuleEnrollmentManagerData_() {
 function saveModuleEnrollments(input) {
   const lock = LockService.getDocumentLock();
   if (!lock.tryLock(30000)) throw new Error('Hay otra operación en curso. Inténtalo de nuevo.');
+  let result;
   try {
     const book = SpreadsheetApp.getActiveSpreadsheet();
     const activity = getModuleActivitiesForEnrollment_().find(function(item) {
@@ -221,8 +222,15 @@ function saveModuleEnrollments(input) {
       catch (restoreError) { console.warn('No se pudo restaurar la vista de Eval tras fallar el guardado.'); }
       throw error;
     }
-    return { selected: input.studentIds.length, total: candidates.length };
+    result = { selected: input.studentIds.length, total: candidates.length };
   } finally { lock.releaseLock(); }
+  result.contactsWarning = syncContactsAfterAcademicChange_([String(input.activityId)]);
+  if (result.contactsWarning) {
+    try { SpreadsheetApp.getActiveSpreadsheet().toast(
+      'Matrículas guardadas. No se ha podido actualizar Google Contacts; puedes reintentarlo desde Módulos → Sincronizar Google Contacts.'); }
+    catch (error) { console.warn('No se pudo mostrar el aviso de Google Contacts.'); }
+  }
+  return result;
 }
 
 function repairEvaluationsForActivities_(activityIds) {

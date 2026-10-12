@@ -4,6 +4,7 @@ const vm = require('node:vm');
 
 const context = vm.createContext({
   console: { warn() {} },
+  syncContactsAfterAcademicChange_: () => false,
   CP: { SHEETS: { STUDENTS: '3 Alumnado', ENROLLMENTS: '_MATRICULAS',
     ENROLLMENT_META: '_MATRICULAS_META' } },
   SpreadsheetApp: { getActiveSpreadsheet: () => book },
@@ -180,4 +181,14 @@ assert.equal(rows.find(row => row.studentId === 'A').origin, 'MANUAL');
 assert.equal(rows.find(row => row.studentId === 'X').active, true); // La relación por ID permanece activa.
 assert.equal(rows.find(row => row.studentId === 'X').origin, 'MANUAL');
 assert.deepEqual(Object.keys(modes), ['ACDA']);
+const notices = [];
+book.toast = message => notices.push(message);
+context.syncContactsAfterAcademicChange_ = ids => {
+  assert.equal(ids[0], 'ACDA');
+  return true;
+};
+const savedWithContactsFailure = context.saveModuleEnrollments({ activityId: 'ACDA', studentIds: ['A'] });
+assert.equal(savedWithContactsFailure.contactsWarning, true);
+assert.equal(rows.find(row => row.activityId === 'ACDA' && row.studentId === 'A').active, true);
+assert.match(notices[0], /Matrículas guardadas/);
 console.log('legacy, manual and EDUCA memberships; Eval history and annual reset: ok');

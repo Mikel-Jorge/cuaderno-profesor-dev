@@ -35,7 +35,9 @@ function crc32(data) {
 }
 const archiveParts = new Map();
 let zipBlobCreations = 0;
+const contactsSyncs = [];
 const context = vm.createContext({ CP: { SHEETS: { STUDENTS: '3 Alumnado' } },
+  syncContactsAfterAcademicChange_: ids => { contactsSyncs.push(Array.from(ids)); return false; },
   XmlService: { parse: parseXml },
   Utilities: {
     newBlob: (bytes, contentType, name) => {
@@ -270,6 +272,7 @@ const firstReport = fixture([{ subject: 'Módulo',
   names: ['Apellido Uno, Ana', 'Apellido Dos, Pedro'] }]);
 const firstResult = context.importarAlumnadoEduca({ archivo: firstReport,
   mapping: '{}', confirmDrops: 'false' });
+assert.deepEqual(contactsSyncs.at(-1), ['M1']);
 assert.equal(firstResult.summary.newStudents, 1);
 assert.equal(firstResult.summary.existingStudents, 1);
 assert.equal(firstResult.summary.activations, 2);
