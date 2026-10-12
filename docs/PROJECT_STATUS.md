@@ -2,8 +2,14 @@
 
 **Última actualización:** 2026-10-12
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.11.3`
+**Versión vigente:** `1.11.4`
 **Esquema vigente:** `13`
+
+## Flujo EDUCA y matrículas 1.11.4
+
+- EDUCA fija el Grupo de cada MODULO importado y del alumnado reconocido; la validación de Alumnado y las etiquetas de hojas gestionadas se actualizan sin cambiar IDs ni sesiones.
+- Las decisiones manuales de matrícula prevalecen sobre reimportaciones. Guardar matrículas o importar sincroniza Eval de inmediato: las bajas conservan notas en filas inactivas protegidas con advertencia y las altas restauran sus controles.
+- Alumnado protege cabecera, A:C y G; Email, REACA y Medidas siguen editables. Los diálogos de importación y matrículas se cierran al guardar correctamente. Ayuda y guía describen el nuevo flujo.
 
 ## Mapeo y matrículas por módulo 1.11.3
 

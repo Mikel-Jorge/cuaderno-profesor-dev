@@ -12,7 +12,7 @@ function groupConsecutiveRows_(rows) {
 
 function getManagedProtectionRanges_(sheet, kind) {
   if (kind === 'STUDENTS') {
-    return [sheet.getRange(2, 1, sheet.getMaxRows() - 1, 6)];
+    return [sheet.getRange(2, 4, sheet.getMaxRows() - 1, 3)];
   }
   if (kind === 'CONFIG') {
     const ranges = [sheet.getRange(28, 1, 15, 18)];

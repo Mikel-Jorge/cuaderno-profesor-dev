@@ -116,7 +116,12 @@ function normalizeEnrollmentStorage_(book) {
     if (!student || !activity) return;
     const key = row.studentId + '\n' + row.activityId;
     if (byPair[key]) {
-      byPair[key].active = byPair[key].active && row.active;
+      if (byPair[key].origin === 'MANUAL' && row.origin !== 'MANUAL') return;
+      if (row.origin === 'MANUAL' && byPair[key].origin !== 'MANUAL') {
+        byPair[key] = Object.assign({}, row);
+      } else {
+        byPair[key].active = byPair[key].active && row.active;
+      }
     } else {
       byPair[key] = Object.assign({}, row);
     }
@@ -189,17 +194,33 @@ function saveModuleEnrollments(input) {
     });
     ensureEnrollmentStructure_();
     const previous = readEnrollmentRows_(book);
+    const previousByStudent = previous.reduce(function(map, row) {
+      if (row.activityId === activity.id) map[row.studentId] = row;
+      return map;
+    }, {});
     const rows = previous.filter(function(row) {
       return row.activityId !== activity.id || !allowed[row.studentId];
-    }).map(function(row) {
-      return row.activityId === activity.id ? Object.assign({}, row, { active: false }) : row;
     });
-    candidates.forEach(function(student) { rows.push({ studentId: student.id,
-      activityId: activity.id, active: Boolean(selected[student.id]), origin: 'MANUAL' }); });
     const modes = readEnrollmentModes_(book);
+    const previousModes = Object.assign({}, modes);
+    candidates.forEach(function(student) {
+      const active = Boolean(selected[student.id]);
+      const old = previousByStudent[student.id];
+      const previouslyActive = old ? old.active : !modes[activity.id];
+      if (!old && !active && !previouslyActive) return;
+      rows.push({ studentId: student.id, activityId: activity.id, active: active,
+        origin: active !== previouslyActive ? 'MANUAL' : old ? old.origin : 'EDUCA_XLS' });
+    });
     modes[activity.id] = true;
     writeEnrollmentState_(book, rows, modes);
-    repairEvaluationsForActivities_([activity.id]);
+    try {
+      repairEvaluationsForActivities_([activity.id]);
+    } catch (error) {
+      writeEnrollmentState_(book, previous, previousModes);
+      try { repairEvaluationsForActivities_([activity.id]); }
+      catch (restoreError) { console.warn('No se pudo restaurar la vista de Eval tras fallar el guardado.'); }
+      throw error;
+    }
     return { selected: input.studentIds.length, total: candidates.length };
   } finally { lock.releaseLock(); }
 }
@@ -212,9 +233,12 @@ function repairEvaluationsForActivities_(activityIds) {
     const activity = getModuleActivityById_(record.activityId);
     const sheet = getSheetById_(book, record.evaluationSheetId);
     const configSheet = getSheetById_(book, record.sheetId);
-    if (activity && sheet && configSheet) {
-      repairEvaluationSheet_(sheet, configSheet,
-        validateModuleConfigPrerequisites_(book, activity), activity);
+    if (!sheet) return;
+    if (!activity || !configSheet) throw new Error('No se puede sincronizar la Evaluación de este módulo. Revisa su Config.');
+    const result = repairEvaluationSheet_(sheet, configSheet,
+      validateModuleConfigPrerequisites_(book, activity), activity);
+    if (typeof result === 'string' && result.indexOf(sheet.getName() + ': ') !== 0) {
+      throw new Error(result);
     }
   });
 }

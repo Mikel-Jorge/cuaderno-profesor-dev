@@ -1,6 +1,7 @@
 const CP_EVAL_COLORS = Object.freeze({
   pending: '#FFF8E1',
   red: '#C62828', blue: '#1565C0', green: '#2E7D32', gold: '#B26A00',
+  inactiveBackground: '#4B5563', inactiveText: '#FFFFFF',
 });
 
 function getEvaluationConfig_(configSheet, context) {
@@ -276,10 +277,7 @@ function repairEvaluationSheet_(sheet, configSheet, context, activity) {
   sheet.getRange(footerRow, 1, 1, 3).merge().setValue('MEDIA DEL GRUPO');
   installEvaluationGroupAverages_(sheet, layout, rows.items.length, footerRow);
   styleEvaluationSheet_(sheet, layout, rows.items.length, footerRow);
-  rows.items.forEach(function(item, index) {
-    if (item.inactive) sheet.getRange(index + 4, 1, 1, layout.lastVisibleColumn)
-      .setBackground('#E5E7EB');
-  });
+  syncInactiveEvaluationRows_(sheet, layout, rows.items);
   sheet.setFrozenRows(3);
   sheet.setFrozenColumns(3);
   sheet.setHiddenGridlines(true);
@@ -288,6 +286,39 @@ function repairEvaluationSheet_(sheet, configSheet, context, activity) {
   trimSheetToBounds_(sheet, footerRow, layout.idColumn);
   installManagedSheetProtections_(sheet, 'EVALUATION');
   return sheet.getName() + ': ' + rows.additions + ' alumnos añadidos.';
+}
+
+function syncInactiveEvaluationRows_(sheet, layout, items) {
+  const prefix = CP_PROTECTION_PREFIX + 'EVAL_INACTIVO:';
+  sheet.getProtections(SpreadsheetApp.ProtectionType.RANGE).forEach(function(protection) {
+    if (String(protection.getDescription()).startsWith(prefix)) protection.remove();
+  });
+  const inactiveRanges = [];
+  items.forEach(function(item, index) {
+    if (!item.inactive) return;
+    const row = index + 4;
+    const visible = sheet.getRange(row, 1, 1, layout.lastVisibleColumn);
+    visible.setBackground(CP_EVAL_COLORS.inactiveBackground)
+      .setFontColor(CP_EVAL_COLORS.inactiveText);
+    layout.groups.forEach(function(group) {
+      group.units.forEach(function(unit) {
+        sheet.getRange(row, unit.column).clearDataValidations();
+      });
+      sheet.getRange(row, group.educaColumn).clearDataValidations();
+    });
+    sheet.getRange(row, layout.finalEducaColumn).clearDataValidations();
+    sheet.getRange(row, 4, 1, layout.lastVisibleColumn - 3).protect()
+      .setDescription(prefix + item.id).setWarningOnly(true);
+    inactiveRanges.push(visible);
+  });
+  if (inactiveRanges.length) {
+    const rule = SpreadsheetApp.newConditionalFormatRule()
+      .whenFormulaSatisfied('=TRUE')
+      .setBackground(CP_EVAL_COLORS.inactiveBackground)
+      .setFontColor(CP_EVAL_COLORS.inactiveText)
+      .setRanges(inactiveRanges).build();
+    sheet.setConditionalFormatRules([rule].concat(sheet.getConditionalFormatRules()));
+  }
 }
 
 function installEvaluationRows_(sheet, configSheet, layout, count) {

@@ -129,17 +129,17 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'students',
       title: 'Alumnado',
-      text: 'Anota Apellidos, Nombre y Grupo, o importa desde EDUCA. Grupo incluye módulos y, si está activa, Tutoría. Email es opcional. En los módulos cuyo alumnado ya se gestiona individualmente, indica qué módulos cursa cada alumno. Usa REACA y Medidas cuando corresponda; Medidas se muestra como nota en Eval.',
+      text: 'Importa Apellidos, Nombre y Grupo desde EDUCA. En 3 Alumnado puedes completar Email y editar REACA e Información / Medidas. Grupo incluye módulos y, si está activa, Tutoría. La matrícula indica qué módulos cursa cada alumno.',
     },
     {
       id: 'educa-import',
       title: 'Importar alumnado desde EDUCA',
-      text: 'En EDUCA abre Alumnado → Informes → Listado mi alumnado → Por profesor → Excel → Asignatura → Mostrar todas las asignaturas. Selecciona todas, también «(Centro)», y descarga el archivo sin modificarlo. El Cuaderno une ambas variantes porque EDUCA puede repartir el alumnado entre ellas. Si el nombre del grupo en EDUCA no coincide exactamente con el del Cuaderno, selecciona manualmente el módulo correcto. El Grupo de 3 Alumnado conserva el texto de EDUCA y la matrícula lo relaciona con el módulo elegido. El archivo se procesa para importar y no se guarda como archivo en Drive. El informe no incluye correo electrónico: completa después Email en 3 Alumnado. Este importador solo incluye alumnado de módulos, no el grupo completo de Tutoría.',
+      text: 'En EDUCA abre Alumnado → Informes → Listado mi alumnado → Por profesor → Excel → Asignatura → Mostrar todas las asignaturas. Selecciona todas, también «(Centro)», y descarga el archivo sin modificarlo. El Cuaderno une ambas variantes porque EDUCA puede repartir el alumnado entre ellas. Si el nombre del grupo difiere, selecciona manualmente el módulo correcto: al importar se actualizarán el Grupo del módulo y el del alumnado reconocido con el valor de EDUCA. El archivo se procesa para importar y no se guarda como archivo en Drive. El informe no incluye correo electrónico: completa después Email en 3 Alumnado. Este importador solo incluye alumnado de módulos, no el grupo completo de Tutoría.',
     },
     {
       id: 'module-enrollments',
       title: 'Matrículas de módulos',
-      text: 'Grupo indica el grupo general del alumno; la matrícula indica qué módulos concretos cursa. Un alumno de DAM 2A puede cursar PMDM y no ACDA. Gestiona la pertenencia desde Módulos → Matrículas de módulos. Los módulos antiguos siguen usando todo el alumnado de su grupo hasta que guardes una selección individual.',
+      text: 'Grupo indica el grupo general del alumno; la matrícula indica qué módulos concretos cursa. Para matricular o desmatricular, abre Módulos → Matrículas de módulos, marca o desmarca y guarda. Si existe 6 Eval, la evaluación se actualiza automáticamente: las bajas conservan notas en una fila gris y las altas recuperan su fila. Los cambios manuales tienen prioridad sobre futuras importaciones de EDUCA.',
     },
     {
       id: 'module-config',
@@ -154,7 +154,7 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'evaluation',
       title: 'Evaluación',
-      text: 'Introduce la nota final de cada UT. Revisa las medias calculadas y escribe manualmente las notas Educa. Si llega un alumno nuevo, añádelo en 3 Alumnado, asígnale matrícula en los módulos explícitos y repara solo 6 Eval.',
+      text: 'Introduce la nota final de cada UT. Revisa las medias calculadas y escribe manualmente las notas Educa. Importar alumnado o guardar Matrículas de módulos actualiza la Eval existente sin ejecutar Reparar estructura. Las filas de alumnos desmatriculados conservan sus notas y aparecen inactivas.',
     },
     {
       id: 'new-course',
@@ -181,10 +181,10 @@ function getSidebarHelpSections_(contextSectionId) {
         ['¿Qué significa OLD?', 'Es un Seguimiento histórico del curso anterior, que no se resincroniza.'],
         ['¿Por qué sigue un alumno ausente en Eval?', 'Las notas anteriores se conservan aunque esa persona deje de aparecer en Alumnado.'],
         ['¿Por qué no se importan los correos?', 'El informe «Listado mi alumnado» de EDUCA no incluye el correo electrónico. Después de importar, completa la columna Email de 3 Alumnado manualmente.'],
-        ['¿Qué ocurre si vuelvo a importar el Excel?', 'No duplica alumnos existentes y conserva Email, REACA y Medidas. Actualiza las matrículas de los módulos seleccionados; quien deja de aparecer no se borra y sus notas históricas permanecen.'],
+        ['¿Qué ocurre si vuelvo a importar el Excel?', 'No duplica alumnos existentes y conserva Email, REACA y Medidas. Actualiza el Grupo con el dato de EDUCA y las matrículas gestionadas por el informe. Los cambios manuales en Matrículas de módulos tienen prioridad: si desmatriculaste a un alumno, reimportar no lo matriculará otra vez. Nadie se borra de Alumnado ni pierde sus notas.'],
         ['¿Por qué no acepta mi archivo?', 'El importador está diseñado solo para Listado mi alumnado → Por profesor → Excel → Asignatura de EDUCA, no para cualquier Excel.'],
         ['¿Importa el grupo de Tutoría?', 'No. Por ahora importa solo alumnado relacionado con los módulos del informe. El importador específico de Tutoría queda para una versión futura.'],
-        ['¿Qué hago si llega un alumno nuevo?', 'Añádelo en 3 Alumnado, selecciona su grupo y, si ya gestionas individualmente el alumnado del módulo, márcalo en Módulos → Matrículas de módulos. Después ejecuta Reparar estructura marcando Hojas 6 Eval. Las notas existentes se conservan.'],
+        ['¿Qué hago si llega un alumno nuevo?', 'Para un nuevo alumno, vuelve a importar el informe actualizado de EDUCA y revisa su matrícula en Módulos → Matrículas de módulos si hace falta. Si el módulo ya tiene 6 Eval, se incorporará automáticamente. Completa Email manualmente en 3 Alumnado si falta.'],
         ['¿Qué hago si una media parece incorrecta?', 'Revisa las notas y los pesos de Config. Si la hoja tiene un problema de formato o cálculo, selecciona su bloque en Reparar estructura.'],
         ['¿Por qué Sheets avisa de una celda protegida?', 'Es una advertencia para evitar cambios accidentales en celdas derivadas. Puedes continuar si sabes lo que haces.'],
         ['¿Cambiar Config cambia Seguimiento?', 'No. Seg conserva la instantánea capturada al crearse.'],

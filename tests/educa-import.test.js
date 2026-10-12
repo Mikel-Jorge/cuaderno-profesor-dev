@@ -249,6 +249,23 @@ context.writeEnrollmentState_ = (_book, rows, modes) => {
   enrollmentState = rows; modeState = modes;
 };
 context.repairEvaluationsForActivities_ = ids => { repaired = ids; };
+context.prepareEducaModuleGroupChanges_ = (_book, plan) => ({ originalGroups: [],
+  nextGroups: [], renames: [], selected: plan.selected });
+context.applyEducaModuleGroupChanges_ = change => change.selected.forEach(item => {
+  item.activity.group = item.block.group;
+});
+context.syncEducaExistingStudentGroups_ = (_book, plan) => {
+  const expected = new Map();
+  plan.selected.forEach(item => item.block.students.forEach(student =>
+    expected.set(context.studentImportIdentityKey_(student), student.group)));
+  studentState.forEach(student => {
+    const group = expected.get(context.studentImportIdentityKey_(student));
+    if (group) student.group = group;
+  });
+};
+let groupValidationSyncs = 0;
+context.syncStudentGroupValidation_ = () => { groupValidationSyncs++; };
+context.createOrRepairScheduleSheet_ = () => {};
 const firstReport = fixture([{ subject: 'Módulo',
   names: ['Apellido Uno, Ana', 'Apellido Dos, Pedro'] }]);
 const firstResult = context.importarAlumnadoEduca({ archivo: firstReport,
@@ -272,6 +289,15 @@ const secondResult = context.importarAlumnadoEduca({ archivo: secondReport,
 assert.equal(secondResult.summary.deactivations, 1);
 assert.equal(studentState.length, 2);
 assert.equal(enrollmentState.find(item => item.studentId === 'NEW-0').active, false);
+enrollmentState.find(item => item.studentId === 'NEW-0').origin = 'MANUAL';
+context.importarAlumnadoEduca({ archivo: firstReport, mapping: '{}', confirmDrops: 'false' });
+assert.deepEqual(JSON.parse(JSON.stringify(enrollmentState.find(item => item.studentId === 'NEW-0'))),
+  { studentId: 'NEW-0', activityId: 'M1', active: false, origin: 'MANUAL' });
+assert.equal(enrollmentState.find(item => item.studentId === 'ID-A').origin, 'EDUCA_XLS');
+enrollmentState.find(item => item.studentId === 'NEW-0').active = true;
+context.importarAlumnadoEduca({ archivo: secondReport, mapping: '{}', confirmDrops: 'false' });
+assert.deepEqual(JSON.parse(JSON.stringify(enrollmentState.find(item => item.studentId === 'NEW-0'))),
+  { studentId: 'NEW-0', activityId: 'M1', active: true, origin: 'MANUAL' });
 const virtualModule = { id: 'ASIR', category: 'MODULO', group: 'ASIR Online',
   name: 'Gestión de bases de datos', acronym: 'GBD' };
 context.getModuleActivitiesForEnrollment_ = () => [virtualModule];
@@ -287,6 +313,8 @@ assert.equal(studentState[0].group, 'ASIR - VIRTUAL');
 assert.equal(enrollmentState[0].activityId, 'ASIR');
 assert.equal(enrollmentState[0].active, true);
 assert.equal(modeState.ASIR, true);
+assert.equal(virtualModule.group, 'ASIR - VIRTUAL');
+assert(groupValidationSyncs > 0);
 studentState = [{ id: 'EXISTING', surname: 'Apellido Cuatro', name: 'Vera',
   group: 'ASIR Online', email: 'existing@example.invalid', reaca: true, measures: 'Medida previa' }];
 enrollmentState = [];
@@ -295,7 +323,7 @@ const existingVirtualResult = context.importarAlumnadoEduca({ archivo: virtualRe
   mapping: '{}', confirmDrops: 'false' });
 assert.equal(existingVirtualResult.summary.newStudents, 0);
 assert.equal(studentState.length, 1);
-assert.equal(studentState[0].group, 'ASIR Online');
+assert.equal(studentState[0].group, 'ASIR - VIRTUAL');
 assert.equal(studentState[0].email, 'existing@example.invalid');
 assert.equal(studentState[0].reaca, true);
 assert.equal(studentState[0].measures, 'Medida previa');
@@ -320,7 +348,7 @@ assert.match(dialog, /Listado mi alumnado/);
 assert.match(dialog, /Por profesor/);
 assert.match(dialog, /Mostrar todas las asignaturas/);
 assert.match(dialog, /\(Centro\)/);
-assert.equal((dialog.match(/El informe de EDUCA no incluye el correo electrónico/g) || []).length, 2);
+assert.equal((dialog.match(/El informe de EDUCA no incluye el correo electrónico/g) || []).length, 1);
 assert.match(dialog, /google\.script\.run[\s\S]*\[method\]\(form\)/);
 assert.doesNotMatch(fs.readFileSync('EducaImport.gs', 'utf8'),
   /DriveApp|CacheService|PropertiesService|Logger\.log/);

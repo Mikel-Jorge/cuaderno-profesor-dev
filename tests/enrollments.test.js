@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const context = vm.createContext({
+  console: { warn() {} },
   CP: { SHEETS: { STUDENTS: '3 Alumnado', ENROLLMENTS: '_MATRICULAS',
     ENROLLMENT_META: '_MATRICULAS_META' } },
   SpreadsheetApp: { getActiveSpreadsheet: () => book },
@@ -97,19 +98,37 @@ context.ensureEnrollmentStructure_ = () => {};
 context.writeEnrollmentState_ = (_book, nextRows, nextModes) => {
   saved = { rows: nextRows, modes: nextModes }; rows = nextRows; modes = nextModes;
 };
-context.repairEvaluationsForActivities_ = () => {};
+const syncedEvaluations = [];
+context.repairEvaluationsForActivities_ = ids => syncedEvaluations.push(...ids);
 assert.throws(() => context.saveModuleEnrollments({ activityId: 'ACDA', studentIds: ['X'] }),
   /no disponible/);
 assert.throws(() => context.saveModuleEnrollments({ activityId: 'T', studentIds: [] }),
   /módulo válido/);
 context.saveModuleEnrollments({ activityId: 'ACDA', studentIds: ['A'] });
+assert.deepEqual(syncedEvaluations, ['ACDA']);
 assert.equal(saved.modes.ACDA, true);
 assert.deepEqual(Array.from(saved.rows.filter(row => row.activityId === 'ACDA')
   .map(row => [row.studentId, row.active, row.origin])),
-[['A', true, 'MANUAL'], ['J', false, 'MANUAL']]);
+[['A', true, 'EDUCA_XLS'], ['J', false, 'MANUAL']]);
 context.saveModuleEnrollments({ activityId: 'PMDM', studentIds: [] });
 assert.equal(modes.PMDM, true);
 assert.equal(rows.filter(row => row.activityId === 'PMDM' && row.active).length, 0);
+rows = rows.filter(row => row.activityId !== 'PMDM').concat([
+  { studentId: 'A', activityId: 'PMDM', active: true, origin: 'EDUCA_XLS' },
+  { studentId: 'J', activityId: 'PMDM', active: true, origin: 'EDUCA_XLS' },
+]);
+context.saveModuleEnrollments({ activityId: 'PMDM', studentIds: ['A'] });
+assert.equal(rows.find(row => row.activityId === 'PMDM' && row.studentId === 'A').origin,
+  'EDUCA_XLS');
+assert.deepEqual(JSON.parse(JSON.stringify(rows.find(row => row.activityId === 'PMDM' &&
+  row.studentId === 'J'))),
+{ studentId: 'J', activityId: 'PMDM', active: false, origin: 'MANUAL' });
+const beforeFailedSave = JSON.stringify(rows);
+context.repairEvaluationsForActivities_ = () => { throw new Error('Eval no disponible'); };
+assert.throws(() => context.saveModuleEnrollments({ activityId: 'PMDM', studentIds: ['A', 'J'] }),
+  /Eval no disponible/);
+assert.equal(JSON.stringify(rows), beforeFailedSave);
+context.repairEvaluationsForActivities_ = ids => syncedEvaluations.push(...ids);
 students = [ana, javi, other, virtual];
 rows.push({ studentId: 'V', activityId: 'ACDA', active: true, origin: 'EDUCA_XLS' });
 assert.equal(context.getModuleEnrollmentManagerData_().candidatesByModule.ACDA.includes(5), true);
@@ -150,12 +169,15 @@ rows = [
   { studentId: 'A', activityId: 'ACDA', active: true, origin: 'EDUCA_XLS' },
   { studentId: 'A', activityId: 'ACDA', active: false, origin: 'MANUAL' },
   { studentId: 'X', activityId: 'ACDA', active: true, origin: 'MANUAL' },
+  { studentId: 'X', activityId: 'ACDA', active: false, origin: 'EDUCA_XLS' },
 ];
 modes = { ACDA: true, REMOVED: true };
 book.getSheetByName = () => ({ getLastRow: () => 3 });
 context.normalizeEnrollmentStorage_(book);
 assert.equal(rows.length, 2);
 assert.equal(rows.find(row => row.studentId === 'A').active, false);
+assert.equal(rows.find(row => row.studentId === 'A').origin, 'MANUAL');
 assert.equal(rows.find(row => row.studentId === 'X').active, true); // La relación por ID permanece activa.
+assert.equal(rows.find(row => row.studentId === 'X').origin, 'MANUAL');
 assert.deepEqual(Object.keys(modes), ['ACDA']);
 console.log('legacy, manual and EDUCA memberships; Eval history and annual reset: ok');

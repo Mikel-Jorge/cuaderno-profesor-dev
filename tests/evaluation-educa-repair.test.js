@@ -89,6 +89,7 @@ context.getStudentsForModuleActivity_ = () => Object.values(byId);
 context.ensureSheetSize_ = () => {};
 context.getModuleFormulaSeparator_ = () => ';';
 context.styleEvaluationSheet_ = () => {};
+context.syncInactiveEvaluationRows_ = () => {};
 context.trimSheetToBounds_ = () => {};
 context.installManagedSheetProtections_ = () => {};
 context.installEvaluationGroupAverages_ = (_sheet, currentLayout, _count, footerRow) => {

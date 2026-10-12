@@ -357,6 +357,7 @@ function buildEducaImportPlan_(blocks, mappingInput, modules, students, enrollme
     }
     return { key: block.key, subject: block.subject, group: block.group,
       count: block.students.length, variants: block.variants, activityId: activityId,
+      groupWillUpdate: Boolean(activityId) && moduleById[activityId].group !== block.group,
       groupMismatch: Boolean(activityId) &&
         normalizeEnrollmentGroupHint_(moduleById[activityId].group) !== normalizeEnrollmentGroupHint_(block.group),
       selectedGroup: activityId ? moduleById[activityId].group : '',
@@ -372,13 +373,16 @@ function buildEducaImportPlan_(blocks, mappingInput, modules, students, enrollme
   selected.forEach(function(item) {
     item.block.students.forEach(function(student) {
       const key = studentImportIdentityKey_(student);
+      if (selectedStudents[key] && selectedStudents[key].group !== student.group) {
+        throw new Error('Un alumno aparece con grupos distintos en las asignaturas seleccionadas. Revisa el informe de EDUCA.');
+      }
       if (!selectedStudents[key]) selectedStudents[key] = student;
     });
   });
   const newStudents = Object.keys(selectedStudents).filter(function(key) { return !existingByKey[key]; })
     .map(function(key) { return selectedStudents[key]; });
   const previous = {};
-  enrollments.forEach(function(row) { previous[row.studentId + '\n' + row.activityId] = row.active; });
+  enrollments.forEach(function(row) { previous[row.studentId + '\n' + row.activityId] = row; });
   let activations = 0, deactivations = 0;
   selected.forEach(function(item) {
     const imported = {};
@@ -387,8 +391,9 @@ function buildEducaImportPlan_(blocks, mappingInput, modules, students, enrollme
       item.activity, item.block.group).forEach(function(student) {
       const key = studentImportIdentityKey_(student);
       const now = Boolean(imported[key]);
-      const wasRecorded = modes[item.activity.id] &&
-        Boolean(previous[student.id + '\n' + item.activity.id]);
+      const prior = previous[student.id + '\n' + item.activity.id];
+      if (prior && prior.origin === 'MANUAL') return;
+      const wasRecorded = modes[item.activity.id] && Boolean(prior && prior.active);
       const wasEffective = modes[item.activity.id] ? wasRecorded :
         Boolean(existingByKey[key]) &&
         normalizeEnrollmentKey_(student.group) === normalizeEnrollmentKey_(item.activity.group);
@@ -401,6 +406,7 @@ function buildEducaImportPlan_(blocks, mappingInput, modules, students, enrollme
       detectedStudents: Object.keys(detected).length, newStudents: newStudents.length,
       existingStudents: Object.keys(selectedStudents).length - newStudents.length,
       activations: activations, deactivations: deactivations,
+      groupUpdates: previewBlocks.filter(function(block) { return block.groupWillUpdate; }).length,
       manualDifferentGroups: previewBlocks.filter(function(block) { return block.groupMismatch; }).length,
       skipped: blocks.length - selected.length } };
 }
@@ -459,6 +465,79 @@ function writeEducaNewStudents_(book, newStudents) {
   }
 }
 
+function syncEducaExistingStudentGroups_(book, plan) {
+  const sheet = book.getSheetByName(CP.SHEETS.STUDENTS);
+  const expected = {};
+  plan.selected.forEach(function(item) {
+    item.block.students.forEach(function(student) {
+      expected[studentImportIdentityKey_(student)] = student.group;
+    });
+  });
+  const students = getEnrollmentStudents_(book);
+  const changes = students.filter(function(student) {
+    return expected[studentImportIdentityKey_(student)] &&
+      student.group !== expected[studentImportIdentityKey_(student)];
+  });
+  if (!changes.length) return;
+  const values = sheet.getRange(2, 3, sheet.getLastRow() - 1, 1).getValues();
+  changes.forEach(function(student) {
+    values[student.rowNumber - 2][0] = expected[studentImportIdentityKey_(student)];
+  });
+  sheet.getRange(2, 3, values.length, 1).setValues(values);
+}
+
+function prepareEducaModuleGroupChanges_(book, plan) {
+  const sheet = book.getSheetByName(CP.SHEETS.SCHEDULE_ACTIVITIES);
+  const count = Math.max(0, sheet.getLastRow() - 1);
+  const values = count ? sheet.getRange(2, 1, count, CP_SCHEDULE_HEADERS.ACTIVITIES.length).getValues() : [];
+  const rowById = {};
+  values.forEach(function(row, index) { rowById[String(row[0])] = index; });
+  const registry = readModuleConfigRegistry_(book);
+  const renames = [];
+  const nextGroups = values.map(function(row) { return [row[5]]; });
+  plan.selected.forEach(function(item) {
+    const index = rowById[item.activity.id];
+    if (index === undefined || normalizeScheduleActivityCategory_(values[index][1]) !== 'MODULO') {
+      throw new Error('Un módulo de destino ha cambiado. Analiza de nuevo el archivo.');
+    }
+    if (String(values[index][5]) === item.block.group) return;
+    nextGroups[index][0] = item.block.group;
+    const record = registry.find(function(row) { return row.activityId === item.activity.id; });
+    if (!record) return;
+    const nextActivity = Object.assign({}, item.activity, { group: item.block.group });
+    [[record.sheetId, '4 Config'], [record.trackingSheetId, '5 Seg'],
+      [record.evaluationSheetId, '6 Eval']].forEach(function(entry) {
+      const managed = entry[0] && getSheetById_(book, entry[0]);
+      if (!managed) return;
+      const name = (entry[1] + ' ' + getModuleDisplayName_(nextActivity))
+        .replace(/[\\\/\?\*\[\]:]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100).trim();
+      if (managed.getName() === name) return;
+      const occupied = book.getSheetByName(name);
+      if (occupied && occupied.getSheetId() !== managed.getSheetId()) {
+        throw new Error('Ya existe una hoja llamada «' + name + '». Cambia ese nombre antes de importar.');
+      }
+      renames.push({ sheet: managed, oldName: managed.getName(), name: name });
+    });
+  });
+  const proposedNames = {};
+  renames.forEach(function(item) {
+    if (proposedNames[item.name] && proposedNames[item.name] !== item.sheet.getSheetId()) {
+      throw new Error('Dos hojas gestionadas tendrían el mismo nombre tras importar. Revisa los módulos de destino.');
+    }
+    proposedNames[item.name] = item.sheet.getSheetId();
+  });
+  return { sheet: sheet, originalGroups: values.map(function(row) { return [row[5]]; }),
+    nextGroups: nextGroups, renames: renames };
+}
+
+function applyEducaModuleGroupChanges_(change) {
+  if (!change.nextGroups.some(function(row, index) {
+    return row[0] !== change.originalGroups[index][0];
+  })) return;
+  change.sheet.getRange(2, 6, change.nextGroups.length, 1).setValues(change.nextGroups);
+  change.renames.forEach(function(item) { item.sheet.setName(item.name); });
+}
+
 function importarAlumnadoEduca(form) {
   const lock = LockService.getDocumentLock();
   if (!lock.tryLock(30000)) throw new Error('Hay otra importación en curso. Inténtalo de nuevo.');
@@ -477,21 +556,29 @@ function importarAlumnadoEduca(form) {
         Number(form.expectedDrops) !== plan.summary.deactivations) {
       throw new Error('Las bajas de matrícula han cambiado. Analiza de nuevo el archivo antes de importar.');
     }
-    ensureEnrollmentStructure_();
-    ensureStudentIdsForValidRows_(book);
-    plan = buildEducaImportPlan_(parsed.blocks, parsed.mapping, modules,
-      getEnrollmentStudents_(book), readEnrollmentRows_(book), readEnrollmentModes_(book));
+    const groupChanges = prepareEducaModuleGroupChanges_(book, plan);
     const studentSheet = book.getSheetByName(CP.SHEETS.STUDENTS);
     const originalStudentRows = studentSheet.getLastRow();
     const studentSnapshot = studentSheet.getRange(1, 1, originalStudentRows, 7).getValues();
     const enrollmentSnapshots = captureNewCourseEnrollmentSnapshots_(book);
     try {
+      ensureEnrollmentStructure_();
+      ensureStudentIdsForValidRows_(book);
+      plan = buildEducaImportPlan_(parsed.blocks, parsed.mapping, modules,
+        getEnrollmentStudents_(book), readEnrollmentRows_(book), readEnrollmentModes_(book));
       writeEducaNewStudents_(book, plan.newStudents);
+      syncEducaExistingStudentGroups_(book, plan);
+      applyEducaModuleGroupChanges_(groupChanges);
+      syncStudentGroupValidation_(book);
       const students = getEnrollmentStudents_(book);
       const selectedIds = plan.selected.map(function(item) { return item.activity.id; });
       const previousEnrollments = readEnrollmentRows_(book);
+      const priorByPair = previousEnrollments.reduce(function(map, row) {
+        map[row.studentId + '\n' + row.activityId] = row;
+        return map;
+      }, {});
       const existing = previousEnrollments.filter(function(row) {
-        return selectedIds.indexOf(row.activityId) === -1;
+        return selectedIds.indexOf(row.activityId) === -1 || row.origin === 'MANUAL';
       });
       const rows = existing.slice();
       plan.selected.forEach(function(item) {
@@ -499,6 +586,8 @@ function importarAlumnadoEduca(form) {
         item.block.students.forEach(function(student) { imported[studentImportIdentityKey_(student)] = true; });
         getEducaEnrollmentSyncStudents_(students, previousEnrollments,
           item.activity, item.block.group).forEach(function(student) {
+          if (priorByPair[student.id + '\n' + item.activity.id] &&
+              priorByPair[student.id + '\n' + item.activity.id].origin === 'MANUAL') return;
           rows.push({ studentId: student.id, activityId: item.activity.id,
             active: Boolean(imported[studentImportIdentityKey_(student)]), origin: 'EDUCA_XLS' });
         });
@@ -507,20 +596,35 @@ function importarAlumnadoEduca(form) {
       selectedIds.forEach(function(id) { modes[id] = true; });
       writeEnrollmentState_(book, rows, modes);
       repairEvaluationsForActivities_(selectedIds);
+      if (groupChanges.renames.length || plan.summary.groupUpdates) {
+        if (book.getSheetByName(CP.SHEETS.SCHEDULE)) createOrRepairScheduleSheet_();
+        else actualizarIndicePortada();
+      }
     } catch (error) {
       const count = Math.max(originalStudentRows, studentSheet.getLastRow());
       studentSheet.getRange(1, 1, count, 7).clearContent();
       studentSheet.getRange(1, 1, studentSnapshot.length, 7).setValues(studentSnapshot);
       restoreNewCourseEnrollmentSnapshots_(book, enrollmentSnapshots);
+      groupChanges.renames.slice().reverse().forEach(function(item) {
+        if (item.sheet.getName() !== item.oldName) item.sheet.setName(item.oldName);
+      });
+      if (groupChanges.originalGroups.length) {
+        groupChanges.sheet.getRange(2, 6, groupChanges.originalGroups.length, 1)
+          .setValues(groupChanges.originalGroups);
+      }
       createOrRepairStudentsSheet_();
+      try { repairEvaluationsForActivities_(plan.selected.map(function(item) { return item.activity.id; })); }
+      catch (repairError) { console.warn('No se pudo restaurar la vista de Eval tras fallar la importación.'); }
+      if (groupChanges.renames.length || plan.summary.groupUpdates) {
+        try {
+          if (book.getSheetByName(CP.SHEETS.SCHEDULE)) createOrRepairScheduleSheet_();
+          else actualizarIndicePortada();
+        } catch (renderError) {
+          console.warn('No se pudo restaurar el Horario tras fallar la importación.');
+        }
+      }
       throw error;
     }
     return { summary: plan.summary, emailNotice: CP_EDUCA_EMAIL_NOTICE };
   } finally { lock.releaseLock(); }
-}
-
-function irAAlumnado() {
-  const book = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = book.getSheetByName(CP.SHEETS.STUDENTS);
-  if (sheet) book.setActiveSheet(sheet);
 }

@@ -142,7 +142,7 @@ No existe sincronización entre actividades con la misma sigla. Cada grupo manti
 
 # 9. Modelo de Alumnado
 
-`3 Alumnado` es simultáneamente fuente de datos y superficie editable. Sus columnas visibles son `Apellidos`, `Nombre`, `Grupo`, `Email`, `REACA` y `Medidas`; G guarda `alumno_id` (UUID) oculto y estable.
+`3 Alumnado` conserva las identidades importadas: A:C y la cabecera quedan protegidas con advertencia, D:F permiten editar Email, REACA y Medidas, y G guarda `alumno_id` (UUID) oculto y protegido. La protección `CUADERNO:STUDENTS` deja desprotegido solo D:F en las filas de datos, también en futuras filas; Repair la reinstala sin tocar protecciones ajenas.
 
 `createOrRepairStudentsSheet_()`:
 
@@ -151,13 +151,13 @@ No existe sincronización entre actividades con la misma sigla. Cada grupo manti
 - restaura cabeceras, formato, anchos y fila congelada;
 - mantiene texto plano para Email;
 - preserva el contenido de las filas existentes;
-- instala checkbox para REACA, asigna UUID solo a filas con alumno y recorta a siete columnas y a las filas útiles o al mínimo editable.
+- instala checkbox para REACA, asigna UUID solo a filas con alumno y recorta a siete columnas y a las filas útiles o al mínimo reservado para importaciones.
 
 `isStudentsConfiguredForSidebar_()` realiza una única lectura por bloque y considera válida una fila con Apellidos, Nombre y Grupo. Email no es obligatorio.
 
-`Matriculas.gs` gestiona `_MATRICULAS` (`alumno_id`, `actividad_id`, `activo`, `origen`) y `_MATRICULAS_META` (`actividad_id`, `modo`), ocultas y protegidas con aviso. El modo `EXPLICITA` persiste incluso con cero alumnos; si falta, `getStudentsForModuleActivity_()` mantiene la selección legacy por Grupo. En modo explícito, la relación `alumno_id` ↔ `actividad_id` activa es la autoridad aunque los textos de Grupo difieran; Grupo solo ayuda a proponer candidatos. Eval usa ese helper en creación y Repair, conserva UUID, notas y filas históricas grises. Seguimiento y Config no leen matrículas. Repair normaliza duplicados técnicos y referencias huérfanas sin desactivar por diferencias de Grupo ni convertir módulos legacy.
+`Matriculas.gs` gestiona `_MATRICULAS` (`alumno_id`, `actividad_id`, `activo`, `origen`) y `_MATRICULAS_META` (`actividad_id`, `modo`), ocultas y protegidas con aviso. El modo `EXPLICITA` persiste incluso con cero alumnos; si falta, `getStudentsForModuleActivity_()` mantiene la selección por Grupo. En modo explícito, la relación `alumno_id` ↔ `actividad_id` activa es la autoridad aunque los textos de Grupo difieran. El gestor compara cada checkbox con el estado anterior y marca `MANUAL` solo el cambio; la importación conserva cualquier `MANUAL` y sincroniza únicamente `EDUCA_XLS`. Guardar y importar reparan de inmediato la Eval afectada. La fila inactiva conserva ID, notas y Notes, pierde validaciones de entrada y recibe estilo gris y una protección de rango `CUADERNO:EVAL_INACTIVO:<alumno_id>` de advertencia. Repair reproduce ese estado sin tocar la matrícula ni las protecciones manuales. Seguimiento y Config no leen matrículas.
 
-`EducaImport.gs` lee el Blob recibido por `google.script.run` desde un formulario HtmlService en cada llamada. Inspecciona la cabecera y el directorio ZIP con límites antes de `Utilities.unzip`, y usa `XmlService` para workbook, relaciones, worksheets y shared strings. Valida la firma «Alumnos por profesor y asignatura» y las cabeceras sin posiciones fijas. El preview no escribe, y la aplicación vuelve a parsear bajo `LockService`; el archivo no se persiste. EDUCA no aporta ID estable ni email. La clave de identidad compara Apellidos + Nombre + Grupo con equivalencia conservadora de separadores y Online/Virtual, sin alterar textos visibles; las variantes «(Centro)» se unen por asignatura y grupo. Los destinos manuales pueden ser cualquier MODULO; el automatching exige nombre completo y grupo equivalentes sin ambigüedad. No se añaden scopes.
+`EducaImport.gs` lee el Blob recibido por `google.script.run` desde un formulario HtmlService en cada llamada. Inspecciona la cabecera y el directorio ZIP con límites antes de `Utilities.unzip`, y usa `XmlService` para workbook, relaciones, worksheets y shared strings. Valida la firma «Alumnos por profesor y asignatura» y las cabeceras sin posiciones fijas. El preview no escribe, y la aplicación vuelve a parsear bajo `LockService`; el archivo no se persiste. EDUCA no aporta ID estable ni email. La clave de identidad compara Apellidos + Nombre + Grupo con equivalencia conservadora de separadores y Online/Virtual; las variantes «(Centro)» se unen por asignatura y grupo. Los destinos manuales pueden ser cualquier MODULO; el automatching exige nombre completo y grupo equivalentes sin ambigüedad. Tras confirmar, EDUCA fija el Grupo visible de la actividad y de alumnos ya reconocidos, manteniendo IDs y otros datos; se sincroniza la validación de Alumnado. Las hojas Config/Seg/Eval se renombran por sus IDs de registro si su etiqueta cambia, sin recrearlas. No se añaden scopes.
 
 # 10. Preparar nuevo curso
 

@@ -31,7 +31,7 @@ const sheet = {
 };
 context.installManagedSheetProtections_(sheet, 'STUDENTS');
 assert.strictEqual(owned.warning, true);
-assert.strictEqual(JSON.stringify(owned.ranges), JSON.stringify([[2, 1, 200, 6]]));
+assert.strictEqual(JSON.stringify(owned.ranges), JSON.stringify([[2, 4, 200, 3]]));
 assert.strictEqual(removed, 1);
 
 const configSheet = {

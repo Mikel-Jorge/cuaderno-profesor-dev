@@ -25,7 +25,7 @@ const helpSearch = value => String(value).normalize('NFD').replace(/[\u0300-\u03
   assert(helpSearch([importHelp.title, importHelp.text, importHelp.keywords,
     importHelp.bullets.join(' ')].join(' ')).includes(helpSearch(term)), term);
 });
-['matrícula', 'módulo'].forEach(term => {
+['matrícula', 'módulo', 'desmatricular', 'evaluación'].forEach(term => {
   assert(helpSearch([enrollmentHelp.title, enrollmentHelp.text, enrollmentHelp.keywords]
     .join(' ')).includes(helpSearch(term)), term);
 });
@@ -34,6 +34,9 @@ assert.strictEqual(sections.filter(item => item.open).length, 1);
 assert(sections.every(item => item.icon && item.subtitle && item.keywords));
 const faq = sections.find(item => item.id === 'troubleshooting').faqs;
 const questions = faq.map(item => item[0]).join(' ');
+assert(helpSearch(faq.flat().join(' ')).includes('nuevo alumno'));
+assert(helpSearch(faq.map(item => item[1]).join(' ')).includes('email'));
+assert(!faq.some(item => /Reparar estructura marcando Hojas 6 Eval/.test(item[1])));
 ['FEOE', 'MH', 'OLD', 'REACA', 'Peso'].forEach(term => {
   assert(questions.includes(term) || sections.some(item => item.text.includes(term)));
 });
