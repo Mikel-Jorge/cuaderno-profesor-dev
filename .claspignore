@@ -7,3 +7,4 @@
 .git/**
 node_modules/**
 tests/**
+/_local_testdata/
