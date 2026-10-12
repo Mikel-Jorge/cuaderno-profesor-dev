@@ -101,6 +101,7 @@ function guardarHorarioNuevoCurso(input, step) {
   }
   draft.schedule = normalized;
   if (section === 'activities') draft.schedule.activities = addMissingBaseActivities_(draft.schedule.activities, true);
+  reconcileNewCourseTutorDraft_(draft);
   draft.reviewed[step] = true;
   saveNewCourseDraft_(draft);
   return getNewCourseDraftSummary_(draft);

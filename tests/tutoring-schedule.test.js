@@ -12,9 +12,20 @@ const context = vm.createContext({});
 });
 context.createCalendarRecordId_ = createId;
 const evaluate = source => JSON.parse(vm.runInContext('JSON.stringify(' + source + ')', context));
-assert.strictEqual(evaluate('CP.NOTEBOOK_VERSION'), '1.10.0');
+assert.strictEqual(evaluate('CP.NOTEBOOK_VERSION'), '1.10.1');
 assert.strictEqual(evaluate('CP.SCHEMA_VERSION'), '12');
-assert.strictEqual(evaluate('CP_CALENDAR_TYPE_DEFINITIONS.find(type => type.id === "ONLINE").name'), 'VIRTUAL');
+assert.strictEqual(evaluate('CP_CALENDAR_TYPE_DEFINITIONS.find(type => type.id === "ONLINE").name'), 'Virtual');
+for (const previousName of ['Online', 'VIRTUAL']) {
+  const previousRow = ['ONLINE', previousName, true, '2026-09-01', '2027-06-20',
+    '2027-03-01', '2027-05-01', '2027-05-02', '2027-06-10'];
+  let writtenRows;
+  context.initializeCalendarTableSheet_ = () => {};
+  context.readCalendarTableRows_ = () => [previousRow];
+  context.writeCalendarTable_ = (_sheet, _headers, rows) => { writtenRows = rows; };
+  context.initializeCalendarTypesSheet_({});
+  const migrated = Array.from(writtenRows.find(row => row[0] === 'ONLINE'));
+  assert.deepStrictEqual(migrated, ['ONLINE', 'Virtual', ...previousRow.slice(2)]);
+}
 assert.strictEqual(context.isTutorEnabled_('TRUE'), true);
 assert.strictEqual(context.isTutorEnabled_('false'), false);
 assert.strictEqual(context.isTutorEnabled_('yes'), false);
@@ -55,11 +66,23 @@ const active = { es_tutor: 'true', grupo_tutoria: 'DAM 1B', actividad_tutoria_id
 const changed = context.reconcileTutorActivityInModel_([tutor, moduleActivity], sessions, active);
 assert.strictEqual(changed.id, 'TUT-1');
 assert.strictEqual(changed.activities[0].group, 'DAM 1B');
+assert.strictEqual(changed.activities[0].classroom, 'Departamento');
 assert.strictEqual(changed.sessions.length, 3);
+const personalized = context.reconcileTutorActivityInModel_(
+  [{ ...tutor, classroom: 'Aula 204' }], sessions, active);
+assert.strictEqual(personalized.activities[0].classroom, 'Aula 204');
+const newlyCreated = context.reconcileTutorActivityInModel_([], [],
+  { ...active, actividad_tutoria_id: '' });
+assert.strictEqual(newlyCreated.activities[0].classroom, 'Departamento');
 const draft = { config: { ...active }, schedule: { activities: [tutor, moduleActivity], sessions: [...sessions] } };
 context.reconcileNewCourseTutorDraft_(draft);
 assert.strictEqual(draft.config.actividad_tutoria_id, 'TUT-1');
 assert.strictEqual(draft.schedule.activities[0].group, 'DAM 1B');
+assert.strictEqual(draft.schedule.activities[0].classroom, 'Departamento');
+const newCourseDraft = { config: { ...active, actividad_tutoria_id: '' },
+  schedule: { activities: [], sessions: [] } };
+context.reconcileNewCourseTutorDraft_(newCourseDraft);
+assert.strictEqual(newCourseDraft.schedule.activities[0].classroom, 'Departamento');
 draft.config.es_tutor = 'false';
 context.reconcileNewCourseTutorDraft_(draft);
 assert.strictEqual(draft.schedule.sessions.length, 1);
@@ -123,6 +146,7 @@ context.persistScheduleConfig_ = (_book, payload, section) => {
 const existingTutorConfig = { actividad_tutoria_id: 'TUT-1' };
 assert.strictEqual(context.syncManagedTutorActivity_(book, active, existingTutorConfig), 'TUT-1');
 assert.strictEqual(liveActivities[0].group, 'DAM 1B');
+assert.strictEqual(liveActivities[0].classroom, 'Departamento');
 assert.strictEqual(liveSessions.length, 3);
 assert.strictEqual(context.syncManagedTutorActivity_(book,
   { ...active, es_tutor: 'false' }, existingTutorConfig), '');
@@ -150,9 +174,12 @@ const wizardHtml = fs.readFileSync('UiDialogNewCourse.html', 'utf8');
 assert(generalHtml.includes('id="es_tutor" type="checkbox"'));
 assert(generalHtml.includes('id="grupo_tutoria" name="grupo_tutoria" type="text"'));
 assert(generalHtml.includes('Dejar de ser tutor/a'));
-assert(wizardHtml.includes('name="es_tutor" type="checkbox"'));
+assert(wizardHtml.includes('<label class="tutor-toggle"><input name="es_tutor" type="checkbox">Soy tutor/a</label>'));
+assert(wizardHtml.includes('.course-grid .tutor-toggle{grid-column:1/-1;display:flex;align-items:center'));
 assert(wizardHtml.includes('name="grupo_tutoria" type="text"'));
+assert(wizardHtml.includes("document.getElementById('course-tutor-group').hidden=!enabled"));
+assert(wizardHtml.includes("form.elements.es_tutor.addEventListener('change',toggleTutorGroup)"));
 assert(wizardHtml.includes('confirmTutorRemoval()'));
 assert(wizardHtml.includes("'Tutoría · '+data.tutorGroup"));
 assert(fs.readFileSync('UiSidebar.html', 'utf8').includes('display:table;margin:0 auto'));
-console.log('tutoring, base activities, categories and VIRTUAL: ok');
+console.log('tutoring, base activities, categories and Virtual: ok');

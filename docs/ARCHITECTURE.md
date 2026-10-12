@@ -107,7 +107,7 @@ La utilidad mueve solo hojas con nombres gestionados, no borra ni renombra hojas
 
 `_CAL_TIPOS` mantiene los IDs `FP1`, `FP2`, `ONLINE` y `CE`, su activación y periodos lectivos, de FEOE y de repaso. Los nombres técnicos históricos de las columnas de FEOE se conservan por compatibilidad. Se relaciona 1:N con `_CAL_EVALUACIONES`.
 
-El ID `ONLINE` conserva fechas y relaciones; su nombre canónico visible es `VIRTUAL` y la inicialización de `_CAL_TIPOS` actualiza solo esa etiqueta.
+El ID `ONLINE` conserva fechas y relaciones; su nombre canónico visible es `Virtual` y la inicialización de `_CAL_TIPOS` actualiza solo esa etiqueta.
 
 `_FECHAS` almacena cada evento una sola vez con ID, intervalo, categoría, descripción y prioridad. `_CAL_FECHA_TIPOS` resuelve su relación N:M con tipos: cero relaciones significa evento global. Las categorías admitidas son `FESTIVO`, `REUNION` y `DESTACADO`.
 

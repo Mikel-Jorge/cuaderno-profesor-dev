@@ -21,7 +21,7 @@ const CP_SCHEDULE_INSTITUTIONAL_CATEGORIES = Object.freeze(['GUARDIA', 'REUNION'
 const CP_SCHEDULE_BASE_CATEGORIES = Object.freeze(['REUNION', 'ECDPI', 'PPPP', 'P']);
 const CP_SCHEDULE_INSTITUTIONAL_COLOR = '#E5E7EB';
 const CP_SCHEDULE_ACTIVITY_DEFAULTS = Object.freeze({
-  TUTORIA: Object.freeze({ name: 'Tutoría', acronym: 'T', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
+  TUTORIA: Object.freeze({ name: 'Tutoría', acronym: 'T', classroom: 'Departamento', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
   GUARDIA: Object.freeze({ name: 'Guardia', acronym: 'G', classroom: 'Sala de Profesores', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
   REUNION: Object.freeze({ name: 'Reunión de Departamento', acronym: 'RD', classroom: 'Departamento', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
   ECDPI: Object.freeze({ name: 'Tareas de coordinación de centro y elaboración de documentos de planificación institucional', acronym: 'ECDPI', classroom: 'Departamento', color: CP_SCHEDULE_INSTITUTIONAL_COLOR }),
@@ -240,6 +240,14 @@ function guardarConfiguracionHorario_(input, options) {
   const normalized = normalizeAndValidateScheduleConfig_(input, previousActivities);
   const generalConfig = getGeneralConfigValues_(spreadsheet);
   assertManagedTutorActivity_(normalized.activities, generalConfig, previousActivities);
+  if (isTutorEnabled_(generalConfig[CP.CONFIG_KEYS.IS_TUTOR])) {
+    const tutorActivity = normalized.activities.find(function(activity) {
+      return activity.id === generalConfig[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID];
+    });
+    if (tutorActivity && !tutorActivity.classroom) {
+      tutorActivity.classroom = CP_SCHEDULE_ACTIVITY_DEFAULTS.TUTORIA.classroom;
+    }
+  }
   const activeTypes = getScheduleTeachingTypesForUi_(spreadsheet)
     .filter(function(type) { return type.active; }).map(function(type) { return type.id; });
   const previousTypes = getScheduleActivities_().reduce(function(map, activity) {
@@ -497,7 +505,8 @@ function reconcileTutorActivityInModel_(activities, sessions, config) {
   const nextId = activity ? activity.id : createCalendarRecordId_('ACT');
   const updated = Object.assign({}, activity || {}, { id: nextId, category: 'TUTORIA',
     name: 'Tutoría', acronym: 'T', group: group, teachingTypeId: '',
-    classroom: activity ? activity.classroom : '',
+    classroom: activity && normalizeScheduleText_(activity.classroom)
+      ? activity.classroom : CP_SCHEDULE_ACTIVITY_DEFAULTS.TUTORIA.classroom,
     color: activity ? activity.color : CP_SCHEDULE_INSTITUTIONAL_COLOR });
   const next = activity
     ? activities.map(function(item) { return item.id === nextId ? updated : item; })

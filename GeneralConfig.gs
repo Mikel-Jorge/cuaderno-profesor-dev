@@ -108,11 +108,16 @@ function saveGeneralConfig_(input, options) {
     return normalizeConfigValue_(previousValues[key]) !== values[key];
   });
 
+  const tutorNeedsClassroom = isTutorEnabled_(values[CP.CONFIG_KEYS.IS_TUTOR]) &&
+    values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] && getScheduleActivities_().some(function(activity) {
+      return activity.id === values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] &&
+        !normalizeScheduleText_(activity.classroom);
+    });
   const tutorChanged = (isTutorEnabled_(values[CP.CONFIG_KEYS.IS_TUTOR]) ||
     isTutorEnabled_(previousValues[CP.CONFIG_KEYS.IS_TUTOR])) && (changedKeys.some(function(key) {
     return key === CP.CONFIG_KEYS.IS_TUTOR || key === CP.CONFIG_KEYS.TUTOR_GROUP;
   }) ||
-    !values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID]);
+    !values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] || tutorNeedsClassroom);
   if (tutorChanged) {
     const snapshots = captureScheduleSnapshots_(spreadsheet);
     try {

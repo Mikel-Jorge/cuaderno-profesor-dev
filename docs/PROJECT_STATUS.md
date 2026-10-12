@@ -2,15 +2,21 @@
 
 **Última actualización:** 2026-10-12
 **Estado general:** Portada, Calendario, Horario, Alumnado, `4 Config`, `5 Seg` y `6 Eval` operativos
-**Versión vigente:** `1.10.0`
+**Versión vigente:** `1.10.1`
 **Esquema vigente:** `12`
+
+## Correctivos de Tutoría y etiqueta Virtual 1.10.1
+
+- La actividad Tutoría gestionada usa aula Departamento por defecto; las ya existentes con Aula vacía se completan al guardar o reparar, conservando aulas personalizadas.
+- El checkbox Soy tutor/a queda alineado con su texto en Preparar nuevo curso y muestra Grupo de tutoría debajo al activarlo.
+- El ID técnico `ONLINE` mantiene sus relaciones y se muestra como Virtual. Esquema 12 sin cambios.
 
 ## Tutoría base y actividades institucionales 1.10.0
 
 - Datos generales y el asistente anual incluyen Soy tutor/a y Grupo de tutoría libre. Portada y validación de Grupo en Alumnado reflejan la Tutoría activa.
 - La actividad Tutoría gestionada conserva `actividad_id` al cambiar grupo. Desactivarla requiere confirmación y elimina solo su actividad y sesiones; el asistente lo aplaza hasta finalizar.
 - RD, ECDPI, PPPP y P se proponen una vez por curso, con ID y personalizaciones conservados. GUARDIA y estas categorías no admiten grupo ni tipo de enseñanza; DUAL solo se conserva como legado.
-- ONLINE mantiene su ID técnico y se presenta como VIRTUAL. La card de feedback centra el botón sin cambiar su enlace.
+- ONLINE mantiene su ID técnico; desde 1.10.1 se presenta como Virtual. La card de feedback centra el botón sin cambiar su enlace.
 - El esquema 12 añade estado de Tutoría y marcador de inicialización de actividades base a `_CONFIG`; no añade hojas ni permisos.
 
 ## Canal central de feedback 1.9.2
