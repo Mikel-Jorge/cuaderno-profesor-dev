@@ -93,7 +93,16 @@ function saveGeneralConfig_(input, options) {
   if (structureError) throw new Error(structureError);
 
   const previousValues = getStoredConfigMap_(spreadsheet);
-  values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] = normalizeConfigValue_(previousValues[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID]);
+  const newCourseTutorId = saveOptions.newCourseManagedTutorId;
+  if (newCourseTutorId !== undefined) {
+    values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] = normalizeConfigValue_(newCourseTutorId);
+    if (values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] !==
+        normalizeConfigValue_(input[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID])) {
+      throw new Error('La identidad de Tutoría del plan del nuevo curso no es coherente.');
+    }
+  } else {
+    values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] = normalizeConfigValue_(previousValues[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID]);
+  }
   values[CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR] = normalizeConfigValue_(previousValues[CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR]);
   if (saveOptions.deactivateRoster !== false &&
       isTutorEnabled_(previousValues[CP.CONFIG_KEYS.IS_TUTOR]) &&
@@ -108,13 +117,18 @@ function saveGeneralConfig_(input, options) {
   }).filter(function(key) {
     return normalizeConfigValue_(previousValues[key]) !== values[key];
   });
+  if (newCourseTutorId !== undefined &&
+      normalizeConfigValue_(previousValues[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID]) !==
+        values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID]) {
+    changedKeys.push(CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID);
+  }
 
   const tutorNeedsClassroom = isTutorEnabled_(values[CP.CONFIG_KEYS.IS_TUTOR]) &&
     values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] && getScheduleActivities_(spreadsheet).some(function(activity) {
       return activity.id === values[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] &&
         !normalizeScheduleText_(activity.classroom);
     });
-  const tutorChanged = (isTutorEnabled_(values[CP.CONFIG_KEYS.IS_TUTOR]) ||
+  const tutorChanged = newCourseTutorId === undefined && (isTutorEnabled_(values[CP.CONFIG_KEYS.IS_TUTOR]) ||
     isTutorEnabled_(previousValues[CP.CONFIG_KEYS.IS_TUTOR])) && (changedKeys.some(function(key) {
     return key === CP.CONFIG_KEYS.IS_TUTOR || key === CP.CONFIG_KEYS.TUTOR_GROUP;
   }) ||

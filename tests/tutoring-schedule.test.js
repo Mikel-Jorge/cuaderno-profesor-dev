@@ -12,7 +12,7 @@ const context = vm.createContext({});
 });
 context.createCalendarRecordId_ = createId;
 const evaluate = source => JSON.parse(vm.runInContext('JSON.stringify(' + source + ')', context));
-assert.strictEqual(evaluate('CP.NOTEBOOK_VERSION'), '1.13.4');
+assert.strictEqual(evaluate('CP.NOTEBOOK_VERSION'), '1.13.5');
 assert.strictEqual(evaluate('CP.SCHEMA_VERSION'), '14');
 assert.strictEqual(evaluate('CP_CALENDAR_TYPE_DEFINITIONS.find(type => type.id === "ONLINE").name'), 'Virtual');
 for (const previousName of ['Online', 'VIRTUAL']) {
@@ -70,7 +70,7 @@ assert.strictEqual(changed.activities[0].classroom, 'Departamento');
 assert.strictEqual(changed.sessions.length, 3);
 const personalized = context.reconcileTutorActivityInModel_(
   [{ ...tutor, classroom: 'Aula 204' }], sessions, active);
-assert.strictEqual(personalized.activities[0].classroom, 'Aula 204');
+assert.strictEqual(personalized.activities[0].classroom, 'Departamento');
 const newlyCreated = context.reconcileTutorActivityInModel_([], [],
   { ...active, actividad_tutoria_id: '' });
 assert.strictEqual(newlyCreated.activities[0].classroom, 'Departamento');
@@ -96,6 +96,7 @@ const enabledAgain = { config: { ...active, grupo_tutoria: 'SMR 1A' },
   schedule: { activities: [moduleActivity], sessions: [...sessions] } };
 context.reconcileNewCourseTutorDraft_(enabledAgain);
 assert.strictEqual(enabledAgain.managedTutorActivity.group, 'SMR 1A');
+assert.strictEqual(enabledAgain.managedTutorActivity.id, 'TUT-1');
 assert.strictEqual(context.getNewCourseDraftActivities_(enabledAgain).filter(
   item => item.category === 'TUTORIA').length, 1);
 const disabled = context.reconcileTutorActivityInModel_(changed.activities, sessions,
@@ -103,11 +104,49 @@ const disabled = context.reconcileTutorActivityInModel_(changed.activities, sess
 assert.strictEqual(disabled.id, '');
 assert.deepStrictEqual(Array.from(disabled.activities.map(item => item.id)), ['MOD-1']);
 assert.deepStrictEqual(Array.from(disabled.sessions.map(item => item.id)), ['S3']);
+context.validateThemeConfig_ = () => {};
+context.validateAcademicYear_ = () => {};
+const disabledPlan = context.buildFinalNewCoursePlan_({
+  config: { ...active, curso_academico: '2027-2028', es_tutor: 'false', grupo_tutoria: '',
+    actividad_tutoria_id: 'TUT-1' },
+  calendar: { types: [], events: [] }, managedTutorActivity: tutor,
+  schedule: { slots: [{ id: 'T1', type: 'SESION', startTime: '08:00', durationMinutes: 60 }],
+    activities: [moduleActivity], sessions: [
+      { id: 'S1', activityId: 'TUT-1', day: 'LUN', slotId: 'T1' },
+      { id: 'S3', activityId: 'MOD-1', day: 'MAR', slotId: 'T1' },
+    ] },
+});
+assert.strictEqual(disabledPlan.config.actividad_tutoria_id, '');
+assert.strictEqual(disabledPlan.schedule.activities.some(item => item.category === 'TUTORIA'), false);
+assert.deepStrictEqual(Array.from(disabledPlan.schedule.sessions.map(item => item.id)), ['S3']);
 assert.doesNotThrow(() => context.assertManagedTutorActivity_(changed.activities, active, [tutor, moduleActivity]));
 assert.throws(() => context.assertManagedTutorActivity_([moduleActivity], active, [tutor, moduleActivity]),
   /gestiona desde Datos/);
+assert.throws(() => context.assertManagedTutorActivity_(changed.activities, active, [moduleActivity]),
+  /gestiona desde Datos/, 'el guardado normal no permite bootstrap');
+assert.doesNotThrow(() => context.assertManagedTutorActivityForNewCourse_(
+  changed.activities, active, [moduleActivity]), 'Nuevo curso permite el bootstrap canónico');
+for (const patch of [
+  { group: 'SMR 1A' }, { name: 'Tutoría editada' }, { acronym: 'TU' },
+  { category: 'OTRA' }, { teachingTypeId: 'FP1' }, { classroom: 'Aula 204' }, { color: '#123456' },
+]) {
+  const tampered = changed.activities.map(activity => activity.id === 'TUT-1'
+    ? { ...activity, ...patch } : activity);
+  assert.throws(() => context.assertManagedTutorActivity_(tampered, active, [tutor, moduleActivity]),
+    /gestiona desde Datos/);
+}
+assert.throws(() => context.assertManagedTutorActivityForNewCourse_(
+  changed.activities.concat(makeTutor('MANUAL', 'DAM 1B')), active, [moduleActivity]),
+  /no coincide/, 'una Tutoría manual adicional sigue rechazada');
 assert.throws(() => context.assertNoManualTutorActivities_([makeTutor('MANUAL', 'DAM 1B')], tutor),
   /gestiona desde Datos/);
+assert(!evaluate('getManualScheduleActivityCategories_()').includes('TUTORIA'));
+
+const staleDraft = { config: { ...active }, managedTutorActivity: { ...changed.activities[0] },
+  schedule: { activities: [moduleActivity, makeTutor('BUG-134', 'DAM 1B')], sessions: [] } };
+context.sanitizeLegacyNewCourseTutorDraft_(staleDraft);
+assert.strictEqual(staleDraft.managedTutorActivity.id, 'TUT-1');
+assert.deepStrictEqual(Array.from(staleDraft.schedule.activities.map(activity => activity.id)), ['MOD-1']);
 
 const adopted = context.reconcileTutorActivityInModel_([tutor], [],
   { es_tutor: 'true', grupo_tutoria: 'DAM 2A', actividad_tutoria_id: '' });
@@ -224,6 +263,9 @@ assert.throws(() => context.normalizeScheduleActivities_([legacy]), /categoría/
 const scheduleHtml = fs.readFileSync('UiDialogScheduleConfig.html', 'utf8');
 assert(scheduleHtml.includes('Dual (legado)'));
 assert(scheduleHtml.includes('Gestionada desde Datos del docente y centro'));
+assert(scheduleHtml.includes('managedActivityDetails(activity)'));
+assert(scheduleHtml.includes('Se configura desde Datos del docente y centro.'));
+assert(scheduleHtml.includes("if(id===data.managedTutorActivityId)return"));
 const generalHtml = fs.readFileSync('UiDialogGeneralConfig.html', 'utf8');
 const wizardHtml = fs.readFileSync('UiDialogNewCourse.html', 'utf8');
 assert(generalHtml.includes('id="es_tutor" type="checkbox"'));

@@ -169,7 +169,7 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'new-course',
       title: 'Preparar nuevo curso',
-      text: 'Completa los siete pasos a tu ritmo. Si eres tutor/a, marca Soy tutor/a e indica el Grupo de tutoría en Datos del docente y centro; no crees Tutoría en Actividades. El borrador se conserva al cancelar; la copia y el nuevo cuaderno se crean al finalizar.',
+      text: 'Completa los siete pasos a tu ritmo. Si eres tutor/a, marca Soy tutor/a e indica el Grupo de tutoría en Datos del docente y centro. Tutoría aparecerá automáticamente en Actividades, donde se muestra como gestionada y no se edita; en Horario semanal solo tienes que asignarla a sus tramos. El borrador se conserva al cancelar; la copia y el nuevo cuaderno se crean al finalizar.',
     },
     {
       id: 'initialize',
@@ -245,7 +245,7 @@ function getSidebarHelpSections_(contextSectionId) {
       cover: ['Usa el índice para abrir las hojas del cuaderno.'],
       'general-data': ['Actualiza docente y centro cuando cambien.', 'Revisa el curso académico antes de configurar el calendario.'],
       calendar: ['Revisa festivos, Navidad y Semana Santa con el calendario oficial.', 'Indica FEOE y repaso cuando afecten a tus módulos.'],
-      schedule: ['Crea los tramos y las actividades antes de asignar sesiones.', 'En un curso nuevo se conservan tramos y actividades; la semana empieza vacía.'],
+      schedule: ['Crea los tramos y las actividades antes de asignar sesiones.', 'Tutoría se configura desde Datos del docente y centro: en Actividades se visualiza, pero no se edita; sí puedes asignarla o quitarla en el Horario semanal.', 'En un curso nuevo se conservan tramos y actividades; la semana empieza vacía.'],
       students: ['3 Alumnado reúne al alumnado de módulos y al grupo completo de Tutoría, incluso si alguien no cursa módulos del docente. Tras cada importación se ordena por Grupo, Apellidos y Nombre, con separación visual entre grupos.', 'Completa Email manualmente y edita REACA e Información / Medidas en 3 Alumnado.'],
       'educa-import': ['Abre Alumnado → Importar alumnado de módulos y analiza el archivo antes de confirmar.', 'Comprueba el destino de cada asignatura y las posibles bajas de matrícula.'],
       'tutor-import': ['Descarga Por grupo → Todos los alumnos y analiza el XLS sin modificarlo.', 'Revisa todos los Email; se precargan los existentes y puedes corregirlos.', 'Tutoría mantiene un roster anual y no cambia matrículas de módulos.'],

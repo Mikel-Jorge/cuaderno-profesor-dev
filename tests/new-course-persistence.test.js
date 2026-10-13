@@ -33,12 +33,15 @@ const context = {
   reconcileTutorActivityInModel_: (activities, sessions, config) =>
     ({ activities, sessions, id: config.actividad_tutoria_id || '' }),
   assertManagedTutorActivity_: () => {},
+  assertManagedTutorActivityForNewCourse_: () => {},
   isTutorEnabled_: value => value === 'true',
   normalizeNewCourseProcessInput_: value => value,
   validateNotebookOriginalLocation_: () => {},
   saveGeneralConfig_: () => calls.push('general'),
   guardarConfiguracionCalendario_: () => calls.push('calendarData'),
-  guardarConfiguracionHorario_: () => calls.push('scheduleData'),
+  guardarConfiguracionHorarioNuevoCurso_: () => calls.push('scheduleData'),
+  assertNewCourseApplyPostconditions_: () => {},
+  assertNewCourseRollbackRestored_: () => {},
   captureCalendarTableSnapshots_: () => ({}), restoreCalendarTableSnapshots_: () => {},
   captureScheduleSnapshots_: () => ({}), restoreScheduleSnapshots_: () => {},
   createOrRepairCalendarSheet_: () => calls.push('calendarView'),
@@ -57,6 +60,8 @@ vm.runInContext(generalSource.match(/function getGeneralConfigCompletion_\(confi
 vm.runInContext(fs.readFileSync('NewCourse.gs', 'utf8'), context);
 context.normalizeNewCourseProcessInput_ = value => value;
 context.validateNotebookOriginalLocation_ = () => {};
+context.assertNewCourseApplyPostconditions_ = () => {};
+context.assertNewCourseRollbackRestored_ = () => {};
 const first = context.getNewCourseDraft_();
 assert.strictEqual(store.size, 0, 'abrir el borrador no escribe');
 assert.strictEqual(first.schedule.sessions.length, 0);

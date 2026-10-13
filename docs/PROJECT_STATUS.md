@@ -3,7 +3,13 @@
 **Estado general:** alcance funcional del curso actual cerrado y operativo; las ampliaciones futuras quedan diferidas.
 
 **Última actualización:** 2026-10-13
-**Versión vigente:** `1.13.4`
+**Versión vigente:** `1.13.5`
+
+## Bootstrap gestionado de Tutoría en Nuevo curso 1.13.5
+
+- Actividades vuelve a incluir la Tutoría del draft y la muestra completamente read-only, sin eliminar; TUTORIA ya no se ofrece como categoría manual, pero sigue disponible en los selectores del Horario semanal.
+- Nuevo curso construye un único plan canónico y usa una persistencia privada que admite crear la Tutoría gestionada cuando aún no existe en `_HOR_ACTIVIDADES`. El guardado normal de Horario conserva su validación estricta.
+- El apply relee y valida `_CONFIG`, actividades y sesiones antes de avanzar de fase, verifica el rollback y sanea borradores 1.13.4 con un duplicado canónico inequívoco. El esquema permanece en `14`.
 **Esquema vigente:** `14`
 
 ## Correctivo de Tutoría en Preparar nuevo curso 1.13.4

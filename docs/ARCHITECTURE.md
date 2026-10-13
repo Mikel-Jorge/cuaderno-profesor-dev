@@ -2,7 +2,7 @@
 
 **Estado:** vigente
 **Última revisión:** 2026-10-13
-**Versión:** `1.13.4` / esquema `14`
+**Versión:** `1.13.5` / esquema `14`
 
 Este documento describe la arquitectura técnica. El comportamiento esperado se define en `FUNCTIONAL_SPEC.md` y el estado real en `PROJECT_STATUS.md`.
 
@@ -25,7 +25,7 @@ Los colores son siempre presentación. Ningún cálculo reconstruye datos desde 
 
 # 2. Componentes actuales
 
-- `Config.gs`: constantes, nombres de hojas, versión `1.13.4`, esquema `14` y paleta fija de pestañas.
+- `Config.gs`: constantes, nombres de hojas, versión `1.13.5`, esquema `14` y paleta fija de pestañas.
 - `Theme.gs`: tema global, presets, aliases de compatibilidad y colores semánticos. La lectura detecta tríos originales sin personalización para aplicar la nueva paleta; la reparación persiste el ID canónico y los colores resueltos.
 - `Main.gs`: menú principal.
 - `Setup.gs`: inicialización y reparación idempotente.
@@ -177,11 +177,11 @@ La llamada final del importador devuelve un DTO simple con `ok`, `academicImport
 
 # 10. Preparar nuevo curso
 
-`UiDialogNewCourse.html` mantiene los siete pasos en un único diálogo. Al abrir, `getNewCourseDraft_()` solo lee el borrador o construye una propuesta en memoria; no repara ni escribe hojas. `DocumentProperties` guarda el borrador por Spreadsheet en fragmentos menores de 9 KB, sin crear hojas adicionales. Seguridad guarda curso, carpeta y nombre original; los siguientes pasos actualizan únicamente datos y estados del borrador. Tutoría y actividades institucionales se reconcilian en ese borrador antes de aplicar el nuevo curso; desactivar Tutoría se confirma antes de guardarlo. Calendario y Horario se muestran como formularios embebidos; `postMessage` entrega DTO y altura, y `ResizeObserver` ajusta el iframe al contenido para mantener un único scroll. El padre distingue pasos visitados de pasos revisados y usa el mismo resumen para warnings y tarjetas. Los configuradores individuales mantienen guardado y actualización visible inmediatos.
+`UiDialogNewCourse.html` mantiene los siete pasos en un único diálogo. Al abrir, `getNewCourseDraft_()` solo lee el borrador o construye una propuesta en memoria; no repara ni escribe hojas. `DocumentProperties` guarda el borrador por Spreadsheet en fragmentos menores de 9 KB, sin crear hojas adicionales. Seguridad guarda curso, carpeta y nombre original; los siguientes pasos actualizan únicamente datos y estados del borrador. Tutoría y actividades institucionales se reconcilian en ese borrador antes de aplicar el nuevo curso; la Tutoría gestionada puede permanecer separada de las actividades manuales en el draft, pero se incluye en los DTO de Actividades y Horario. Los borradores 1.13.4 con un duplicado canónico inequívoco se sanean al cargar; los ambiguos se rechazan sin tocar módulos. Calendario y Horario se muestran como formularios embebidos; `postMessage` entrega DTO y altura, y `ResizeObserver` ajusta el iframe al contenido para mantener un único scroll. El padre distingue pasos visitados de pasos revisados y usa el mismo resumen para warnings y tarjetas. Los configuradores individuales mantienen guardado y actualización visible inmediatos.
 
 Los datos se separan en reutilizables y anuales. `_CONFIG` conserva profesor, centro y tema; `_HOR_TRAMOS` y `_HOR_ACTIVIDADES` conservan estructura, catálogo e IDs. Alumnado, `_MATRICULAS`, `_MATRICULAS_META`, `_HOR_SESIONES` y todos los valores anuales del Calendario se reinician.
 
-Al finalizar, `iniciarPreparacionNuevoCurso()` valida ubicación, crea y verifica la copia, y ejecuta la transición anual. `prepareNewCourseAnnualData_()` captura snapshots de Alumnado, matrículas y de las tablas de Horario y Calendario. En una única transición limpia Alumnado y matrículas, vacía sesiones y apoyos, reinicia el calendario y precarga propuestas. Como paso destructivo posterior al backup, materializa y renombra por identidad cada `5 Seg` como OLD, elimina `6 Eval` y `4 Config`, y vacía `_MOD_CONFIG` y `_MOD_PLAN`; nunca decide la identidad por el nombre de pestaña. Después se aplican `_CONFIG`, Calendario y Horario del borrador. El backup completo permanece como garantía de la transición anual. Las llamadas finales regeneran Calendario y Horario sin actualizar repetidamente el índice; después ocultan y ordenan hojas, generan Portada e índice una vez, actualizan `_META` e instalan protecciones. `generationPhase` persiste en el borrador para reanudar las fases completadas si falla una fase posterior. Cancelar antes de finalizar solo cierra el diálogo y conserva el borrador.
+Al finalizar, `iniciarPreparacionNuevoCurso()` construye y valida antes del backup un plan canónico `{config, calendar, schedule}`, crea y verifica la copia, y ejecuta la transición anual. `prepareNewCourseAnnualData_()` captura snapshots de Alumnado, matrículas y de las tablas de Horario y Calendario. En una única transición limpia Alumnado y matrículas, vacía sesiones y apoyos, reinicia el calendario y precarga propuestas. Como paso destructivo posterior al backup, materializa y renombra por identidad cada `5 Seg` como OLD, elimina `6 Eval` y `4 Config`, y vacía `_MOD_CONFIG` y `_MOD_PLAN`; nunca decide la identidad por el nombre de pestaña. Después se aplican `_CONFIG`, Calendario y Horario del mismo plan. `guardarConfiguracionHorarioNuevoCurso_()` reutiliza normalización, validación y persistencia de Horario, pero permite el bootstrap solo de la única Tutoría canónica cuyo ID coincide con `_CONFIG`; `guardarConfiguracionHorario_()` conserva el contrato estricto que exige una actividad previa. Antes de avanzar `generationPhase` se releen `_CONFIG`, `_HOR_ACTIVIDADES` y `_HOR_SESIONES` y se verifican identidad, cardinalidad y referencias. Un fallo restaura y verifica los snapshots de Config, Calendario y Horario. Las llamadas finales regeneran Calendario y Horario sin actualizar repetidamente el índice; después ocultan y ordenan hojas, generan Portada e índice una vez, actualizan `_META` e instalan protecciones. `generationPhase` persiste en el borrador para reanudar las fases completadas si falla una fase posterior. Cancelar antes de finalizar solo cierra el diálogo y conserva el borrador.
 
 `Reparar estructura` no llama a estas funciones anuales. Por tanto, una reparación conserva datos y no recupera propuestas que el docente haya eliminado.
 

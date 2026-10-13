@@ -31,7 +31,8 @@ function iniciarPreparacionNuevoCurso(input) {
   const draft = getNewCourseDraft_();
   if (!draft.reviewed[0]) throw new Error('Completa el paso Seguridad antes de generar.');
   if (draft.generationPhase >= 1) return getNewCourseDraftSummary_(draft);
-  validateNewCourseDraftBeforeApply_(draft);
+  draft.finalPlan = validateNewCourseDraftBeforeApply_(draft);
+  saveNewCourseDraft_(draft);
   const processInput = normalizeNewCourseProcessInput_({
     config: draft.config,
     originalFileName: draft.originalFileName,
@@ -62,6 +63,7 @@ function guardarDatosGeneralesNuevoCurso(input) {
   }
   draft.config = values;
   reconcileNewCourseTutorDraft_(draft);
+  delete draft.finalPlan;
   draft.reviewed[1] = true;
   saveNewCourseDraft_(draft);
   return { values: values, summary: getNewCourseDraftSummary_(draft) };
@@ -74,6 +76,7 @@ function guardarCalendarioNuevoCurso(input) {
   const draft = getNewCourseDraft_();
   assertNewCourseDraftEditable_(draft);
   draft.calendar = input;
+  delete draft.finalPlan;
   draft.reviewed[2] = true;
   saveNewCourseDraft_(draft);
   return getNewCourseDraftSummary_(draft);
@@ -111,6 +114,7 @@ function guardarHorarioNuevoCurso(input, step) {
   splitManagedTutorActivityFromDraft_(draft);
   if (section === 'activities') draft.schedule.activities = addMissingBaseActivities_(draft.schedule.activities, true);
   reconcileNewCourseTutorDraft_(draft);
+  delete draft.finalPlan;
   draft.reviewed[step] = true;
   saveNewCourseDraft_(draft);
   return getNewCourseDraftSummary_(draft);
@@ -139,6 +143,7 @@ function guardarSeguridadNuevoCurso(input) {
   draft.originalFileName = processInput.originalFileName;
   draft.originalFolderId = processInput.originalFolderId;
   draft.destinationFolderId = processInput.destinationFolderId;
+  delete draft.finalPlan;
   draft.visited[0] = true;
   draft.reviewed[0] = true;
   saveNewCourseDraft_(draft);
@@ -174,6 +179,7 @@ function getNewCourseDraft_() {
     const draft = JSON.parse(json);
     draft.config = normalizeGeneralConfigInput_(draft.config);
     draft.schedule.activities = addMissingBaseActivities_(draft.schedule.activities, true);
+    sanitizeLegacyNewCourseTutorDraft_(draft);
     splitManagedTutorActivityFromDraft_(draft);
     reconcileNewCourseTutorDraft_(draft);
     return draft;
@@ -192,6 +198,47 @@ function getNewCourseDraft_() {
   splitManagedTutorActivityFromDraft_(draft);
   reconcileNewCourseTutorDraft_(draft);
   return draft;
+}
+
+function sanitizeLegacyNewCourseTutorDraft_(draft) {
+  const enabled = isTutorEnabled_(draft.config[CP.CONFIG_KEYS.IS_TUTOR]);
+  const group = normalizeConfigValue_(draft.config[CP.CONFIG_KEYS.TUTOR_GROUP]);
+  const configuredId = normalizeConfigValue_(draft.config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID]);
+  const manualTutors = draft.schedule.activities.filter(function(activity) {
+    return activity.category === 'TUTORIA';
+  });
+  let managed = draft.managedTutorActivity || null;
+  if (!managed && configuredId) {
+    managed = manualTutors.find(function(activity) { return activity.id === configuredId; }) || null;
+  }
+  if (managed && (managed.category !== 'TUTORIA' || managed.name !== 'Tutoría' ||
+      managed.acronym !== 'T' || managed.teachingTypeId ||
+      (configuredId && managed.id !== configuredId))) {
+    throw new Error('El borrador anterior contiene una Tutoría ambigua. Reinicia el borrador del nuevo curso.');
+  }
+  const canonicalCandidates = manualTutors.filter(function(activity) {
+    return activity.name === 'Tutoría' && activity.acronym === 'T' && activity.group === group &&
+      !activity.teachingTypeId;
+  });
+  if (!managed && enabled && canonicalCandidates.length === 1 && manualTutors.length === 1) {
+    managed = canonicalCandidates[0];
+  }
+  if (managed) {
+    const duplicates = manualTutors.filter(function(activity) { return activity.id !== managed.id; });
+    const safeDuplicates = duplicates.filter(function(activity) {
+      return activity.name === 'Tutoría' && activity.acronym === 'T' && activity.group === group &&
+        !activity.teachingTypeId;
+    });
+    if (duplicates.length !== safeDuplicates.length || safeDuplicates.length > 1) {
+      throw new Error('El borrador anterior contiene varias Tutorías ambiguas. Reinicia el borrador del nuevo curso.');
+    }
+    draft.managedTutorActivity = managed;
+    draft.schedule.activities = draft.schedule.activities.filter(function(activity) {
+      return activity.id !== managed.id && !safeDuplicates.some(function(item) { return item.id === activity.id; });
+    });
+  } else if (manualTutors.length) {
+    throw new Error('El borrador anterior contiene una Tutoría manual ambigua. Reinicia el borrador del nuevo curso.');
+  }
 }
 
 function reconcileNewCourseTutorDraft_(draft) {
@@ -233,17 +280,25 @@ function assertNoManualTutorActivities_(activities, managedTutorActivity) {
 }
 
 function validateNewCourseDraftBeforeApply_(draft) {
+  const plan = buildFinalNewCoursePlan_(draft);
+  if (!plan.calendar || !Array.isArray(plan.calendar.types) || !Array.isArray(plan.calendar.events)) {
+    throw new Error('Revisa los datos del calendario.');
+  }
+  return plan;
+}
+
+function buildFinalNewCoursePlan_(draft) {
   const config = normalizeGeneralConfigInput_(draft.config);
   validateAcademicYear_(config[CP.CONFIG_KEYS.ACADEMIC_YEAR]);
   validateThemeConfig_(config);
   assertNoManualTutorActivities_(draft.schedule.activities, draft.managedTutorActivity);
-  const activities = getNewCourseDraftActivities_(draft);
+  const reconciled = reconcileTutorActivityInModel_(getNewCourseDraftActivities_(draft),
+    draft.schedule.sessions, config);
+  config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] = reconciled.id;
   const schedule = normalizeAndValidateScheduleConfig_({ slots: draft.schedule.slots,
-    activities: activities, sessions: draft.schedule.sessions }, activities);
-  assertManagedTutorActivity_(schedule.activities, config, schedule.activities);
-  if (!draft.calendar || !Array.isArray(draft.calendar.types) || !Array.isArray(draft.calendar.events)) {
-    throw new Error('Revisa los datos del calendario.');
-  }
+    activities: reconciled.activities, sessions: reconciled.sessions }, reconciled.activities);
+  assertManagedTutorActivityForNewCourse_(schedule.activities, config, []);
+  return { config: config, calendar: JSON.parse(JSON.stringify(draft.calendar)), schedule: schedule };
 }
 
 function createDefaultNewCourseCalendarConfig_(spreadsheet, academicYear) {
@@ -298,7 +353,7 @@ function getNewCourseDraftSummary_(draft) {
   const types = draft.calendar.types.filter(function(type) { return type.active; });
   const calendarReady = types.length > 0 && types.every(function(type) { return type.startDate && type.endDate; });
   const slots = draft.schedule.slots.length;
-  const activities = draft.schedule.activities.length;
+  const activities = getNewCourseDraftActivities_(draft).length;
   const sessions = draft.schedule.sessions.length;
   const reasons = {
     general: general.reason,
@@ -329,31 +384,36 @@ function aplicarBorradorNuevoCurso() {
   if (!draft.reviewed[0]) throw new Error('Completa el paso Seguridad antes de generar.');
   if (draft.generationPhase >= 2) return 'Datos del borrador aplicados.';
   if (draft.generationPhase !== 1) throw new Error('Primero debe crearse la copia de seguridad.');
-  validateNewCourseDraftBeforeApply_(draft);
-  const schedule = Object.assign({}, draft.schedule,
-    { activities: getNewCourseDraftActivities_(draft) });
+  const plan = draft.finalPlan || validateNewCourseDraftBeforeApply_(draft);
+  draft.finalPlan = plan;
+  saveNewCourseDraft_(draft);
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const snapshots = { config: getGeneralConfigValues_(spreadsheet),
     calendar: captureCalendarTableSnapshots_(spreadsheet),
     schedule: captureScheduleSnapshots_(spreadsheet) };
   let stage = 'CONFIG';
   try {
-    saveGeneralConfig_(draft.config, { updateCover: false, showToast: false,
+    saveGeneralConfig_(plan.config, { updateCover: false, showToast: false,
       includeTheme: true, confirmedTutorRemoval: true, updateScheduleView: false,
-      deactivateRoster: false, refreshMenu: false });
+      deactivateRoster: false, refreshMenu: false,
+      newCourseManagedTutorId: plan.config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] });
     stage = 'CALENDAR';
-    guardarConfiguracionCalendario_(draft.calendar, { renderViews: false, showToast: false });
+    guardarConfiguracionCalendario_(plan.calendar, { renderViews: false, showToast: false });
     stage = 'SCHEDULE';
-    guardarConfiguracionHorario_(schedule, { renderViews: false, showToast: false });
+    guardarConfiguracionHorarioNuevoCurso_(plan.schedule, plan.config);
+    stage = 'POSTCONDITIONS';
+    assertNewCourseApplyPostconditions_(spreadsheet, plan, snapshots.config);
   } catch (error) {
     console.warn('NEW_COURSE_APPLY_STAGE=' + stage);
     let restored = true;
     try {
       saveGeneralConfig_(snapshots.config, { updateCover: false, showToast: false,
         includeTheme: true, confirmedTutorRemoval: true, updateScheduleView: false,
-        deactivateRoster: false, refreshMenu: false });
+        deactivateRoster: false, refreshMenu: false,
+        newCourseManagedTutorId: snapshots.config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] });
       restoreCalendarTableSnapshots_(spreadsheet, snapshots.calendar);
       restoreScheduleSnapshots_(spreadsheet, snapshots.schedule);
+      assertNewCourseRollbackRestored_(spreadsheet, snapshots);
     } catch (restoreError) {
       restored = false;
       console.warn('NEW_COURSE_APPLY_ROLLBACK=FAILED');
@@ -367,6 +427,56 @@ function aplicarBorradorNuevoCurso() {
   draft.generationPhase = 2;
   saveNewCourseDraft_(draft);
   return 'Datos del borrador aplicados.';
+}
+
+function assertNewCourseApplyPostconditions_(spreadsheet, plan, previousConfig) {
+  const storedConfig = getGeneralConfigValues_(spreadsheet);
+  const activities = getScheduleActivities_(spreadsheet);
+  const sessions = getWeeklySchedule_(spreadsheet);
+  const activityIds = activities.reduce(function(map, activity) { map[activity.id] = true; return map; }, {});
+  if (sessions.some(function(session) { return !activityIds[session.activityId]; })) {
+    throw new Error('El Horario semanal conserva referencias a actividades inexistentes.');
+  }
+  [CP.CONFIG_KEYS.IS_TUTOR, CP.CONFIG_KEYS.TUTOR_GROUP, CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID]
+    .forEach(function(key) {
+      if (normalizeConfigValue_(storedConfig[key]) !== normalizeConfigValue_(plan.config[key])) {
+        throw new Error('La configuración de Tutoría no coincide con el plan final del nuevo curso.');
+      }
+    });
+  assertManagedTutorActivityForNewCourse_(activities, storedConfig, activities);
+  if (isTutorEnabled_(plan.config[CP.CONFIG_KEYS.IS_TUTOR])) {
+    const id = plan.config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID];
+    if (storedConfig[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] !== id ||
+        sessions.some(function(session) {
+          return session.activityId === id && !activities.some(function(activity) { return activity.id === id; });
+        })) {
+      throw new Error('La identidad de Tutoría no ha quedado sincronizada tras aplicar el nuevo curso.');
+    }
+  } else {
+    const previousId = normalizeConfigValue_(previousConfig[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID]);
+    if (storedConfig[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] ||
+        activities.some(function(activity) { return activity.category === 'TUTORIA'; }) ||
+        (previousId && sessions.some(function(session) { return session.activityId === previousId; }))) {
+      throw new Error('La Tutoría desactivada conserva referencias tras aplicar el nuevo curso.');
+    }
+  }
+}
+
+function assertNewCourseRollbackRestored_(spreadsheet, snapshots) {
+  const restoredConfig = getGeneralConfigValues_(spreadsheet);
+  Object.keys(snapshots.config).forEach(function(key) {
+    if (normalizeConfigValue_(restoredConfig[key]) !== normalizeConfigValue_(snapshots.config[key])) {
+      throw new Error('La configuración no se ha restaurado completamente.');
+    }
+  });
+  const currentSchedule = captureScheduleSnapshots_(spreadsheet);
+  if (JSON.stringify(currentSchedule) !== JSON.stringify(snapshots.schedule)) {
+    throw new Error('Las tablas de Horario no se han restaurado completamente.');
+  }
+  const currentCalendar = captureCalendarTableSnapshots_(spreadsheet);
+  if (JSON.stringify(currentCalendar) !== JSON.stringify(snapshots.calendar)) {
+    throw new Error('Las tablas de Calendario no se han restaurado completamente.');
+  }
 }
 
 function finalizarCalendarioNuevoCurso() {
@@ -424,7 +534,7 @@ function obtenerFormularioPasoNuevoCurso(step) {
     template.wizardStep = 0;
   } else {
     template.scheduleConfig = Object.assign({}, getScheduleConfigForUi_(spreadsheet), draft.schedule,
-      { activities: step === 4 ? draft.schedule.activities : getNewCourseDraftActivities_(draft) });
+      { activities: getNewCourseDraftActivities_(draft) });
     template.scheduleConfig.managedTutorActivityId = draft.config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID];
     template.scheduleConfig.teachingTypes = draft.calendar.types.map(function(type) {
       return { id: type.id, label: type.name, active: type.active };

@@ -184,7 +184,7 @@ function abrirConfiguracionHorario(wizardStep) {
       sessions: [],
       days: CP_SCHEDULE_DAYS,
       slotTypes: CP_SCHEDULE_SLOT_TYPES,
-      categories: CP_SCHEDULE_ACTIVITY_CATEGORIES,
+      categories: getManualScheduleActivityCategories_(),
       activityDefaults: CP_SCHEDULE_ACTIVITY_DEFAULTS,
       teachingTypes: getScheduleTeachingTypesForUi_(spreadsheet),
       supportMaxLength: CP_SCHEDULE_SUPPORT_MAX_LENGTH,
@@ -216,8 +216,13 @@ function getScheduleConfigForUi_(spreadsheet) {
     const config = getGeneralConfigValues_(spreadsheet);
     stage = 'ACTIVITIES';
     const storedActivities = getScheduleActivities_(spreadsheet);
-    const activities = config[CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR] === config[CP.CONFIG_KEYS.ACADEMIC_YEAR]
+    let activities = config[CP.CONFIG_KEYS.BASE_ACTIVITIES_YEAR] === config[CP.CONFIG_KEYS.ACADEMIC_YEAR]
       ? storedActivities : addMissingBaseActivities_(storedActivities);
+    const tutorId = normalizeConfigValue_(config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID]);
+    if (isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR]) && tutorId &&
+        activities.some(function(activity) { return activity.id === tutorId; })) {
+      activities = reconcileTutorActivityInModel_(activities, [], config).activities;
+    }
     const activityIds = activities.reduce(function(ids, activity) { ids[activity.id] = true; return ids; }, {});
     stage = 'SLOTS';
     const slots = getScheduleTimeSlots_(spreadsheet).map(function(slot) { return Object.assign({}, slot); });
@@ -234,7 +239,7 @@ function getScheduleConfigForUi_(spreadsheet) {
       managedTutorActivityId: isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR])
         ? config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] : '',
       sessions: sessions, days: CP_SCHEDULE_DAYS, slotTypes: CP_SCHEDULE_SLOT_TYPES,
-      categories: CP_SCHEDULE_ACTIVITY_CATEGORIES, activityDefaults: CP_SCHEDULE_ACTIVITY_DEFAULTS,
+      categories: getManualScheduleActivityCategories_(), activityDefaults: CP_SCHEDULE_ACTIVITY_DEFAULTS,
       teachingTypes: teachingTypes, supportMaxLength: CP_SCHEDULE_SUPPORT_MAX_LENGTH,
     };
   } catch (error) { console.warn('SCHEDULE_LOAD_STAGE=' + stage); throw error; }
@@ -264,26 +269,7 @@ function guardarConfiguracionHorario_(input, options) {
   const normalized = normalizeAndValidateScheduleConfig_(input, previousActivities);
   const generalConfig = getGeneralConfigValues_(spreadsheet);
   assertManagedTutorActivity_(normalized.activities, generalConfig, previousActivities);
-  if (isTutorEnabled_(generalConfig[CP.CONFIG_KEYS.IS_TUTOR])) {
-    const tutorActivity = normalized.activities.find(function(activity) {
-      return activity.id === generalConfig[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID];
-    });
-    if (tutorActivity && !tutorActivity.classroom) {
-      tutorActivity.classroom = CP_SCHEDULE_ACTIVITY_DEFAULTS.TUTORIA.classroom;
-    }
-  }
-  const activeTypes = getScheduleTeachingTypesForUi_(spreadsheet)
-    .filter(function(type) { return type.active; }).map(function(type) { return type.id; });
-  const previousTypes = getScheduleActivities_().reduce(function(map, activity) {
-    map[activity.id] = activity.teachingTypeId;
-    return map;
-  }, {});
-  normalized.activities.forEach(function(activity) {
-    if (activity.category === 'MODULO' && activeTypes.indexOf(activity.teachingTypeId) === -1 &&
-        previousTypes[activity.id] !== activity.teachingTypeId) {
-      throw new Error('El tipo de enseñanza de un módulo nuevo debe estar activo.');
-    }
-  });
+  validateScheduleTeachingTypes_(normalized.activities, previousActivities, spreadsheet);
   const lock = LockService.getDocumentLock();
   if (!lock.tryLock(30000)) throw new Error('No se ha podido bloquear el cuaderno para guardar. Inténtalo de nuevo.');
   const snapshots = captureScheduleSnapshots_(spreadsheet);
@@ -317,6 +303,48 @@ function guardarConfiguracionHorario_(input, options) {
   }
   if (saveOptions.showToast !== false) spreadsheet.toast('Configuración del horario guardada.', CP.PROJECT_NAME, 4);
   return { message: 'La configuración del horario se ha guardado.' };
+}
+
+function guardarConfiguracionHorarioNuevoCurso_(input, finalConfig) {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  assertScheduleStructureReady_(spreadsheet);
+  const previousActivities = getScheduleActivities_(spreadsheet);
+  const normalized = normalizeAndValidateScheduleConfig_(input, previousActivities);
+  assertManagedTutorActivityForNewCourse_(normalized.activities, finalConfig, previousActivities);
+  validateScheduleTeachingTypes_(normalized.activities, previousActivities, spreadsheet);
+  const lock = LockService.getDocumentLock();
+  if (!lock.tryLock(30000)) throw new Error('No se ha podido bloquear el cuaderno para guardar. Inténtalo de nuevo.');
+  const snapshots = captureScheduleSnapshots_(spreadsheet);
+  try {
+    persistScheduleConfig_(spreadsheet, normalized);
+  } catch (error) {
+    try { restoreScheduleSnapshots_(spreadsheet, snapshots); } catch (rollbackError) {
+      throw new Error('No se ha podido guardar el horario ni restaurar las tablas técnicas.');
+    }
+    throw error;
+  } finally {
+    lock.releaseLock();
+  }
+  return normalized;
+}
+
+function validateScheduleTeachingTypes_(activities, previousActivities, spreadsheet) {
+  const activeTypes = getScheduleTeachingTypesForUi_(spreadsheet)
+    .filter(function(type) { return type.active; }).map(function(type) { return type.id; });
+  const previousTypes = (previousActivities || []).reduce(function(map, activity) {
+    map[activity.id] = activity.teachingTypeId;
+    return map;
+  }, {});
+  activities.forEach(function(activity) {
+    if (activity.category === 'MODULO' && activeTypes.indexOf(activity.teachingTypeId) === -1 &&
+        previousTypes[activity.id] !== activity.teachingTypeId) {
+      throw new Error('El tipo de enseñanza de un módulo nuevo debe estar activo.');
+    }
+  });
+}
+
+function getManualScheduleActivityCategories_() {
+  return CP_SCHEDULE_ACTIVITY_CATEGORIES.filter(function(category) { return category !== 'TUTORIA'; });
 }
 
 function normalizeAndValidateScheduleConfig_(input, previousActivities) {
@@ -472,16 +500,43 @@ function seedBaseScheduleActivities_(spreadsheet) {
 }
 
 function assertManagedTutorActivity_(activities, config, previousActivities) {
-  if (!isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR])) return;
+  const tutorActivities = activities.filter(function(item) { return item.category === 'TUTORIA'; });
+  if (!isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR])) {
+    if (tutorActivities.length) throw new Error('La actividad Tutoría se gestiona desde Datos del docente y centro.');
+    return;
+  }
   const id = config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID];
   if (!id) throw new Error('Falta la actividad de Tutoría gestionada. Repara la estructura.');
   const current = (previousActivities || []).find(function(item) { return item.id === id; });
   const next = activities.find(function(item) { return item.id === id; });
-  if (!current || !next || next.category !== 'TUTORIA' || next.name !== 'Tutoría' ||
-      next.acronym !== 'T' || next.group !== config[CP.CONFIG_KEYS.TUTOR_GROUP] ||
-      next.teachingTypeId) {
+  if (!current || current.category !== 'TUTORIA' || tutorActivities.length !== 1 ||
+      !isCanonicalManagedTutorActivity_(next, config)) {
     throw new Error('La actividad Tutoría se gestiona desde Datos del docente y centro.');
   }
+}
+
+function assertManagedTutorActivityForNewCourse_(activities, config, previousActivities) {
+  const tutorActivities = activities.filter(function(item) { return item.category === 'TUTORIA'; });
+  if (!isTutorEnabled_(config[CP.CONFIG_KEYS.IS_TUTOR])) {
+    if (config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID] || tutorActivities.length) {
+      throw new Error('El plan del nuevo curso contiene una Tutoría no autorizada.');
+    }
+    return;
+  }
+  const id = normalizeConfigValue_(config[CP.CONFIG_KEYS.TUTOR_ACTIVITY_ID]);
+  const current = (previousActivities || []).find(function(item) { return item.id === id; });
+  const next = activities.find(function(item) { return item.id === id; });
+  if (!id || tutorActivities.length !== 1 || !isCanonicalManagedTutorActivity_(next, config) ||
+      (current && current.category !== 'TUTORIA')) {
+    throw new Error('La actividad Tutoría del nuevo curso no coincide con Datos del docente y centro.');
+  }
+}
+
+function isCanonicalManagedTutorActivity_(activity, config) {
+  return Boolean(activity && activity.category === 'TUTORIA' && activity.name === 'Tutoría' &&
+    activity.acronym === 'T' && activity.group === config[CP.CONFIG_KEYS.TUTOR_GROUP] &&
+    !activity.teachingTypeId && activity.classroom === CP_SCHEDULE_ACTIVITY_DEFAULTS.TUTORIA.classroom &&
+    activity.color === CP_SCHEDULE_ACTIVITY_DEFAULTS.TUTORIA.color);
 }
 
 function syncManagedTutorActivity_(spreadsheet, values, previousValues) {
@@ -523,15 +578,14 @@ function reconcileTutorActivityInModel_(activities, sessions, config) {
   if (!group) throw new Error('Indica el grupo de tutoría.');
   const matches = !id ? activities.filter(function(item) {
     return item.category === 'TUTORIA' && item.name === 'Tutoría' && item.acronym === 'T' &&
-      item.group === group;
+      item.group === group && !item.teachingTypeId;
   }) : [];
   const activity = current || (matches.length === 1 ? matches[0] : null);
   const nextId = activity ? activity.id : createCalendarRecordId_('ACT');
   const updated = Object.assign({}, activity || {}, { id: nextId, category: 'TUTORIA',
     name: 'Tutoría', acronym: 'T', group: group, teachingTypeId: '',
-    classroom: activity && normalizeScheduleText_(activity.classroom)
-      ? activity.classroom : CP_SCHEDULE_ACTIVITY_DEFAULTS.TUTORIA.classroom,
-    color: activity ? activity.color : CP_SCHEDULE_INSTITUTIONAL_COLOR });
+    classroom: CP_SCHEDULE_ACTIVITY_DEFAULTS.TUTORIA.classroom,
+    color: CP_SCHEDULE_ACTIVITY_DEFAULTS.TUTORIA.color });
   const next = activity
     ? activities.map(function(item) { return item.id === nextId ? updated : item; })
     : activities.concat(updated);

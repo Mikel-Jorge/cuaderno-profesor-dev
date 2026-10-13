@@ -56,5 +56,6 @@ assert(html.includes("frame.setAttribute('scrolling','no')"));
 assert(!html.includes('min-height:510px'));
 assert(!html.includes('Las actividades conservan sus identificadores'));
 assert(html.includes('course-loading'));
-assert(server.includes("activities: step === 4 ? draft.schedule.activities : getNewCourseDraftActivities_(draft)"));
+assert(server.includes("activities: getNewCourseDraftActivities_(draft)"),
+  'Actividades recibe también la Tutoría gestionada');
 console.log('wizard visited, warnings, errors, navigation and theme selector: ok');
