@@ -11,7 +11,7 @@ Si una decisión funcional cambia, debe actualizarse aquí en el mismo commit.
 
 **Estado:** especificación funcional vigente
 **Versión del documento:** 3.5
-**Versión del cuaderno:** `1.13.3`
+**Versión del cuaderno:** `1.13.4`
 **Plataforma:** Google Sheets + Google Apps Script + HTML/CSS/JavaScript
 
 # 1. Objetivo y principios
@@ -29,7 +29,7 @@ Principios cerrados:
 - no se usan triggers instalables ni Google Calendar; Google Contacts usa Advanced People Service y el scope de contactos;
 - se priorizan soluciones simples, mantenibles y con operaciones por bloques.
 
-# 2. Estado funcional de la versión 1.13.3
+# 2. Estado funcional de la versión 1.13.4
 
 El alcance previsto para el curso actual está operativo: Portada, Calendario, Horario, Alumnado, importadores EDUCA de módulos y Tutoría, Matrículas, Google Contacts, Tutoría base, Config, Seg, Eval, nuevo curso, Repair y Ayuda.
 

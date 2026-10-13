@@ -4,7 +4,7 @@
 html,body{height:100%;overflow:hidden}
 .course-wizard{height:100%;display:flex;flex-direction:column;min-width:0;overflow:hidden}.course-wizard .brand-header{flex:0 0 auto;padding:8px 16px}.course-wizard .brand-logo{width:30px;height:38px}
 .course-stepper{flex:0 0 auto;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;padding:12px 18px 4px;list-style:none;margin:0}.course-stepper li{text-align:center;min-width:0;color:var(--muted-text);font-size:11px}.course-stepper b{display:grid;place-items:center;width:26px;height:26px;margin:auto auto 4px;border-radius:50%;background:var(--muted);color:var(--text);font-size:12px}.course-stepper .done b{background:var(--success);color:#fff}.course-stepper .current b{background:var(--accent);color:#fff}.course-stepper .warning b{background:var(--warning);color:var(--text)}.course-stepper span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.course-step-title{margin:4px 18px 8px;font-size:17px;color:var(--text)}.course-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:0 18px 10px}.course-step{display:none}.course-step.current{display:block}.course-note{margin:6px 0 14px;color:var(--muted-text);font-size:13px;line-height:1.5}.course-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.course-grid label{display:grid;gap:3px;font-size:12px;font-weight:600}.course-grid .tutor-toggle{grid-column:1/-1;display:flex;align-items:center;gap:8px;min-height:38px;font-size:13px;cursor:pointer}.course-grid .tutor-toggle input[type=checkbox]{box-sizing:border-box;width:16px;height:16px;min-height:0;margin:0;padding:0;flex:none;cursor:pointer}#course-tutor-group[hidden]{display:none}.course-grid input,.course-grid select{width:100%;min-width:0}.course-security{padding:13px;background:var(--muted);border:1px solid var(--border);border-radius:8px}.course-security p{margin:4px 0 10px}.course-frame{width:100%;border:0;background:var(--surface)}.course-feedback{padding:4px 18px;color:var(--danger);font-size:12px}.course-feedback:empty{display:none}.course-footer{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:10px 18px;border-top:1px solid var(--border)}.course-footer .spacer{flex:1}.course-summary{display:grid;gap:8px}
+.course-step-title{margin:4px 18px 8px;font-size:17px;color:var(--text)}.course-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:0 18px 10px}.course-step{display:none}.course-step.current{display:block}.course-note{margin:6px 0 14px;color:var(--muted-text);font-size:13px;line-height:1.5}.course-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.course-grid label{display:grid;gap:3px;font-size:12px;font-weight:600}.course-grid .tutor-toggle{grid-column:1/-1;display:flex;align-items:center;gap:8px;min-height:38px;font-size:13px;cursor:pointer}.course-grid .tutor-toggle input[type=checkbox]{box-sizing:border-box;width:16px;height:16px;min-height:0;margin:0;padding:0;flex:none;cursor:pointer}#course-tutor-group[hidden]{display:none}.course-grid input,.course-grid select{width:100%;min-width:0}.course-security{padding:13px;background:var(--muted);border:1px solid var(--border);border-radius:8px}.course-security p{margin:4px 0 10px}.course-frame{width:100%;border:0;background:var(--surface)}.course-feedback{margin:0 18px 8px;padding:9px 11px;border:1px solid var(--danger);border-left-width:4px;border-radius:7px;background:var(--muted);color:var(--danger);font-size:12px;line-height:1.4}.course-feedback:empty{display:none}.course-footer{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:10px 18px;border-top:1px solid var(--border)}.course-footer .spacer{flex:1}.course-summary{display:grid;gap:8px}
 
 .folder-picker{position:fixed;inset:0;z-index:5;background:#0008;display:grid;place-items:center;padding:16px;overflow:hidden}.folder-picker[hidden]{display:none}
 .folder-picker-dialog{display:flex;flex-direction:column;width:min(480px,100%);height:min(410px,calc(100vh - 32px));min-height:0;max-height:calc(100vh - 32px);padding:15px;border:1px solid var(--border);border-radius:10px;background:var(--surface);overflow:hidden}
@@ -58,8 +58,8 @@ window.addEventListener('message',receiveFrameLayout);
 renderCurrentStepChrome();if(finalPhase>0&&summary.steps[6].visited)showStep(6);
 function callServer(name,arg,secondArg){return new Promise(function(resolve,reject){const runner=google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);if(secondArg===undefined)runner[name](arg);else runner[name](arg,secondArg)})}
 function setBusy(value,title,detail){busy=value;document.getElementById('course-body').hidden=value;document.getElementById('course-loading').hidden=!value;document.getElementById('loading-title').textContent=title||'Preparando…';document.getElementById('loading-detail').textContent=detail||'';document.getElementById('course-wizard-controls').hidden=value;['cancel','back','next','choose-folder'].forEach(function(id){document.getElementById(id).disabled=value});renderStepper()}
-function errorText(error){return error&&error.message?error.message:String(error)}
-function showError(error){setBusy(false);document.getElementById('course-error').textContent=errorText(error)}
+function errorText(error){const message=error&&error.message?error.message:String(error||'');return message.split('\n')[0]||'No se ha podido preparar el nuevo curso. Revisa los datos e inténtalo de nuevo.'}
+function showError(error){setBusy(false);document.getElementById('course-error').textContent='⚠ '+errorText(error)}
 function clearError(){document.getElementById('course-error').textContent=''}
 function setGeneral(values){Object.keys(values).forEach(function(key){if(form.elements[key]){const control=form.elements[key];if(control.type==='checkbox')control.checked=values[key]==='true';else control.value=values[key]||''}});toggleTutorGroup()}
 function readGeneral(){const values={};Array.from(form.elements).forEach(function(control){if(control.name)values[control.name]=control.type==='checkbox'?(control.checked?'true':'false'):control.value.trim()});return values}
@@ -75,14 +75,14 @@ function renderCurrentStepChrome(){
   title.textContent=step===6?(finalPhase>0?'Completar preparación del cuaderno':'Todo listo para generar el cuaderno'):LABELS[step];
   title.classList.toggle('summary-title',step===6);
   document.getElementById('save-hint').hidden=step===0||step===6;
-  document.getElementById('back').hidden=step===0||finalPhase>0;
+  document.getElementById('back').hidden=step===0||finalPhase>1;
   document.getElementById('next').textContent=step===6?(finalPhase>0?'Continuar generación':'Finalizar y generar cuaderno'):'Siguiente';
   warning.hidden=!state.reviewed||state.complete||!state.reason;
   warning.textContent=warning.hidden?'':'⚠ Pendiente: '+state.reason;
   renderStepper();
 }
 function showStep(step){
-  if(busy||(finalPhase>0&&step!==6)||(!summary.steps[step].visited&&step!==currentStep+1))return;
+  if(busy||(finalPhase>1&&step!==6)||(!summary.steps[step].visited&&step!==currentStep+1))return;
   if(currentStep===1&&step!==1)setGeneral(savedGeneral);
   if(currentStep===0&&step!==0){document.getElementById('new-year').value=savedSecurity.year;selectedFolder={id:savedSecurity.folderId,name:savedSecurity.folderName};document.getElementById('destination-folder').textContent=selectedFolder.name}
   currentStep=step;
@@ -96,7 +96,7 @@ function renderStepper(){
   const list=document.getElementById('stepper');list.replaceChildren();
   LABELS.forEach(function(label,index){
     const state=stepState(index),li=document.createElement('li'),button=document.createElement('button'),badge=document.createElement('b'),name=document.createElement('span');
-    li.className=state;button.type='button';button.disabled=busy||finalPhase>0||!summary.steps[index].visited;
+    li.className=state;button.type='button';button.disabled=busy||finalPhase>1||!summary.steps[index].visited;
     button.setAttribute('aria-label',label+(state==='warning'?', pendiente: '+summary.steps[index].reason:''));
     if(index===currentStep)button.setAttribute('aria-current','step');
     badge.textContent=state==='done'?'✓':state==='warning'?'!':String(index+1);

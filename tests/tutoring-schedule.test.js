@@ -12,7 +12,7 @@ const context = vm.createContext({});
 });
 context.createCalendarRecordId_ = createId;
 const evaluate = source => JSON.parse(vm.runInContext('JSON.stringify(' + source + ')', context));
-assert.strictEqual(evaluate('CP.NOTEBOOK_VERSION'), '1.13.3');
+assert.strictEqual(evaluate('CP.NOTEBOOK_VERSION'), '1.13.4');
 assert.strictEqual(evaluate('CP.SCHEMA_VERSION'), '14');
 assert.strictEqual(evaluate('CP_CALENDAR_TYPE_DEFINITIONS.find(type => type.id === "ONLINE").name'), 'Virtual');
 for (const previousName of ['Online', 'VIRTUAL']) {
@@ -77,15 +77,27 @@ assert.strictEqual(newlyCreated.activities[0].classroom, 'Departamento');
 const draft = { config: { ...active }, schedule: { activities: [tutor, moduleActivity], sessions: [...sessions] } };
 context.reconcileNewCourseTutorDraft_(draft);
 assert.strictEqual(draft.config.actividad_tutoria_id, 'TUT-1');
-assert.strictEqual(draft.schedule.activities[0].group, 'DAM 1B');
-assert.strictEqual(draft.schedule.activities[0].classroom, 'Departamento');
+assert.strictEqual(draft.managedTutorActivity.group, 'DAM 1B');
+assert.strictEqual(draft.managedTutorActivity.classroom, 'Departamento');
+assert.deepStrictEqual(Array.from(draft.schedule.activities.map(item => item.id)), ['MOD-1']);
 const newCourseDraft = { config: { ...active, actividad_tutoria_id: '' },
   schedule: { activities: [], sessions: [] } };
 context.reconcileNewCourseTutorDraft_(newCourseDraft);
-assert.strictEqual(newCourseDraft.schedule.activities[0].classroom, 'Departamento');
+assert.strictEqual(newCourseDraft.managedTutorActivity.classroom, 'Departamento');
+assert.strictEqual(newCourseDraft.schedule.activities.length, 0);
+assert.strictEqual(context.getNewCourseDraftActivities_(newCourseDraft).filter(
+  item => item.category === 'TUTORIA').length, 1);
 draft.config.es_tutor = 'false';
 context.reconcileNewCourseTutorDraft_(draft);
 assert.strictEqual(draft.schedule.sessions.length, 1);
+assert.strictEqual(draft.managedTutorActivity, null);
+const enabledAgain = { config: { ...active, grupo_tutoria: 'SMR 1A' },
+  managedTutorActivity: tutor,
+  schedule: { activities: [moduleActivity], sessions: [...sessions] } };
+context.reconcileNewCourseTutorDraft_(enabledAgain);
+assert.strictEqual(enabledAgain.managedTutorActivity.group, 'SMR 1A');
+assert.strictEqual(context.getNewCourseDraftActivities_(enabledAgain).filter(
+  item => item.category === 'TUTORIA').length, 1);
 const disabled = context.reconcileTutorActivityInModel_(changed.activities, sessions,
   { ...active, es_tutor: 'false' });
 assert.strictEqual(disabled.id, '');
@@ -93,6 +105,8 @@ assert.deepStrictEqual(Array.from(disabled.activities.map(item => item.id)), ['M
 assert.deepStrictEqual(Array.from(disabled.sessions.map(item => item.id)), ['S3']);
 assert.doesNotThrow(() => context.assertManagedTutorActivity_(changed.activities, active, [tutor, moduleActivity]));
 assert.throws(() => context.assertManagedTutorActivity_([moduleActivity], active, [tutor, moduleActivity]),
+  /gestiona desde Datos/);
+assert.throws(() => context.assertNoManualTutorActivities_([makeTutor('MANUAL', 'DAM 1B')], tutor),
   /gestiona desde Datos/);
 
 const adopted = context.reconcileTutorActivityInModel_([tutor], [],

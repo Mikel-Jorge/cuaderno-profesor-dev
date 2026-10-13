@@ -3,8 +3,14 @@
 **Estado general:** alcance funcional del curso actual cerrado y operativo; las ampliaciones futuras quedan diferidas.
 
 **Última actualización:** 2026-10-13
-**Versión vigente:** `1.13.3`
+**Versión vigente:** `1.13.4`
 **Esquema vigente:** `14`
+
+## Correctivo de Tutoría en Preparar nuevo curso 1.13.4
+
+- El borrador separa la actividad Tutoría gestionada de las actividades manuales, evita duplicados y reconstruye su grupo e identidad desde Datos del docente y centro.
+- La validación completa se ejecuta antes del backup y el apply restaura Config, Calendario y Horario si falla una escritura. El asistente conserva el borrador y permite volver a pasos anteriores tras un error recuperable.
+- Los errores del asistente usan el callout danger común y los controles se restauran al terminar el loading. El esquema permanece en `14`.
 
 ## Parche de UX e idempotencia 1.13.3
 

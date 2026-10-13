@@ -169,7 +169,7 @@ function getSidebarHelpSections_(contextSectionId) {
     {
       id: 'new-course',
       title: 'Preparar nuevo curso',
-      text: 'Completa los siete pasos a tu ritmo. El borrador se conserva al cancelar; la copia y el nuevo cuaderno se crean al finalizar.',
+      text: 'Completa los siete pasos a tu ritmo. Si eres tutor/a, marca Soy tutor/a e indica el Grupo de tutoría en Datos del docente y centro; no crees Tutoría en Actividades. El borrador se conserva al cancelar; la copia y el nuevo cuaderno se crean al finalizar.',
     },
     {
       id: 'initialize',

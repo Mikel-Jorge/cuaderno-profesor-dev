@@ -39,6 +39,8 @@ const context = {
   saveGeneralConfig_: () => calls.push('general'),
   guardarConfiguracionCalendario_: () => calls.push('calendarData'),
   guardarConfiguracionHorario_: () => calls.push('scheduleData'),
+  captureCalendarTableSnapshots_: () => ({}), restoreCalendarTableSnapshots_: () => {},
+  captureScheduleSnapshots_: () => ({}), restoreScheduleSnapshots_: () => {},
   createOrRepairCalendarSheet_: () => calls.push('calendarView'),
   createOrRepairScheduleSheet_: () => calls.push('scheduleView'),
   hideTechnicalSheets_: () => calls.push('hide'),

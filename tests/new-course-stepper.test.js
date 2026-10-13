@@ -3,6 +3,7 @@ const fs = require('fs');
 const vm = require('vm');
 
 const html = fs.readFileSync('UiDialogNewCourse.html', 'utf8');
+const server = fs.readFileSync('NewCourse.gs', 'utf8');
 const names = ['stepState', 'applySelectedTheme'];
 const functions = names.map(name => {
   const match = html.match(new RegExp(`function ${name}\\([^\n]*`));
@@ -43,7 +44,10 @@ context.applySelectedTheme();
 assert.deepStrictEqual([controls.tema_primary.value, controls.tema_secondary.value,
   controls.tema_accent.value], ['#1f6e8c', '#355070', '#a65b7c']);
 assert.strictEqual(controls.tema_preset.value, 'atlantico');
-assert(html.includes('button.disabled=busy||finalPhase>0||!summary.steps[index].visited'));
+assert(html.includes('button.disabled=busy||finalPhase>1||!summary.steps[index].visited'));
+assert(html.includes("document.getElementById('back').hidden=step===0||finalPhase>1"));
+assert(html.includes("document.getElementById('course-error').textContent='⚠ '+errorText(error)"));
+assert(html.includes('if(busy)return;'), 'el doble submit queda bloqueado mientras busy');
 assert(html.includes("button.addEventListener('click',function(){if(index!==currentStep)showStep(index)}"));
 assert(html.includes('const general=data.steps[1]'));
 assert(html.includes("card.addEventListener('click',function(){showStep(item[0])}"));
@@ -52,4 +56,5 @@ assert(html.includes("frame.setAttribute('scrolling','no')"));
 assert(!html.includes('min-height:510px'));
 assert(!html.includes('Las actividades conservan sus identificadores'));
 assert(html.includes('course-loading'));
+assert(server.includes("activities: step === 4 ? draft.schedule.activities : getNewCourseDraftActivities_(draft)"));
 console.log('wizard visited, warnings, errors, navigation and theme selector: ok');
