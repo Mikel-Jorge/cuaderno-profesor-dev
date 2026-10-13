@@ -74,13 +74,18 @@ function compareManagedStudentText_(left, right) {
 }
 
 function applyStudentGroupSeparators_(sheet) {
-  const count = Math.max(0, sheet.getLastRow() - 1);
+  const count = Math.max(0, sheet.getMaxRows() - 1);
   if (!count) return;
-  sheet.getRange(2, 1, count, 6).setBorder(false, null, false, null, false, null);
+  // El sexto argumento controla los bordes horizontales internos; null los conserva.
+  // Limpiamos toda el área preparada sin tocar el borde inferior de la cabecera.
+  sheet.getRange(2, 1, count, 6).setBorder(null, null, null, null, null, false);
   const rows = sheet.getRange(2, 1, count, 3).getValues();
   let previous = '';
   rows.forEach(function(row, index) {
-    if (!row.every(function(value) { return String(value || '').trim(); })) return;
+    if (!row.every(function(value) { return String(value || '').trim(); })) {
+      previous = '';
+      return;
+    }
     const group = String(row[2]).trim();
     if (previous && compareManagedStudentText_(previous, group) !== 0) {
       sheet.getRange(index + 2, 1, 1, 6).setBorder(true, null, null, null, null, null,

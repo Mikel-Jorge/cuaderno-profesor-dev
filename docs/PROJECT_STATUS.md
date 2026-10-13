@@ -2,9 +2,14 @@
 
 **Estado general:** alcance funcional del curso actual cerrado y operativo; las ampliaciones futuras quedan diferidas.
 
-**Última actualización:** 2026-10-12
-**Versión vigente:** `1.13.2`
+**Última actualización:** 2026-10-13
+**Versión vigente:** `1.13.3`
 **Esquema vigente:** `14`
+
+## Parche de UX e idempotencia 1.13.3
+
+- Los dos importadores muestran la misma ruta EDUCA. Durante la escritura, el preview y sus acciones desaparecen, el loading ocupa la zona de contenido sin scroll residual y un fallo recupera las selecciones previas.
+- Alumnado limpia los bordes horizontales de toda su área preparada antes de dibujar los separadores vigentes, tanto tras ambos importadores como en Repair. El registro de pasos de Repair aprovecha la altura disponible.
 
 ## Parche final de cierre 1.13.2
 
@@ -12,8 +17,6 @@
 - Cabecera F de Alumnado: Información / Medidas. Cabecera C de Eval: REACA; Repair distingue la Eval histórica de dos filas de la moderna y no inserta filas en la moderna. Ayuda y documentación actualizadas. Esquema 14.
 
 ## Estabilización Tutoría y menú 1.13.1 (histórico)
-
-Las entradas anteriores a 1.13.2 documentan su evolución; los pendientes antiguos no son el estado vigente.
 
 Las entradas anteriores a 1.13.2 documentan su evolución; los pendientes antiguos no son el estado vigente.
 
@@ -307,7 +310,7 @@ Validaciones que estaban pendientes en este hito histórico:
 - Abrir los configuradores o Crear configuración de módulo es solo lectura; la creación confirmada sanea Config huérfanas.
 - En este hito histórico se anotaron comprobaciones posteriores del asistente y Repair.
 
-# Decisiones vigentes en 1.13.2
+# Decisiones vigentes en 1.13.3
 
 - No existe `3 Módulos`.
 - No existen `_MODULOS` ni `_UT`; `_MATRICULAS` existe y es la fuente de pertenencia a módulos; `_MOD_CONFIG` y `_MOD_PLAN` no duplican los campos editables de UT.

@@ -1,4 +1,4 @@
-# Guía de uso · Cuaderno del Profesor 1.13.2
+# Guía de uso · Cuaderno del Profesor 1.13.3
 
 ## Empezar un curso
 

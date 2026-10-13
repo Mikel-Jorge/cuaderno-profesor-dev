@@ -23,6 +23,12 @@ assert(!contacts.includes('Confirmar sincronización'));
 assert(contacts.includes("document.getElementById('intro').hidden=true"));
 assert(contacts.includes('Google Contacts actualizado con incidencias'));
 const tutor = fs.readFileSync('UiDialogTutorImport.html', 'utf8');
+const repairProgress = fs.readFileSync('UiDialogProgress.html', 'utf8');
+assert.match(repairProgress, /\.process-app\s*\.log\s*\{[^}]*flex:\s*1 1 auto/);
+assert.match(repairProgress, /\.process-app\s*\.log\s*\{[^}]*max-height:\s*none/);
+assert.match(repairProgress, /\.process-app\s*\.log\s*\{[^}]*overflow-y:\s*auto/);
+assert.match(repairProgress, /\.process-app\s*\.actions,\s*\.process-app\s*\.author-footer\s*\{[^}]*flex:\s*0 0 auto/);
+assert.match(repairProgress, /logElement\.scrollTop\s*=\s*logElement\.scrollHeight/);
 for (const step of ['Alumnado', 'Informes', 'Listado mi alumnado', 'Por grupo', 'Excel',
   'Todos los alumnos', 'Enviar']) assert(tutor.includes(step));
 assert(tutor.includes('input.value=student.email||'));

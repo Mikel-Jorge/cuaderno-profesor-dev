@@ -11,6 +11,8 @@ class Node {
     this.disabled = false;
     this.value = id === 'module' ? 'M' : '';
     this.listeners = {};
+    this.classes = new Set();
+    this.classList = { toggle: (name, enabled) => enabled ? this.classes.add(name) : this.classes.delete(name) };
   }
   append(...children) { this.children.push(...children); }
   appendChild(child) { this.children.push(child); }
@@ -88,27 +90,53 @@ function runImporter(fails) {
   const importer = importDialog.replace('<?= hasModules ?>', 'true');
   const importerScript = /<script>([\s\S]*?)<\/script>/.exec(importer)[1];
   const ids = ['upload-form', 'archivo', 'primary', 'back', 'error', 'no-modules',
-    'loading', 'loading-label', 'file-name', 'confirm-cancel', 'confirm-accept'];
+    'loading', 'loading-label', 'file-name', 'confirm-cancel', 'confirm-accept',
+    'educa-body', 'import-actions', 'intro', 'preview'];
   const elements = Object.fromEntries(ids.map(id => [id, new Node(id)]));
   elements.archivo.files = [{}];
   elements['upload-form'].elements = { archivo: elements.archivo,
-    mapping: { value: '{}' }, confirmDrops: { value: '' }, expectedDrops: { value: '0' } };
+    mapping: { value: '{"subject":"module"}' }, confirmDrops: { value: '' }, expectedDrops: { value: '0' } };
   let closed = 0;
+  let duringImport;
   const runner = { withSuccessHandler(handler) { this.success = handler; return this; },
     withFailureHandler(handler) { this.failure = handler; return this; },
     importarAlumnadoEduca() {
+      duringImport = { introHidden: elements.intro.hidden, previewHidden: elements.preview.hidden,
+        loadingVisible: !elements.loading.hidden, actionsHidden: elements['import-actions'].hidden,
+        overflowLocked: elements['educa-body'].classes.has('is-busy'),
+        mapping: elements['upload-form'].elements.mapping.value };
       if (fails) this.failure({ message: 'Importación fallida' });
       else this.success({ summary: {} });
     } };
   const scope = { document: { getElementById: id => elements[id] },
     google: { script: { run: runner, host: { close() { closed++; } } } } };
-  vm.runInNewContext(importerScript, scope);
+  vm.createContext(scope);
+  vm.runInContext(importerScript, scope);
+  vm.runInContext('preview={summary:{modules:1}};showPage("preview")', scope);
   scope.applyImport(false);
-  return { closed, error: elements.error.textContent };
+  return { closed, error: elements.error.textContent, duringImport,
+    restored: !elements.preview.hidden && elements.loading.hidden &&
+      !elements['import-actions'].hidden && !elements['educa-body'].classes.has('is-busy'),
+    mapping: elements['upload-form'].elements.mapping.value };
 }
-assert.equal(runImporter(false).closed, 1);
-assert.equal(runImporter(true).closed, 0);
-assert.equal(runImporter(true).error, 'Importación fallida');
+const importSuccess = runImporter(false);
+assert.equal(importSuccess.closed, 1);
+assert.deepEqual(importSuccess.duringImport, { introHidden: true, previewHidden: true,
+  loadingVisible: true, actionsHidden: true, overflowLocked: true, mapping: '{"subject":"module"}' });
+const importFailure = runImporter(true);
+assert.equal(importFailure.closed, 0);
+assert.equal(importFailure.restored, true);
+assert.equal(importFailure.mapping, '{"subject":"module"}');
+assert.equal(importFailure.error, 'Importación fallida');
+const tutorDialog = fs.readFileSync('UiDialogTutorImport.html', 'utf8');
+const commonStyles = fs.readFileSync('UiStyles.html', 'utf8');
+assert.match(importDialog, /<nav class="educa-route" aria-label="Ruta en EDUCA">/);
+assert.match(tutorDialog, /<nav class="educa-route" aria-label="Ruta en EDUCA">/);
+assert.match(commonStyles, /\.educa-route\s*\{/);
+assert.match(importDialog, /Por profesor/);
+assert.match(importDialog, /Mostrar todas las asignaturas/);
+assert.match(importDialog, /\.educa-body\.is-busy\{[^}]*overflow:hidden/);
+assert.doesNotMatch(importDialog, /\.educa-loading\{position:absolute/);
 const menu = fs.readFileSync('Main.gs', 'utf8');
 assert(menu.indexOf('CP.MENU.EDUCA_IMPORT') < menu.indexOf('CP.MENU.MODULE_ENROLLMENTS'));
 assert(menu.indexOf('CP.MENU.MODULE_ENROLLMENTS') < menu.indexOf('CP.MENU.MODULE_CONFIG_CREATE'));

@@ -6,7 +6,8 @@ class Element {
   constructor() {
     this.children = []; this.dataset = {}; this.hidden = false; this.disabled = false;
     this.value = ''; this.textContent = ''; this.listeners = {};
-    this.classList = { toggle() {} };
+    this.classes = new Set();
+    this.classList = { toggle: (name, enabled) => enabled ? this.classes.add(name) : this.classes.delete(name) };
   }
   addEventListener(name, callback) { this.listeners[name] = callback; }
   append(...children) {
@@ -22,7 +23,8 @@ class Element {
   scrollIntoView(options) { this.scrolled = options; }
 }
 const ids = Object.fromEntries(['file-form', 'action', 'close', 'back', 'error', 'loading',
-  'loading-label', 'intro', 'preview', 'group', 'students', 'count', 'emails'].map(id => [id, new Element()]));
+  'loading-label', 'intro', 'preview', 'group', 'students', 'count', 'emails',
+  'tutor-body', 'tutor-actions'].map(id => [id, new Element()]));
 ids.intro.hidden = false;
 ids.preview.hidden = true;
 ids.loading.hidden = true;
@@ -33,6 +35,7 @@ const student = { key: 'KEY', surname: 'Apellido', name: 'Nombre', email: 'known
 let previewStudents = [student];
 let importResult = { ok: true, academicImported: true, contactsOk: true };
 let backendThrows = false, closes = 0, imports = 0;
+let duringImport;
 const document = {
   getElementById: id => ids[id],
   createElement: () => new Element(),
@@ -45,11 +48,16 @@ const run = {
   analizarArchivoTutorEduca() { this.success({ group: 'DAM 2A', students: previewStudents }); },
   importarAlumnadoTutoria() {
     imports++;
+    duringImport = { previewHidden: ids.preview.hidden, introHidden: ids.intro.hidden,
+      loadingVisible: !ids.loading.hidden, actionsHidden: ids['tutor-actions'].hidden,
+      overflowLocked: ids['tutor-body'].classes.has('is-busy'),
+      email: document.querySelectorAll('.tutor-row input')[0].value };
     if (backendThrows) this.failure({ message: 'Servicio no disponible.' });
     else this.success(importResult);
   },
 };
 const source = fs.readFileSync('UiDialogTutorImport.html', 'utf8');
+assert.match(source, /\.tutor-body\.is-busy\{overflow:hidden\}/);
 const script = source.match(/<script>([\s\S]*?)<\/script>/)[1];
 const context = vm.createContext({ document, google: { script: { run,
   host: { close: () => { closes++; } } } } });
@@ -87,6 +95,9 @@ first.value = 'known@example.test';
 first.listeners.input();
 ids.action.listeners.click();
 assert.strictEqual(closes, 1);
+assert.deepStrictEqual(duringImport, { previewHidden: true, introHidden: true,
+  loadingVisible: true, actionsHidden: true, overflowLocked: true,
+  email: 'known@example.test' });
 assert.strictEqual(ids.preview.hidden, true, 'el éxito cierra sin volver al formulario');
 vm.runInContext('busy=false', context);
 
@@ -102,6 +113,9 @@ ids.action.listeners.click();
 assert.strictEqual(closes, 1);
 assert.strictEqual(ids.preview.hidden, false);
 assert.strictEqual(ids.loading.hidden, true);
+assert.strictEqual(ids['tutor-actions'].hidden, false);
+assert.strictEqual(ids['tutor-body'].classes.has('is-busy'), false);
+assert.strictEqual(first.value, 'known@example.test');
 assert.strictEqual(ids.error.textContent, 'Servicio no disponible.');
 
 backendThrows = false;
